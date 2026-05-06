@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://iffjdqfwdawqfxwowdqp.supabase.co";
@@ -253,14 +253,82 @@ function Splash() {
   );
 }
 
+function TriondaBall() {
+  return (
+    <svg viewBox="0 0 200 200" width="130" height="130" xmlns="http://www.w3.org/2000/svg"
+      style={{filter:"drop-shadow(0 0 28px rgba(0,200,224,0.35)) drop-shadow(0 8px 16px rgba(0,0,0,0.5))"}}>
+      <defs>
+        <radialGradient id="ballGrad" cx="38%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#ffffff"/>
+          <stop offset="60%" stopColor="#f0f4f8"/>
+          <stop offset="100%" stopColor="#d0dce8"/>
+        </radialGradient>
+        <radialGradient id="shineGrad" cx="35%" cy="30%" r="40%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.9)"/>
+          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
+        </radialGradient>
+        <clipPath id="circle"><circle cx="100" cy="100" r="92"/></clipPath>
+      </defs>
+      {/* Base ball */}
+      <circle cx="100" cy="100" r="92" fill="url(#ballGrad)" stroke="#c8d8e8" strokeWidth="1"/>
+      {/* Panel 1 - top left - blue (USA) */}
+      <path d="M100,100 Q60,30 20,50 Q10,75 30,100 Q60,95 100,100Z" fill="#1a5fd4" opacity="0.82" clipPath="url(#circle)"/>
+      {/* Panel 2 - top right - red (Canada) */}
+      <path d="M100,100 Q140,30 178,50 Q190,75 168,100 Q140,95 100,100Z" fill="#cc1e1e" opacity="0.82" clipPath="url(#circle)"/>
+      {/* Panel 3 - bottom - green (Mexico) */}
+      <path d="M100,100 Q60,168 100,190 Q140,168 100,100Z" fill="#1a8a3a" opacity="0.82" clipPath="url(#circle)"/>
+      {/* Wave lines on panels */}
+      <g clipPath="url(#circle)" fill="none" strokeWidth="1.5" opacity="0.4">
+        <path d="M25,65 Q45,55 65,70 Q85,85 100,80" stroke="#fff"/>
+        <path d="M20,80 Q42,68 62,82 Q82,96 100,92" stroke="#fff"/>
+        <path d="M175,65 Q155,55 135,70 Q115,85 100,80" stroke="#fff"/>
+        <path d="M180,80 Q158,68 138,82 Q118,96 100,92" stroke="#fff"/>
+        <path d="M70,155 Q85,175 100,185 Q115,175 130,155" stroke="#fff"/>
+        <path d="M78,168 Q88,182 100,188 Q112,182 122,168" stroke="#fff"/>
+      </g>
+      {/* Center triangle connecting panels - gold */}
+      <polygon points="100,100 85,78 115,78" fill="#ffd060" opacity="0.9"/>
+      {/* Star - USA symbol */}
+      <g transform="translate(56,58)" fill="#ffffff" opacity="0.95">
+        <polygon points="0,-8 2,-2 8,-2 3,2 5,8 0,4 -5,8 -3,2 -8,-2 -2,-2" transform="scale(0.9)"/>
+      </g>
+      {/* Maple leaf simplified - Canada */}
+      <g transform="translate(144,58)" fill="#ffffff" opacity="0.95">
+        <path d="M0,-8 L1.5,-3 L6,-4 L3,0 L5,5 L0,2 L-5,5 L-3,0 L-6,-4 L-1.5,-3 Z" transform="scale(0.85)"/>
+        <rect x="-1" y="2" width="2" height="4" rx="0.5" transform="scale(0.85)"/>
+      </g>
+      {/* Eagle simplified - Mexico */}
+      <g transform="translate(100,158)" fill="#ffffff" opacity="0.95">
+        <ellipse cx="0" cy="0" rx="5" ry="3.5"/>
+        <path d="M-5,0 Q-9,-3 -8,-6 Q-5,-4 -3,-1Z" />
+        <path d="M5,0 Q9,-3 8,-6 Q5,-4 3,-1Z" />
+      </g>
+      {/* Panel seams */}
+      <g clipPath="url(#circle)" fill="none" stroke="#8899aa" strokeWidth="1.2" opacity="0.5">
+        <path d="M100,100 Q80,60 50,40 Q30,45 18,62"/>
+        <path d="M100,100 Q120,60 150,40 Q170,45 182,62"/>
+        <path d="M100,100 Q100,140 100,188"/>
+        <path d="M30,100 Q65,95 100,100 Q135,95 168,100"/>
+      </g>
+      {/* FIFA 2026 text */}
+      <text x="100" y="107" textAnchor="middle" fontSize="7" fontWeight="800"
+        fill="#ffd060" fontFamily="sans-serif" letterSpacing="1" opacity="0.95">FIFA 2026</text>
+      {/* Shine overlay */}
+      <circle cx="100" cy="100" r="92" fill="url(#shineGrad)" opacity="0.35"/>
+      {/* Border */}
+      <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(200,220,240,0.4)" strokeWidth="1.5"/>
+    </svg>
+  );
+}
+
 function SplashView({ctx}) {
   const {setView} = ctx;
   return (
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:C.bg}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
         justifyContent:"center",padding:"48px 24px 32px"}}>
-        <div style={{position:"relative",marginBottom:24}}>
-          <div style={{fontSize:64,filter:"drop-shadow(0 0 20px rgba(0,200,224,0.4))"}}>⚽</div>
+        <div style={{marginBottom:24}}>
+          <TriondaBall/>
         </div>
         <div style={{fontSize:10,letterSpacing:4,color:C.sub2,marginBottom:6,textTransform:"uppercase"}}>Baprode</div>
         <h1 style={{...gradText,fontSize:36,fontWeight:800,textAlign:"center",lineHeight:1.1,margin:0}}>
@@ -278,19 +346,31 @@ function SplashView({ctx}) {
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 function LoginView({ctx}) {
-  const {setView, toast$, setProfile} = ctx;
-  const [email,setEmail]=useState(""), [pw,setPw]=useState(""), [loading,setLoading]=useState(false);
+  const {setView, toast$} = ctx;
+  const [identifier, setIdentifier] = useState("");
+  const [pw, setPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function login() {
-    if (!email||!pw) return toast$("Completá todos los campos","err");
+    if (!identifier || !pw) return toast$("Completá todos los campos", "err");
     setLoading(true);
-    const {error} = await supabase.auth.signInWithPassword({email, password:pw});
-    if (error) { toast$(error.message,"err"); setLoading(false); }
+    let emailToUse = identifier;
+    // If not an email, look up by nick
+    if (!identifier.includes("@")) {
+      const {data} = await supabase.from("profiles").select("email").eq("nick", identifier).single();
+      if (!data) { toast$("Usuario no encontrado", "err"); setLoading(false); return; }
+      emailToUse = data.email;
+    }
+    const {error} = await supabase.auth.signInWithPassword({email: emailToUse, password: pw});
+    if (error) { toast$("Email, usuario o contraseña incorrectos", "err"); setLoading(false); }
   }
 
   async function forgotPw() {
-    if (!email) return toast$("Ingresá tu email primero","err");
-    await supabase.auth.resetPasswordForEmail(email);
+    if (!identifier) return toast$("Ingresá tu email primero", "err");
+    const email = identifier.includes("@") ? identifier : null;
+    if (!email) return toast$("Usá tu email para recuperar contraseña", "err");
+    await supabase.auth.resetPasswordForEmail(email, {redirectTo: "https://baprode-mundial.vercel.app"});
     toast$("Email de recuperación enviado");
   }
 
@@ -298,8 +378,24 @@ function LoginView({ctx}) {
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column"}}>
       <Bar title="Iniciar sesión" onBack={()=>setView("splash")}/>
       <div style={{padding:"24px 20px",display:"flex",flexDirection:"column",gap:14}}>
-        <Field label="Email" value={email} onChange={setEmail} type="email"/>
-        <Field label="Contraseña" value={pw} onChange={setPw} type="password"/>
+        <div>
+          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Email o Nick</div>
+          <input style={inp} placeholder="nombre@email.com o tu nick"
+            value={identifier} onChange={e=>setIdentifier(e.target.value)}/>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contraseña</div>
+          <div style={{position:"relative"}}>
+            <input type={showPw?"text":"password"} style={{...inp,paddingRight:44}}
+              placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)}/>
+            <button onClick={()=>setShowPw(p=>!p)} style={{
+              position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0,
+            }}>
+              {showPw ? "🙈" : "👁"}
+            </button>
+          </div>
+        </div>
         <GradBtn onClick={login} disabled={loading}>{loading?"Ingresando...":"Entrar"}</GradBtn>
         <button onClick={forgotPw} style={{background:"none",border:"none",color:C.sub2,
           fontSize:13,cursor:"pointer",padding:"4px 0",fontFamily:font}}>
@@ -317,10 +413,82 @@ function LoginView({ctx}) {
   );
 }
 
+// ─── WHEEL DATE PICKER ────────────────────────────────────────────────────────
+function WheelPicker({items, value, onChange, width=70}) {
+  const idx = items.indexOf(value);
+  const ref = useState(null);
+  return (
+    <div style={{width,height:120,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:40,
+        background:`linear-gradient(to bottom, ${C.surface2}, transparent)`,zIndex:2,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,
+        background:`linear-gradient(to top, ${C.surface2}, transparent)`,zIndex:2,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,
+        marginTop:-18,border:`1px solid ${C.accentS}`,borderRadius:8,
+        background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
+      <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",
+        scrollbarWidth:"none",paddingTop:42,paddingBottom:42}}
+        onScroll={e=>{
+          const el=e.target;
+          const i=Math.round((el.scrollTop)/(36));
+          if(items[i] && items[i]!==value) onChange(items[i]);
+        }}>
+        {items.map((item,i)=>(
+          <div key={item} style={{height:36,display:"flex",alignItems:"center",
+            justifyContent:"center",scrollSnapAlign:"start",
+            fontSize:15,fontWeight:i===idx?700:400,
+            color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>
+            {item}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const DAYS   = Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0"));
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const YEARS  = Array.from({length:90},(_,i)=>String(2006-i));
+
+function DOBPicker({value, onChange}) {
+  const parts = value ? value.split("-") : ["2000","01","01"];
+  const year=parts[0], month=parts[1], day=parts[2];
+  const monthIdx = parseInt(month)-1;
+
+  function update(y,m,d) {
+    const mm = String(MONTHS.indexOf(m)+1).padStart(2,"0");
+    onChange(`${y}-${mm}-${d}`);
+  }
+
+  return (
+    <div>
+      <div style={{fontSize:11,color:C.sub,marginBottom:8,letterSpacing:0.5,textTransform:"uppercase"}}>
+        Fecha de nacimiento *
+      </div>
+      <div style={{display:"flex",gap:8,background:C.surface2,borderRadius:12,
+        padding:"8px",border:`1px solid ${C.border}`,justifyContent:"center"}}>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>DÍA</div>
+          <WheelPicker items={DAYS} value={day} onChange={d=>update(year,MONTHS[monthIdx],d)} width={60}/>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>MES</div>
+          <WheelPicker items={MONTHS} value={MONTHS[monthIdx]} onChange={m=>update(year,m,day)} width={72}/>
+        </div>
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>AÑO</div>
+          <WheelPicker items={YEARS} value={year} onChange={y=>update(y,MONTHS[monthIdx],day)} width={72}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RegisterView({ctx}) {
   const {setView, toast$} = ctx;
-  const [f,setF] = useState({nombre:"",dni:"",dob:"",email:"",nick:"",pw:"",cel:""});
-  const [loading,setLoading] = useState(false);
+  const [f,setF] = useState({nombre:"",dni:"",dob:"2000-01-01",email:"",nick:"",pw:"",cel:""});
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
   const upd = k => v => setF(p=>({...p,[k]:v}));
 
   async function register() {
@@ -328,15 +496,16 @@ function RegisterView({ctx}) {
       return toast$("Completá los campos obligatorios","err");
     if (!ageOk(f.dob)) return toast$("Debés ser mayor de 18 años","err");
     setLoading(true);
-    const {data,error} = await supabase.auth.signUp({email:f.email, password:f.pw,
-      options:{data:{nombre:f.nombre,dni:f.dni,dob:f.dob,nick:f.nick,cel:f.cel}}});
+    const {data,error} = await supabase.auth.signUp({
+      email:f.email, password:f.pw,
+      options:{data:{nombre:f.nombre,dni:f.dni,dob:f.dob,nick:f.nick,cel:f.cel}}
+    });
     if (error) { toast$(error.message,"err"); setLoading(false); return; }
-    // insert profile
     await supabase.from("profiles").insert({
-      id: data.user.id, nombre:f.nombre, dni:f.dni, dob:f.dob,
+      id:data.user.id, nombre:f.nombre, dni:f.dni, dob:f.dob,
       email:f.email, nick:f.nick, cel:f.cel, is_admin:false
     });
-    toast$("¡Cuenta creada! Revisá tu email");
+    toast$("¡Cuenta creada! Ya podés ingresar");
     setLoading(false);
     setView("login");
   }
@@ -344,19 +513,53 @@ function RegisterView({ctx}) {
   return (
     <div style={{minHeight:"100vh"}}>
       <Bar title="Crear cuenta" onBack={()=>setView("splash")}/>
-      <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:12,paddingBottom:40}}>
+      <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:14,paddingBottom:40}}>
         <SectionLabel>Datos personales</SectionLabel>
         <Field label="Nombre completo *" value={f.nombre} onChange={upd("nombre")}/>
         <Field label="DNI *" value={f.dni} onChange={upd("dni")} type="number"/>
-        <Field label="Fecha de nacimiento *" value={f.dob} onChange={upd("dob")} type="date"/>
+        <DOBPicker value={f.dob} onChange={upd("dob")}/>
+
         <SectionLabel>Cuenta</SectionLabel>
         <Field label="Email *" value={f.email} onChange={upd("email")} type="email"/>
         <Field label="Nick (nombre en el juego) *" value={f.nick} onChange={upd("nick")}/>
-        <Field label="Contraseña *" value={f.pw} onChange={upd("pw")} type="password"/>
-        <Field label="Celular (opcional)" value={f.cel} onChange={upd("cel")} type="tel"/>
+
+        {/* Password with eye */}
+        <div>
+          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contraseña *</div>
+          <div style={{position:"relative"}}>
+            <input type={showPw?"text":"password"} style={{...inp,paddingRight:44}}
+              placeholder="Mínimo 6 caracteres" value={f.pw} onChange={e=>upd("pw")(e.target.value)}/>
+            <button onClick={()=>setShowPw(p=>!p)} style={{
+              position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0,
+            }}>
+              {showPw?"🙈":"👁"}
+            </button>
+          </div>
+        </div>
+
+        {/* Phone with ARG flag */}
+        <div>
+          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>
+            Celular (opcional)
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div style={{...inp,width:"auto",padding:"10px 12px",display:"flex",
+              alignItems:"center",gap:6,flexShrink:0,color:C.text,fontSize:14}}>
+              <span style={{fontSize:18}}>🇦🇷</span>
+              <span style={{color:C.sub2,fontFamily:mono}}>+54</span>
+            </div>
+            <input type="tel" style={{...inp,flex:1}} placeholder="9 11 1234 5678"
+              value={f.cel} onChange={e=>upd("cel")(e.target.value.replace(/^\+54/,"").replace(/^54/,""))}/>
+          </div>
+        </div>
+
         <div style={{marginTop:4}}>
           <GradBtn onClick={register} disabled={loading}>{loading?"Creando...":"Crear cuenta"}</GradBtn>
         </div>
+        <p style={{fontSize:11,color:C.sub,textAlign:"center",lineHeight:1.6,margin:0}}>
+          Debés ser mayor de 18 años para registrarte
+        </p>
       </div>
     </div>
   );
