@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://iffjdqfwdawqfxwowdqp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZmpkcWZ3ZGF3cWZ4d293ZHFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTgyNjIsImV4cCI6MjA5MzU5NDI2Mn0.J3oSgvOBNbO7Kg26HeKiDagkBbrMNsgm5tkClA_0QXI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
   bg:       "#050a10",
   surface:  "#091520",
@@ -28,7 +26,6 @@ const C = {
 const font = "'DM Sans', 'Segoe UI', system-ui, sans-serif";
 const mono = "'DM Mono', 'Fira Mono', monospace";
 
-// ─── 2026 DATA ────────────────────────────────────────────────────────────────
 const GROUPS = {
   A: ["Mexico","Corea del Sur","Sudáfrica","Chequia"],
   B: ["Canadá","Bosnia-Herz.","Qatar","Suiza"],
@@ -44,86 +41,73 @@ const GROUPS = {
   L: ["Inglaterra","Croacia","Ghana","Panamá"],
 };
 
-// Group stage matches with real dates/times (Argentina time = ET+1 for summer)
 const GROUP_MATCHES = [
-  // Group A
   {id:"A1",group:"A",home:"Mexico",away:"Sudáfrica",date:"2026-06-11",time:"16:00",venue:"Ciudad de México"},
   {id:"A2",group:"A",home:"Corea del Sur",away:"Chequia",date:"2026-06-11",time:"23:00",venue:"Zapopan"},
   {id:"A3",group:"A",home:"Mexico",away:"Chequia",date:"2026-06-15",time:"23:00",venue:"Ciudad de México"},
   {id:"A4",group:"A",home:"Corea del Sur",away:"Sudáfrica",date:"2026-06-15",time:"20:00",venue:"Zapopan"},
   {id:"A5",group:"A",home:"Mexico",away:"Corea del Sur",date:"2026-06-19",time:"23:00",venue:"Ciudad de México"},
   {id:"A6",group:"A",home:"Sudáfrica",away:"Chequia",date:"2026-06-19",time:"23:00",venue:"Zapopan"},
-  // Group B
   {id:"B1",group:"B",home:"Canadá",away:"Bosnia-Herz.",date:"2026-06-12",time:"16:00",venue:"Toronto"},
   {id:"B2",group:"B",home:"Qatar",away:"Suiza",date:"2026-06-13",time:"16:00",venue:"Santa Clara"},
   {id:"B3",group:"B",home:"Canadá",away:"Suiza",date:"2026-06-17",time:"16:00",venue:"Toronto"},
   {id:"B4",group:"B",home:"Qatar",away:"Bosnia-Herz.",date:"2026-06-17",time:"20:00",venue:"Santa Clara"},
   {id:"B5",group:"B",home:"Canadá",away:"Qatar",date:"2026-06-21",time:"20:00",venue:"Toronto"},
   {id:"B6",group:"B",home:"Bosnia-Herz.",away:"Suiza",date:"2026-06-21",time:"20:00",venue:"Kansas City"},
-  // Group C
   {id:"C1",group:"C",home:"Brasil",away:"Marruecos",date:"2026-06-13",time:"19:00",venue:"East Rutherford"},
   {id:"C2",group:"C",home:"Haití",away:"Escocia",date:"2026-06-13",time:"22:00",venue:"Foxborough"},
   {id:"C3",group:"C",home:"Brasil",away:"Escocia",date:"2026-06-17",time:"22:00",venue:"East Rutherford"},
   {id:"C4",group:"C",home:"Marruecos",away:"Haití",date:"2026-06-17",time:"19:00",venue:"Foxborough"},
   {id:"C5",group:"C",home:"Brasil",away:"Haití",date:"2026-06-21",time:"16:00",venue:"East Rutherford"},
   {id:"C6",group:"C",home:"Escocia",away:"Marruecos",date:"2026-06-21",time:"16:00",venue:"Foxborough"},
-  // Group D
   {id:"D1",group:"D",home:"USA",away:"Paraguay",date:"2026-06-12",time:"22:00",venue:"Los Ángeles"},
   {id:"D2",group:"D",home:"Australia",away:"Türkiye",date:"2026-06-13",time:"13:00",venue:"Philadelphia"},
   {id:"D3",group:"D",home:"USA",away:"Türkiye",date:"2026-06-17",time:"13:00",venue:"Los Ángeles"},
   {id:"D4",group:"D",home:"Paraguay",away:"Australia",date:"2026-06-17",time:"22:00",venue:"Philadelphia"},
   {id:"D5",group:"D",home:"USA",away:"Australia",date:"2026-06-22",time:"20:00",venue:"Los Ángeles"},
   {id:"D6",group:"D",home:"Türkiye",away:"Paraguay",date:"2026-06-22",time:"20:00",venue:"Philadelphia"},
-  // Group E
   {id:"E1",group:"E",home:"Alemania",away:"Costa Marfil",date:"2026-06-14",time:"16:00",venue:"Atlanta"},
   {id:"E2",group:"E",home:"Curazao",away:"Ecuador",date:"2026-06-14",time:"22:00",venue:"Seattle"},
   {id:"E3",group:"E",home:"Alemania",away:"Ecuador",date:"2026-06-18",time:"16:00",venue:"Atlanta"},
   {id:"E4",group:"E",home:"Costa Marfil",away:"Curazao",date:"2026-06-18",time:"22:00",venue:"Seattle"},
   {id:"E5",group:"E",home:"Alemania",away:"Curazao",date:"2026-06-22",time:"16:00",venue:"Atlanta"},
   {id:"E6",group:"E",home:"Ecuador",away:"Costa Marfil",date:"2026-06-22",time:"16:00",venue:"Seattle"},
-  // Group F
   {id:"F1",group:"F",home:"Países Bajos",away:"Túnez",date:"2026-06-14",time:"13:00",venue:"Miami"},
   {id:"F2",group:"F",home:"Japón",away:"Suecia",date:"2026-06-14",time:"19:00",venue:"Dallas"},
   {id:"F3",group:"F",home:"Países Bajos",away:"Suecia",date:"2026-06-18",time:"13:00",venue:"Miami"},
   {id:"F4",group:"F",home:"Túnez",away:"Japón",date:"2026-06-18",time:"19:00",venue:"Dallas"},
   {id:"F5",group:"F",home:"Países Bajos",away:"Japón",date:"2026-06-22",time:"22:00",venue:"Miami"},
   {id:"F6",group:"F",home:"Suecia",away:"Túnez",date:"2026-06-22",time:"22:00",venue:"Dallas"},
-  // Group G
   {id:"G1",group:"G",home:"Bélgica",away:"Irán",date:"2026-06-15",time:"13:00",venue:"Dallas"},
   {id:"G2",group:"G",home:"Egipto",away:"Nueva Zelanda",date:"2026-06-15",time:"16:00",venue:"Seattle"},
   {id:"G3",group:"G",home:"Bélgica",away:"Nueva Zelanda",date:"2026-06-19",time:"13:00",venue:"Dallas"},
   {id:"G4",group:"G",home:"Irán",away:"Egipto",date:"2026-06-19",time:"16:00",venue:"Seattle"},
   {id:"G5",group:"G",home:"Bélgica",away:"Egipto",date:"2026-06-23",time:"20:00",venue:"Dallas"},
   {id:"G6",group:"G",home:"Nueva Zelanda",away:"Irán",date:"2026-06-23",time:"20:00",venue:"Seattle"},
-  // Group H
   {id:"H1",group:"H",home:"España",away:"Arabia Saudita",date:"2026-06-15",time:"19:00",venue:"Kansas City"},
   {id:"H2",group:"H",home:"Uruguay",away:"Cabo Verde",date:"2026-06-15",time:"22:00",venue:"Miami"},
   {id:"H3",group:"H",home:"España",away:"Cabo Verde",date:"2026-06-19",time:"19:00",venue:"Kansas City"},
   {id:"H4",group:"H",home:"Arabia Saudita",away:"Uruguay",date:"2026-06-19",time:"22:00",venue:"Miami"},
   {id:"H5",group:"H",home:"España",away:"Uruguay",date:"2026-06-23",time:"16:00",venue:"Kansas City"},
   {id:"H6",group:"H",home:"Cabo Verde",away:"Arabia Saudita",date:"2026-06-23",time:"16:00",venue:"Miami"},
-  // Group I
   {id:"I1",group:"I",home:"Francia",away:"Senegal",date:"2026-06-16",time:"13:00",venue:"Atlanta"},
   {id:"I2",group:"I",home:"Noruega",away:"Irak",date:"2026-06-16",time:"16:00",venue:"Los Ángeles"},
   {id:"I3",group:"I",home:"Francia",away:"Irak",date:"2026-06-20",time:"13:00",venue:"Atlanta"},
   {id:"I4",group:"I",home:"Senegal",away:"Noruega",date:"2026-06-20",time:"16:00",venue:"Los Ángeles"},
   {id:"I5",group:"I",home:"Francia",away:"Noruega",date:"2026-06-24",time:"20:00",venue:"Atlanta"},
   {id:"I6",group:"I",home:"Irak",away:"Senegal",date:"2026-06-24",time:"20:00",venue:"Los Ángeles"},
-  // Group J
   {id:"J1",group:"J",home:"Argentina",away:"Argelia",date:"2026-06-16",time:"19:00",venue:"Miami"},
   {id:"J2",group:"J",home:"Austria",away:"Jordania",date:"2026-06-16",time:"22:00",venue:"East Rutherford"},
   {id:"J3",group:"J",home:"Argentina",away:"Jordania",date:"2026-06-20",time:"19:00",venue:"Miami"},
   {id:"J4",group:"J",home:"Argelia",away:"Austria",date:"2026-06-20",time:"22:00",venue:"East Rutherford"},
   {id:"J5",group:"J",home:"Argentina",away:"Austria",date:"2026-06-24",time:"16:00",venue:"Miami"},
   {id:"J6",group:"J",home:"Jordania",away:"Argelia",date:"2026-06-24",time:"16:00",venue:"East Rutherford"},
-  // Group K
   {id:"K1",group:"K",home:"Portugal",away:"Uzbekistán",date:"2026-06-17",time:"13:00",venue:"Kansas City"},
   {id:"K2",group:"K",home:"Colombia",away:"DR Congo",date:"2026-06-17",time:"16:00",venue:"Santa Clara"},
   {id:"K3",group:"K",home:"Portugal",away:"DR Congo",date:"2026-06-21",time:"13:00",venue:"Kansas City"},
   {id:"K4",group:"K",home:"Uzbekistán",away:"Colombia",date:"2026-06-21",time:"16:00",venue:"Santa Clara"},
   {id:"K5",group:"K",home:"Portugal",away:"Colombia",date:"2026-06-25",time:"20:00",venue:"Kansas City"},
   {id:"K6",group:"K",home:"DR Congo",away:"Uzbekistán",date:"2026-06-25",time:"20:00",venue:"Santa Clara"},
-  // Group L
   {id:"L1",group:"L",home:"Inglaterra",away:"Panamá",date:"2026-06-18",time:"13:00",venue:"Foxborough"},
   {id:"L2",group:"L",home:"Croacia",away:"Ghana",date:"2026-06-18",time:"16:00",venue:"Vancouver"},
   {id:"L3",group:"L",home:"Inglaterra",away:"Ghana",date:"2026-06-22",time:"13:00",venue:"Foxborough"},
@@ -132,7 +116,6 @@ const GROUP_MATCHES = [
   {id:"L6",group:"L",home:"Ghana",away:"Panamá",date:"2026-06-26",time:"20:00",venue:"Vancouver"},
 ];
 
-// Knockout bracket — Round of 32 (fixed matchups where possible)
 const R32_SLOTS = [
   {id:"r32_0", label:"1°A vs 2°B", home_src:{g:"A",pos:1}, away_src:{g:"B",pos:2}, date:"2026-06-28", time:"16:00", venue:"Los Ángeles"},
   {id:"r32_1", label:"1°B vs 2°A", home_src:{g:"B",pos:1}, away_src:{g:"A",pos:2}, date:"2026-06-28", time:"22:00", venue:"Los Ángeles"},
@@ -146,13 +129,8 @@ const R32_SLOTS = [
   {id:"r32_9", label:"1°K vs 2°J", home_src:{g:"K",pos:1}, away_src:{g:"J",pos:2}, date:"2026-07-02", time:"22:30", venue:"Kansas City"},
   {id:"r32_10",label:"1°H vs 2°L", home_src:{g:"H",pos:1}, away_src:{g:"L",pos:2}, date:"2026-07-03", time:"16:00", venue:"Dallas"},
   {id:"r32_11",label:"1°L vs 2°H", home_src:{g:"L",pos:1}, away_src:{g:"H",pos:2}, date:"2026-07-03", time:"19:00", venue:"Philadelphia"},
-  {id:"r32_12",label:"1°E vs 3°mejor", home_src:{g:"E",pos:1}, away_src:null, date:"2026-06-29", time:"17:30", venue:"Foxborough"},
-  {id:"r32_13",label:"1°A vs 3°mejor", home_src:{g:"A",pos:1}, away_src:null, date:"2026-07-01", time:"22:00", venue:"Ciudad de México"},
-  {id:"r32_14",label:"1°L vs 3°mejor", home_src:{g:"L",pos:1}, away_src:null, date:"2026-07-01", time:"15:00", venue:"Atlanta"},
-  {id:"r32_15",label:"1°E vs 3°mejor", home_src:{g:"E",pos:1}, away_src:null, date:"2026-07-02", time:"16:00", venue:"Arlington"},
 ];
 
-// ─── SCORING ──────────────────────────────────────────────────────────────────
 function scoreGroup(pred, off) {
   if (!off || off.home == null || off.home === "" || off.away == null || off.away === "") return null;
   const oh=+off.home, oa=+off.away, ph=+(pred?.home??-1), pa=+(pred?.away??-1);
@@ -165,7 +143,6 @@ function scoreGroup(pred, off) {
   return p;
 }
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function fmtDate(d) {
   if (!d) return "";
   const [y,m,day] = d.split("-");
@@ -185,11 +162,10 @@ function hashColor(str) {
   return `hsl(${Math.abs(h)%360},40%,30%)`;
 }
 
-// ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [view, setView]       = useState("splash"); // splash|login|register|groups_list|group|predictions|ranking|profile
+  const [view, setView]       = useState("splash");
   const [activeGroup, setActiveGroup] = useState(null);
   const [toast, setToast]     = useState(null);
   const [loading, setLoading] = useState(true);
@@ -229,20 +205,21 @@ export default function App() {
 
   return (
     <Page>
-      {view==="splash"       && <SplashView ctx={ctx}/>}
-      {view==="login"        && <LoginView ctx={ctx}/>}
-      {view==="register"     && <RegisterView ctx={ctx}/>}
-      {view==="groups_list"  && <GroupsListView ctx={ctx}/>}
-      {view==="group"        && <GroupView ctx={ctx}/>}
-      {view==="predictions"  && <PredictionsView ctx={ctx}/>}
-      {view==="ranking"      && <RankingView ctx={ctx}/>}
-      {view==="admin"        && <AdminView ctx={ctx}/>}
+      {view==="splash"         && <SplashView ctx={ctx}/>}
+      {view==="login"          && <LoginView ctx={ctx}/>}
+      {view==="register"       && <RegisterView ctx={ctx}/>}
+      {view==="groups_list"    && <GroupsListView ctx={ctx}/>}
+      {view==="group"          && <GroupView ctx={ctx}/>}
+      {view==="predictions"    && <PredictionsView ctx={ctx}/>}
+      {view==="ranking"        && <RankingView ctx={ctx}/>}
+      {view==="global_ranking" && <GlobalRankingView ctx={ctx}/>}
+      {view==="official"       && <OfficialResultsView ctx={ctx}/>}
+      {view==="admin"          && <AdminView ctx={ctx}/>}
       {toast && <Toast msg={toast.msg} type={toast.type}/>}
     </Page>
   );
 }
 
-// ─── SPLASH ───────────────────────────────────────────────────────────────────
 function Splash() {
   return (
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
@@ -255,14 +232,6 @@ function Splash() {
 
 function SplashView({ctx}) {
   const {setView} = ctx;
-  const [colorIdx, setColorIdx] = useState(0);
-  const colors = ["#2280ff","#00b8d4","#00e5cc","#00b8d4","#2280ff"];
-
-  useEffect(()=>{
-    const t = setInterval(()=>setColorIdx(i=>(i+1)%colors.length), 800);
-    return ()=>clearInterval(t);
-  },[]);
-
   return (
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:C.bg}}>
       <style>{`
@@ -278,10 +247,8 @@ function SplashView({ctx}) {
       `}</style>
       <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
         justifyContent:"center",padding:"48px 24px 32px"}}>
-        <div style={{
-          fontSize:90,marginBottom:20,lineHeight:1,
-          animation:"ballFloat 2.5s ease-in-out infinite, ballGlow 2.4s ease-in-out infinite",
-        }}>⚽</div>
+        <div style={{fontSize:90,marginBottom:20,lineHeight:1,
+          animation:"ballFloat 2.5s ease-in-out infinite, ballGlow 2.4s ease-in-out infinite"}}>⚽</div>
         <div style={{fontSize:10,letterSpacing:4,color:C.sub2,marginBottom:6,textTransform:"uppercase"}}>Baprode</div>
         <h1 style={{...gradText,fontSize:36,fontWeight:800,textAlign:"center",lineHeight:1.1,margin:0}}>
           Mundial<br/>2026
@@ -296,7 +263,6 @@ function SplashView({ctx}) {
   );
 }
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
 function LoginView({ctx}) {
   const {setView, toast$} = ctx;
   const [identifier, setIdentifier] = useState("");
@@ -308,7 +274,6 @@ function LoginView({ctx}) {
     if (!identifier || !pw) return toast$("Completá todos los campos", "err");
     setLoading(true);
     let emailToUse = identifier;
-    // If not an email, look up by nick
     if (!identifier.includes("@")) {
       const {data} = await supabase.from("profiles").select("email").eq("nick", identifier).single();
       if (!data) { toast$("Usuario no encontrado", "err"); setLoading(false); return; }
@@ -342,8 +307,7 @@ function LoginView({ctx}) {
               placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)}/>
             <button onClick={()=>setShowPw(p=>!p)} style={{
               position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
-              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0,
-            }}>
+              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0}}>
               {showPw ? "🙈" : "👁"}
             </button>
           </div>
@@ -365,10 +329,8 @@ function LoginView({ctx}) {
   );
 }
 
-// ─── WHEEL DATE PICKER ────────────────────────────────────────────────────────
 function WheelPicker({items, value, onChange, width=70}) {
   const idx = items.indexOf(value);
-  const ref = useState(null);
   return (
     <div style={{width,height:120,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
       <div style={{position:"absolute",top:0,left:0,right:0,height:40,
@@ -405,7 +367,6 @@ const YEARS  = Array.from({length:90},(_,i)=>String(2006-i));
 function DOBPicker({value, onChange}) {
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState(value || "2000-01-01");
-
   const parts = temp.split("-");
   const year=parts[0], month=parts[1], day=parts[2];
   const monthIdx = parseInt(month)-1;
@@ -415,10 +376,7 @@ function DOBPicker({value, onChange}) {
     setTemp(`${y}-${mm}-${d}`);
   }
 
-  function confirm() {
-    onChange(temp);
-    setOpen(false);
-  }
+  function confirm() { onChange(temp); setOpen(false); }
 
   function displayDate(v) {
     if (!v) return "";
@@ -433,14 +391,12 @@ function DOBPicker({value, onChange}) {
       </div>
       <button onClick={()=>setOpen(true)} style={{
         ...inp, textAlign:"left", cursor:"pointer", display:"flex",
-        alignItems:"center", justifyContent:"space-between",
-      }}>
+        alignItems:"center", justifyContent:"space-between"}}>
         <span style={{color: value && value!=="2000-01-01" ? C.text : C.sub}}>
           {value && value!=="2000-01-01" ? displayDate(value) : "Seleccionar fecha"}
         </span>
         <span style={{color:C.sub2, fontSize:16}}>📅</span>
       </button>
-
       {open && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,
           display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -508,12 +464,9 @@ function RegisterView({ctx}) {
         <Field label="Nombre completo *" value={f.nombre} onChange={upd("nombre")}/>
         <Field label="DNI *" value={f.dni} onChange={upd("dni")} type="number"/>
         <DOBPicker value={f.dob} onChange={upd("dob")}/>
-
         <SectionLabel>Cuenta</SectionLabel>
         <Field label="Email *" value={f.email} onChange={upd("email")} type="email"/>
         <Field label="Nick (nombre en el juego) *" value={f.nick} onChange={upd("nick")}/>
-
-        {/* Password with eye */}
         <div>
           <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contraseña *</div>
           <div style={{position:"relative"}}>
@@ -521,18 +474,13 @@ function RegisterView({ctx}) {
               placeholder="Mínimo 6 caracteres" value={f.pw} onChange={e=>upd("pw")(e.target.value)}/>
             <button onClick={()=>setShowPw(p=>!p)} style={{
               position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
-              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0,
-            }}>
+              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0}}>
               {showPw?"🙈":"👁"}
             </button>
           </div>
         </div>
-
-        {/* Phone with ARG flag */}
         <div>
-          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>
-            Celular (opcional)
-          </div>
+          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Celular (opcional)</div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <div style={{...inp,width:"auto",padding:"10px 12px",display:"flex",
               alignItems:"center",gap:6,flexShrink:0,color:C.text,fontSize:14}}>
@@ -543,7 +491,6 @@ function RegisterView({ctx}) {
               value={f.cel} onChange={e=>upd("cel")(e.target.value.replace(/^\+54/,"").replace(/^54/,""))}/>
           </div>
         </div>
-
         <div style={{marginTop:4}}>
           <GradBtn onClick={register} disabled={loading}>{loading?"Creando...":"Crear cuenta"}</GradBtn>
         </div>
@@ -590,6 +537,24 @@ function GroupsListView({ctx}) {
         </div>
       </div>
 
+      {/* Botones de acceso rápido */}
+      <div style={{padding:"12px 16px 0",display:"flex",gap:8}}>
+        <button onClick={()=>setView("official")} style={{
+          flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
+          background:C.surface,color:C.accentS,fontSize:12,fontWeight:600,
+          cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",
+          justifyContent:"center",gap:6}}>
+          🏟 Resultados oficiales
+        </button>
+        <button onClick={()=>setView("global_ranking")} style={{
+          flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
+          background:C.surface,color:C.gold,fontSize:12,fontWeight:600,
+          cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",
+          justifyContent:"center",gap:6}}>
+          🌍 Ranking global
+        </button>
+      </div>
+
       <div style={{padding:"16px",paddingBottom:100}}>
         <SectionLabel>Mis grupos</SectionLabel>
         {loading && <p style={{color:C.sub,fontSize:13,textAlign:"center",marginTop:24}}>Cargando...</p>}
@@ -618,7 +583,6 @@ function GroupsListView({ctx}) {
             </div>
           </div>
         ))}
-
         <div style={{marginTop:16}}>
           <Btn2 onClick={()=>setShowJoin(true)}>Unirse a un grupo</Btn2>
         </div>
@@ -697,9 +661,11 @@ function JoinGroupModal({profile,onClose,onJoined,toast$}) {
 
 // ─── GROUP VIEW ───────────────────────────────────────────────────────────────
 function GroupView({ctx}) {
-  const {profile,activeGroup,setView,toast$} = ctx;
+  const {profile,activeGroup,setView,setActiveGroup,toast$} = ctx;
   const [members,setMembers] = useState([]);
   const [selectedUser,setSelectedUser] = useState(null);
+  const [showManage,setShowManage] = useState(false);
+  const [myRole,setMyRole] = useState(null);
 
   useEffect(()=>{ fetchMembers(); },[]);
 
@@ -708,6 +674,8 @@ function GroupView({ctx}) {
       .select("user_id, role, profiles(id,nick,nombre)")
       .eq("group_id",activeGroup.id);
     setMembers(data||[]);
+    const me = data?.find(m=>m.user_id===profile.id);
+    setMyRole(me?.role);
   }
 
   const updatedAt = activeGroup?.updated_at
@@ -715,11 +683,12 @@ function GroupView({ctx}) {
         day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})
     : "Sin datos cargados";
 
+  const isGroupAdmin = myRole==="admin" || activeGroup?.created_by===profile?.id;
+
   return (
     <div style={{minHeight:"100vh"}}>
       <Bar title={activeGroup?.name} onBack={()=>setView("groups_list")}/>
 
-      {/* Last update banner */}
       <div style={{margin:"12px 16px 0",background:C.surface2,borderRadius:10,
         padding:"10px 14px",border:`1px solid ${C.border}`,
         display:"flex",alignItems:"center",gap:8}}>
@@ -733,6 +702,14 @@ function GroupView({ctx}) {
       <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
         <GradBtn onClick={()=>setView("predictions")}>📋 Mis predicciones</GradBtn>
         <Btn2 onClick={()=>setView("ranking")}>🏆 Ranking del grupo</Btn2>
+        {isGroupAdmin && (
+          <button onClick={()=>setShowManage(true)} style={{
+            width:"100%",padding:"13px",borderRadius:12,
+            border:`1px solid ${C.gold}`,cursor:"pointer",
+            fontSize:14,fontWeight:600,fontFamily:font,
+            background:"rgba(255,208,96,0.05)",color:C.gold,
+          }}>⚙️ Administrar grupo</button>
+        )}
       </div>
 
       <div style={{padding:"0 16px 16px"}}>
@@ -759,6 +736,211 @@ function GroupView({ctx}) {
       {selectedUser && (
         <ViewUserPredModal user={selectedUser} group={activeGroup} onClose={()=>setSelectedUser(null)}/>
       )}
+
+      {showManage && (
+        <ManageGroupModal
+          group={activeGroup}
+          onClose={()=>setShowManage(false)}
+          onUpdated={(updated)=>{ setActiveGroup(updated); setShowManage(false); }}
+          toast$={toast$}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── MANAGE GROUP MODAL ───────────────────────────────────────────────────────
+function ManageGroupModal({group,onClose,onUpdated,toast$}) {
+  const [max,setMax] = useState(String(group.max_members));
+  const [loading,setLoading] = useState(false);
+
+  async function save() {
+    const val = parseInt(max);
+    if (isNaN(val) || val < 1) return toast$("Valor inválido","err");
+    setLoading(true);
+    const {data,error} = await supabase.from("groups")
+      .update({max_members:val}).eq("id",group.id).select().single();
+    if (error) { toast$(error.message,"err"); setLoading(false); return; }
+    toast$("Grupo actualizado ✓");
+    onUpdated(data);
+  }
+
+  return (
+    <Modal title={`Administrar · ${group.name}`} onClose={onClose}>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:12,color:C.sub,marginBottom:8,lineHeight:1.5}}>
+          Podés cambiar el máximo de participantes del grupo en cualquier momento.
+        </div>
+        <Field label="Máximo de participantes" value={max} onChange={setMax} type="number"/>
+      </div>
+      <GradBtn onClick={save} disabled={loading}>{loading?"Guardando...":"Guardar cambios"}</GradBtn>
+    </Modal>
+  );
+}
+
+// ─── OFFICIAL RESULTS VIEW (solo lectura para usuarios) ───────────────────────
+function OfficialResultsView({ctx}) {
+  const {setView} = ctx;
+  const [ag,setAg] = useState("A");
+  const [official,setOfficial] = useState({});
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{
+    (async()=>{
+      const {data} = await supabase.from("official_results").select("*");
+      const map={}; data?.forEach(r=>{map[r.match_id]=r;}); setOfficial(map);
+      setLoading(false);
+    })();
+  },[]);
+
+  const sortedMatches = [...GROUP_MATCHES.filter(m=>m.group===ag)]
+    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+
+  const hasAnyResult = Object.values(official).some(r=>r.home!=null&&r.home!=="");
+
+  return (
+    <div style={{minHeight:"100vh"}}>
+      <Bar title="Resultados Oficiales" onBack={()=>setView("groups_list")}/>
+      <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={ag} onSelect={setAg} small/>
+
+      {loading && <p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
+
+      {!loading && !hasAnyResult && (
+        <div style={{textAlign:"center",marginTop:48,padding:"0 24px"}}>
+          <div style={{fontSize:40,marginBottom:12}}>⏳</div>
+          <div style={{color:C.sub,fontSize:14}}>El torneo aún no comenzó</div>
+          <div style={{color:C.sub2,fontSize:12,marginTop:6}}>Los resultados aparecerán aquí una vez que empiecen los partidos</div>
+        </div>
+      )}
+
+      {!loading && (
+        <div style={{padding:"10px 14px 40px"}}>
+          {sortedMatches.map(m=>{
+            const off = official[m.id];
+            const played = off?.home!=null && off?.home!=="";
+            return (
+              <div key={m.id} style={{...card,marginBottom:10,
+                borderLeft:`3px solid ${played?C.accentS:C.border}`}}>
+                <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>
+                  {fmtDate(m.date)} · {m.time} hs · {m.venue}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
+                  <div style={{
+                    minWidth:70,textAlign:"center",
+                    background:played?C.surface2:"transparent",
+                    borderRadius:8,padding:played?"6px 12px":"4px 12px",
+                    border:played?`1px solid ${C.border}`:"none",
+                  }}>
+                    {played
+                      ? <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>
+                          {off.home} – {off.away}
+                        </span>
+                      : <span style={{color:C.sub,fontSize:13}}>vs</span>
+                    }
+                  </div>
+                  <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── GLOBAL RANKING VIEW ──────────────────────────────────────────────────────
+function GlobalRankingView({ctx}) {
+  const {profile,setView} = ctx;
+  const [ranking,setRanking] = useState([]);
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{ loadGlobalRanking(); },[]);
+
+  async function loadGlobalRanking() {
+    const {data:off} = await supabase.from("official_results").select("*");
+    const offMap={};
+    off?.forEach(r=>{ offMap[r.match_id]=r; });
+
+    // Get all unique users with predictions
+    const {data:allPreds} = await supabase.from("predictions").select("user_id,match_id,home,away");
+    if (!allPreds?.length) { setLoading(false); return; }
+
+    // Group by user_id
+    const byUser={};
+    allPreds.forEach(p=>{
+      if (!byUser[p.user_id]) byUser[p.user_id]=[];
+      byUser[p.user_id].push(p);
+    });
+
+    // Get profile info for each user
+    const uids = Object.keys(byUser);
+    const {data:profiles} = await supabase.from("profiles").select("id,nick,nombre").in("id",uids);
+    const profMap={};
+    profiles?.forEach(p=>{ profMap[p.id]=p; });
+
+    const results = uids.map(uid=>{
+      let pts=0;
+      byUser[uid].forEach(p=>{
+        const sc=scoreGroup(p,offMap[p.match_id]);
+        if(sc!=null) pts+=sc;
+      });
+      const prof = profMap[uid];
+      return {
+        uid,
+        pts,
+        nick: prof?.nick||"—",
+        nombre: prof?.nombre||"",
+      };
+    });
+
+    setRanking(results.sort((a,b)=>b.pts-a.pts));
+    setLoading(false);
+  }
+
+  const medals=["🥇","🥈","🥉"];
+
+  return (
+    <div style={{minHeight:"100vh"}}>
+      <Bar title="Ranking Global 🌍" onBack={()=>setView("groups_list")}/>
+      <div style={{padding:"16px 14px 80px"}}>
+        <div style={{...card,marginBottom:16,padding:"10px 14px",
+          background:"rgba(255,208,96,0.05)",border:`1px solid rgba(255,208,96,0.2)`}}>
+          <p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>
+            Todos los participantes de la plataforma, sin importar el grupo.
+          </p>
+        </div>
+        {loading && <p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
+        {ranking.map((r,i)=>(
+          <div key={r.uid} style={{
+            ...rankRow,
+            background: r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,
+            borderLeft:`2px solid ${r.uid===profile.id?C.accentS:i<3?"rgba(255,208,96,0.4)":C.border}`,
+            marginBottom:8,borderRadius:12,
+          }}>
+            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,
+              color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>
+              {medals[i]||`${i+1}`}
+            </span>
+            <Ava name={r.nick} size={32}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:r.uid===profile.id?700:500,
+                color:r.uid===profile.id?C.accentS:C.text,fontFamily:font}}>
+                {r.nick}
+              </div>
+              {r.nombre && (
+                <div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>
+              )}
+            </div>
+            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
+            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
+          </div>
+        ))}
+        {!loading && ranking.every(r=>r.pts===0) && (
+          <p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aún</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -771,19 +953,16 @@ function PredictionsView({ctx}) {
   const [preds,setPreds]   = useState({});
   const [official,setOfficial] = useState({});
   const [saving,setSaving] = useState(false);
-  const [hasExisting, setHasExisting] = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
 
   useEffect(()=>{ loadData(); },[]);
 
   async function loadData() {
-    // load official results
     const {data:off} = await supabase.from("official_results").select("*");
     const offMap={};
     off?.forEach(r=>{ offMap[r.match_id]=r; });
     setOfficial(offMap);
 
-    // load my preds for this group
     const {data:myPreds} = await supabase.from("predictions")
       .select("*").eq("user_id",profile.id).eq("group_id",activeGroup.id);
 
@@ -792,7 +971,6 @@ function PredictionsView({ctx}) {
       myPreds.forEach(p=>{ map[p.match_id]=p; });
       setPreds(map);
     } else {
-      // check if user has preds in other groups
       const {data:otherPreds} = await supabase.from("predictions")
         .select("*").eq("user_id",profile.id).neq("group_id",activeGroup.id).limit(1);
       if (otherPreds?.length>0) setShowCopyModal(true);
@@ -857,11 +1035,10 @@ function PredictionsView({ctx}) {
         <div style={{padding:"10px 14px 100px"}}>
           <div style={{...card,marginBottom:12,padding:"12px 14px"}}>
             <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>
-              Los cruces se completan automáticamente según los resultados de grupos. 
-              Podés predecir el resultado de cada partido una vez que los equipos estén definidos.
+              Los cruces se completan automáticamente según los resultados de grupos.
             </p>
           </div>
-          {R32_SLOTS.slice(0,12).map((slot,i)=>(
+          {R32_SLOTS.map((slot)=>(
             <KOPredCard key={slot.id} slot={slot}
               pred={preds[slot.id]||{}}
               off={official[slot.id]||{}}
@@ -871,7 +1048,6 @@ function PredictionsView({ctx}) {
         </div>
       )}
 
-      {/* Save bar */}
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
         width:"100%",maxWidth:480,background:C.bg,borderTop:`1px solid ${C.border}`,
         padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
@@ -896,18 +1072,15 @@ function PredictionsView({ctx}) {
 function PredMatchCard({match,pred,off,onUpd}) {
   const hasOff = off.home!=null&&off.home!==""&&off.away!=null&&off.away!=="";
   const sc = hasOff ? scoreGroup(pred,off) : null;
-  const isDraw = hasOff && +off.home===+off.away;
 
   return (
     <div style={{...card,marginBottom:10}}>
-      {/* Date/venue */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>
           {fmtDate(match.date)} · {match.time} hs · {match.venue}
         </span>
         {sc!=null && <PtsBadge pts={sc}/>}
       </div>
-      {/* Score row */}
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <span style={{flex:1,fontSize:13,color:C.sub,lineHeight:1.3}}>{match.home}</span>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -929,7 +1102,6 @@ function PredMatchCard({match,pred,off,onUpd}) {
 }
 
 function KOPredCard({slot,pred,off,onUpd}) {
-  const hasOff = !!off.winner;
   const isDraw = pred.home!=="" && pred.away!=="" && +pred.home===+pred.away;
   const showPen = isDraw;
 
@@ -941,18 +1113,6 @@ function KOPredCard({slot,pred,off,onUpd}) {
         </span>
         <span style={{fontSize:10,color:C.sub,background:C.surface2,
           padding:"2px 8px",borderRadius:10,border:`1px solid ${C.border}`}}>{slot.label}</span>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-        <div>
-          <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Equipo 1</div>
-          <input style={inp} value={pred.t1||slot.home_src?`${slot.home_src?.g} 1°`:""} readOnly
-            placeholder={slot.label?.split(" vs ")[0]}/>
-        </div>
-        <div>
-          <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Equipo 2</div>
-          <input style={inp} value={pred.t2||""} readOnly
-            placeholder={slot.label?.split(" vs ")[1]}/>
-        </div>
       </div>
       <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
         <ScoreBox value={pred.home??""} onChange={v=>onUpd("home",v)}/>
@@ -991,7 +1151,7 @@ function KOPredCard({slot,pred,off,onUpd}) {
   );
 }
 
-// ─── RANKING ─────────────────────────────────────────────────────────────────
+// ─── RANKING ──────────────────────────────────────────────────────────────────
 function RankingView({ctx}) {
   const {profile,activeGroup,setView} = ctx;
   const [ranking,setRanking] = useState([]);
@@ -1017,7 +1177,12 @@ function RankingView({ctx}) {
         const sc=scoreGroup(p,offMap[p.match_id]);
         if(sc!=null) pts+=sc;
       });
-      return {name:m.profiles?.nick||m.profiles?.nombre, pts, uid:m.user_id};
+      return {
+        nick: m.profiles?.nick||"—",
+        nombre: m.profiles?.nombre||"",
+        pts,
+        uid: m.user_id
+      };
     }));
     setRanking(results.sort((a,b)=>b.pts-a.pts));
     setLoading(false);
@@ -1041,9 +1206,16 @@ function RankingView({ctx}) {
               color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>
               {medals[i]||`${i+1}`}
             </span>
-            <Ava name={r.name} size={32}/>
-            <span style={{flex:1,fontSize:14,fontWeight:r.uid===profile.id?600:400,
-              color:r.uid===profile.id?C.accentS:C.text,fontFamily:font}}>{r.name}</span>
+            <Ava name={r.nick} size={32}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:r.uid===profile.id?600:400,
+                color:r.uid===profile.id?C.accentS:C.text,fontFamily:font}}>
+                {r.nick}
+              </div>
+              {r.nombre && (
+                <div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>
+              )}
+            </div>
             <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
             <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
           </div>
@@ -1126,7 +1298,6 @@ function AdminView({ctx}) {
       winner:r.winner??null, pen_home:r.pen_home??null, pen_away:r.pen_away??null
     }));
     await supabase.from("official_results").upsert(rows,{onConflict:"match_id"});
-    // update all groups' updated_at
     await supabase.from("groups").update({updated_at:new Date().toISOString()}).neq("id","");
     setSaving(false);
     toast$("Resultados guardados ✓");
@@ -1354,37 +1525,30 @@ function Toast({msg,type}) {
   );
 }
 
-// ─── STYLES ───────────────────────────────────────────────────────────────────
 const inp = {
   width:"100%",background:C.surface2,border:`1px solid ${C.border}`,
   borderRadius:10,color:C.text,padding:"11px 13px",fontSize:14,
   boxSizing:"border-box",fontFamily:font,outline:"none",
 };
-
 const card = {
   background:C.surface,borderRadius:14,padding:"14px",
   border:`1px solid ${C.border}`,
 };
-
 const pill = {
   fontSize:12,color:C.sub2,background:C.surface2,
   padding:"4px 11px",borderRadius:20,border:`1px solid ${C.border}`,
 };
-
 const rankRow = {
   display:"flex",alignItems:"center",gap:10,
   padding:"12px 14px",borderRadius:12,
 };
-
 const gradText = {
   background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
   backgroundClip:"text",
 };
-
 const grad = {
   background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
 };
-
 const gradBtnS = {
   background:C.accent,border:"none",borderRadius:8,cursor:"pointer",
   fontSize:13,fontWeight:700,color:"#040a10",fontFamily:font,
