@@ -253,83 +253,35 @@ function Splash() {
   );
 }
 
-function TriondaBall() {
-  return (
-    <svg viewBox="0 0 200 200" width="130" height="130" xmlns="http://www.w3.org/2000/svg"
-      style={{filter:"drop-shadow(0 0 28px rgba(0,200,224,0.35)) drop-shadow(0 8px 16px rgba(0,0,0,0.5))"}}>
-      <defs>
-        <radialGradient id="ballGrad" cx="38%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#ffffff"/>
-          <stop offset="60%" stopColor="#f0f4f8"/>
-          <stop offset="100%" stopColor="#d0dce8"/>
-        </radialGradient>
-        <radialGradient id="shineGrad" cx="35%" cy="30%" r="40%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.9)"/>
-          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
-        </radialGradient>
-        <clipPath id="circle"><circle cx="100" cy="100" r="92"/></clipPath>
-      </defs>
-      {/* Base ball */}
-      <circle cx="100" cy="100" r="92" fill="url(#ballGrad)" stroke="#c8d8e8" strokeWidth="1"/>
-      {/* Panel 1 - top left - blue (USA) */}
-      <path d="M100,100 Q60,30 20,50 Q10,75 30,100 Q60,95 100,100Z" fill="#1a5fd4" opacity="0.82" clipPath="url(#circle)"/>
-      {/* Panel 2 - top right - red (Canada) */}
-      <path d="M100,100 Q140,30 178,50 Q190,75 168,100 Q140,95 100,100Z" fill="#cc1e1e" opacity="0.82" clipPath="url(#circle)"/>
-      {/* Panel 3 - bottom - green (Mexico) */}
-      <path d="M100,100 Q60,168 100,190 Q140,168 100,100Z" fill="#1a8a3a" opacity="0.82" clipPath="url(#circle)"/>
-      {/* Wave lines on panels */}
-      <g clipPath="url(#circle)" fill="none" strokeWidth="1.5" opacity="0.4">
-        <path d="M25,65 Q45,55 65,70 Q85,85 100,80" stroke="#fff"/>
-        <path d="M20,80 Q42,68 62,82 Q82,96 100,92" stroke="#fff"/>
-        <path d="M175,65 Q155,55 135,70 Q115,85 100,80" stroke="#fff"/>
-        <path d="M180,80 Q158,68 138,82 Q118,96 100,92" stroke="#fff"/>
-        <path d="M70,155 Q85,175 100,185 Q115,175 130,155" stroke="#fff"/>
-        <path d="M78,168 Q88,182 100,188 Q112,182 122,168" stroke="#fff"/>
-      </g>
-      {/* Center triangle connecting panels - gold */}
-      <polygon points="100,100 85,78 115,78" fill="#ffd060" opacity="0.9"/>
-      {/* Star - USA symbol */}
-      <g transform="translate(56,58)" fill="#ffffff" opacity="0.95">
-        <polygon points="0,-8 2,-2 8,-2 3,2 5,8 0,4 -5,8 -3,2 -8,-2 -2,-2" transform="scale(0.9)"/>
-      </g>
-      {/* Maple leaf simplified - Canada */}
-      <g transform="translate(144,58)" fill="#ffffff" opacity="0.95">
-        <path d="M0,-8 L1.5,-3 L6,-4 L3,0 L5,5 L0,2 L-5,5 L-3,0 L-6,-4 L-1.5,-3 Z" transform="scale(0.85)"/>
-        <rect x="-1" y="2" width="2" height="4" rx="0.5" transform="scale(0.85)"/>
-      </g>
-      {/* Eagle simplified - Mexico */}
-      <g transform="translate(100,158)" fill="#ffffff" opacity="0.95">
-        <ellipse cx="0" cy="0" rx="5" ry="3.5"/>
-        <path d="M-5,0 Q-9,-3 -8,-6 Q-5,-4 -3,-1Z" />
-        <path d="M5,0 Q9,-3 8,-6 Q5,-4 3,-1Z" />
-      </g>
-      {/* Panel seams */}
-      <g clipPath="url(#circle)" fill="none" stroke="#8899aa" strokeWidth="1.2" opacity="0.5">
-        <path d="M100,100 Q80,60 50,40 Q30,45 18,62"/>
-        <path d="M100,100 Q120,60 150,40 Q170,45 182,62"/>
-        <path d="M100,100 Q100,140 100,188"/>
-        <path d="M30,100 Q65,95 100,100 Q135,95 168,100"/>
-      </g>
-      {/* FIFA 2026 text */}
-      <text x="100" y="107" textAnchor="middle" fontSize="7" fontWeight="800"
-        fill="#ffd060" fontFamily="sans-serif" letterSpacing="1" opacity="0.95">FIFA 2026</text>
-      {/* Shine overlay */}
-      <circle cx="100" cy="100" r="92" fill="url(#shineGrad)" opacity="0.35"/>
-      {/* Border */}
-      <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(200,220,240,0.4)" strokeWidth="1.5"/>
-    </svg>
-  );
-}
-
 function SplashView({ctx}) {
   const {setView} = ctx;
+  const [colorIdx, setColorIdx] = useState(0);
+  const colors = ["#2280ff","#00b8d4","#00e5cc","#00b8d4","#2280ff"];
+
+  useEffect(()=>{
+    const t = setInterval(()=>setColorIdx(i=>(i+1)%colors.length), 800);
+    return ()=>clearInterval(t);
+  },[]);
+
   return (
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:C.bg}}>
+      <style>{`
+        @keyframes ballFloat {
+          0%,100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-12px) rotate(8deg); }
+        }
+        @keyframes ballGlow {
+          0%,100% { filter: drop-shadow(0 0 20px #2280ff88) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+          33% { filter: drop-shadow(0 0 28px #00b8d488) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+          66% { filter: drop-shadow(0 0 28px #00e5cc88) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+        }
+      `}</style>
       <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
         justifyContent:"center",padding:"48px 24px 32px"}}>
-        <div style={{marginBottom:24}}>
-          <TriondaBall/>
-        </div>
+        <div style={{
+          fontSize:90,marginBottom:20,lineHeight:1,
+          animation:"ballFloat 2.5s ease-in-out infinite, ballGlow 2.4s ease-in-out infinite",
+        }}>⚽</div>
         <div style={{fontSize:10,letterSpacing:4,color:C.sub2,marginBottom:6,textTransform:"uppercase"}}>Baprode</div>
         <h1 style={{...gradText,fontSize:36,fontWeight:800,textAlign:"center",lineHeight:1.1,margin:0}}>
           Mundial<br/>2026
@@ -451,35 +403,73 @@ const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov
 const YEARS  = Array.from({length:90},(_,i)=>String(2006-i));
 
 function DOBPicker({value, onChange}) {
-  const parts = value ? value.split("-") : ["2000","01","01"];
+  const [open, setOpen] = useState(false);
+  const [temp, setTemp] = useState(value || "2000-01-01");
+
+  const parts = temp.split("-");
   const year=parts[0], month=parts[1], day=parts[2];
   const monthIdx = parseInt(month)-1;
 
   function update(y,m,d) {
     const mm = String(MONTHS.indexOf(m)+1).padStart(2,"0");
-    onChange(`${y}-${mm}-${d}`);
+    setTemp(`${y}-${mm}-${d}`);
+  }
+
+  function confirm() {
+    onChange(temp);
+    setOpen(false);
+  }
+
+  function displayDate(v) {
+    if (!v) return "";
+    const p = v.split("-");
+    return `${p[2]} ${MONTHS[parseInt(p[1])-1]} ${p[0]}`;
   }
 
   return (
     <div>
-      <div style={{fontSize:11,color:C.sub,marginBottom:8,letterSpacing:0.5,textTransform:"uppercase"}}>
+      <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>
         Fecha de nacimiento *
       </div>
-      <div style={{display:"flex",gap:8,background:C.surface2,borderRadius:12,
-        padding:"8px",border:`1px solid ${C.border}`,justifyContent:"center"}}>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>DÍA</div>
-          <WheelPicker items={DAYS} value={day} onChange={d=>update(year,MONTHS[monthIdx],d)} width={60}/>
+      <button onClick={()=>setOpen(true)} style={{
+        ...inp, textAlign:"left", cursor:"pointer", display:"flex",
+        alignItems:"center", justifyContent:"space-between",
+      }}>
+        <span style={{color: value && value!=="2000-01-01" ? C.text : C.sub}}>
+          {value && value!=="2000-01-01" ? displayDate(value) : "Seleccionar fecha"}
+        </span>
+        <span style={{color:C.sub2, fontSize:16}}>📅</span>
+      </button>
+
+      {open && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,
+          display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div style={{background:C.surface,borderRadius:"20px 20px 0 0",
+            width:"100%",maxWidth:480,padding:"20px 20px 32px",
+            border:`1px solid ${C.border}`,borderBottom:"none"}}>
+            <div style={{display:"flex",alignItems:"center",marginBottom:16}}>
+              <span style={{flex:1,fontSize:15,fontWeight:700,color:C.text}}>Fecha de nacimiento</span>
+              <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",
+                color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:20}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>DÍA</div>
+                <WheelPicker items={DAYS} value={day} onChange={d=>update(year,MONTHS[monthIdx],d)} width={60}/>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>MES</div>
+                <WheelPicker items={MONTHS} value={MONTHS[monthIdx]} onChange={m=>update(year,m,day)} width={72}/>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>AÑO</div>
+                <WheelPicker items={YEARS} value={year} onChange={y=>update(y,MONTHS[monthIdx],day)} width={72}/>
+              </div>
+            </div>
+            <GradBtn onClick={confirm}>Confirmar</GradBtn>
+          </div>
         </div>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>MES</div>
-          <WheelPicker items={MONTHS} value={MONTHS[monthIdx]} onChange={m=>update(year,m,day)} width={72}/>
-        </div>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>AÑO</div>
-          <WheelPicker items={YEARS} value={year} onChange={y=>update(y,MONTHS[monthIdx],day)} width={72}/>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
