@@ -394,7 +394,7 @@ function ContactoView({ctx}){
     <div style={{minHeight:"100vh"}}>
       <Bar title="Contactar Administrador" onBack={()=>setView("splash")}/>
       <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:14}}>
-        <div style={{...card,padding:"12px 14px",background:"rgba(0,200,224,0.05)",border:`1px solid rgba(0,200,224,0.2)`}}>
+        <div style={{...card,padding:"12px 14px",background:"rgba(0,200,224,0.05)",border:"1px solid rgba(0,200,224,0.2)"}}>
           <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Si tenés problemas para acceder a tu cuenta, completá el formulario y el administrador te ayudará.</p>
         </div>
         <Field label="Nombre completo *" value={f.nombre} onChange={upd("nombre")}/>
@@ -418,7 +418,7 @@ function ReglamentoView({ctx}){
       <Bar title="📋 Reglamento" onBack={back}/>
       <div style={{padding:"16px 16px 40px",display:"flex",flexDirection:"column",gap:12}}>
 
-        <div style={{...card,borderLeft:`3px solid ${C.accentS}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.accentS}}>
           <div style={{fontSize:12,color:C.accentS,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Fase de Grupos</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.gold}}>4 pts</b> por acertar resultado (Local / Empate / Visitante)<br/>
@@ -429,7 +429,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.gold}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.gold}}>
           <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>32avos y Octavos de Final</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.gold}}>5 pts</b> por acertar país en posición exacta (1° o 2°)<br/>
@@ -439,7 +439,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.gold}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.gold}}>
           <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Cuartos de Final</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.gold}}>10 pts</b> por acertar país en esa instancia<br/>
@@ -448,7 +448,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.gold}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.gold}}>
           <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Semifinales</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.gold}}>15 pts</b> por acertar país en esa instancia<br/>
@@ -457,7 +457,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.gold}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.gold}}>
           <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Final y 3° / 4° puesto</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.gold}}>20 pts</b> por acertar país en esa instancia<br/>
@@ -466,7 +466,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.green}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.green}}>
           <div style={{fontSize:12,color:C.green,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Puntos Extras</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             <b style={{color:C.green}}>50 pts</b> por acertar el Campeón 🥇<br/>
@@ -476,7 +476,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,borderLeft:`3px solid ${C.sub2}`}}>
+        <div style={{...card,borderLeft:"3px solid "+C.sub2}}>
           <div style={{fontSize:12,color:C.sub2,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Desempate</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.8}}>
             1. Quien acertó el <b>Campeón</b><br/>
@@ -486,7 +486,7 @@ function ReglamentoView({ctx}){
           </div>
         </div>
 
-        <div style={{...card,background:"rgba(224,92,106,0.05)",border:`1px solid rgba(224,92,106,0.2)`}}>
+        <div style={{...card,background:"rgba(224,92,106,0.05)",border:"1px solid rgba(224,92,106,0.2)"}}>
           <div style={{fontSize:12,color:C.red,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Cierre de planillas</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>
             Las predicciones se bloquean automáticamente el <b>11 de junio de 2026</b> al inicio del torneo. No se aceptan modificaciones una vez iniciado el Mundial.
@@ -510,9 +510,9 @@ function WheelPicker({items,value,onChange,width=70}){
   const idx=items.indexOf(value);
   return(
     <div style={{width,height:120,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:40,background:`linear-gradient(to bottom,${C.surface2},transparent)`,zIndex:2,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:`linear-gradient(to top,${C.surface2},transparent)`,zIndex:2,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,marginTop:-18,border:`1px solid ${C.accentS}`,borderRadius:8,background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:0,left:0,right:0,height:40,background:"linear-gradient(to bottom,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:"linear-gradient(to top,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,marginTop:-18,border:"1px solid "+C.accentS,borderRadius:8,background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
       <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",scrollbarWidth:"none",paddingTop:42,paddingBottom:42}}
         onScroll={e=>{const el=e.target;const i=Math.round(el.scrollTop/36);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
         {items.map((item,i)=>(<div key={item} style={{height:36,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"start",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>))}
@@ -542,7 +542,7 @@ function DOBPicker({value,onChange}){
         <span style={{color:C.sub2,fontSize:16}}>📅</span>
       </button>
       {open&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-        <div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"20px 20px 32px",border:`1px solid ${C.border}`,borderBottom:"none"}}>
+        <div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"20px 20px 32px",border:"1px solid "+C.border,borderBottom:"none"}}>
           <div style={{display:"flex",alignItems:"center",marginBottom:16}}><span style={{flex:1,fontSize:15,fontWeight:700,color:C.text}}>Fecha de nacimiento</span><button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button></div>
           <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:20}}>
             <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub,marginBottom:4}}>DÍA</div><WheelPicker items={DAYS} value={day} onChange={d=>update(year,MONTHS[monthIdx],d)} width={60}/></div>
@@ -636,7 +636,7 @@ function GroupsListView({ctx}){
 
   return(
     <div style={{minHeight:"100vh"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid "+C.border}}>
         <div>
           <div style={{fontSize:10,color:C.sub,letterSpacing:1,textTransform:"uppercase"}}>Bienvenido</div>
           <div style={{fontSize:16,fontWeight:700,color:C.text}}>{profile?.nick||profile?.nombre}</div>
@@ -650,18 +650,18 @@ function GroupsListView({ctx}){
 
       {/* Accesos rápidos */}
       <div style={{padding:"12px 16px 0",display:"flex",gap:8}}>
-        <button onClick={()=>{markResultsSeen();setView("official");}} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.accentS,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6,position:"relative"}}>
+        <button onClick={()=>{markResultsSeen();setView("official");}} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+C.border,background:C.surface,color:C.accentS,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6,position:"relative"}}>
           🏟 Resultados
           {hasNewResults&&<span style={{position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:C.red}}/>}
         </button>
-        <button onClick={()=>setView("global_ranking")} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.gold,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>🌍 Ranking global</button>
+        <button onClick={()=>setView("global_ranking")} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+C.border,background:C.surface,color:C.gold,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>🌍 Ranking global</button>
       </div>
       <div style={{padding:"8px 16px 0",display:"flex",gap:8}}>
-        <button onClick={()=>setView("reglamento")} style={{flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,background:C.surface,color:C.sub2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>📋 Reglamento</button>
+        <button onClick={()=>setView("reglamento")} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+C.border,background:C.surface,color:C.sub2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>📋 Reglamento</button>
       </div>
 
       {isLocked()&&(
-        <div style={{margin:"12px 16px 0",background:"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:`1px solid rgba(224,92,106,0.2)`,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{margin:"12px 16px 0",background:"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:"1px solid rgba(224,92,106,0.2)",display:"flex",alignItems:"center",gap:8}}>
           <span>🔒</span>
           <div style={{fontSize:12,color:C.red}}>Las planillas están cerradas. El torneo ya comenzó.</div>
         </div>
@@ -750,7 +750,7 @@ function GroupView({ctx}){
   return(
     <div style={{minHeight:"100vh"}}>
       <Bar title={activeGroup?.name} onBack={()=>setView("groups_list")}/>
-      <div style={{margin:"12px 16px 0",background:C.surface2,borderRadius:10,padding:"10px 14px",border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
+      <div style={{margin:"12px 16px 0",background:C.surface2,borderRadius:10,padding:"10px 14px",border:"1px solid "+C.border,display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:14}}>🕐</span>
         <div style={{flex:1}}>
           <div style={{fontSize:10,color:C.sub,letterSpacing:0.5}}>Última actualización oficial</div>
@@ -761,10 +761,10 @@ function GroupView({ctx}){
         <GradBtn onClick={()=>setView("predictions")}>{isLocked()?"📋 Ver mis predicciones":"📋 Mis predicciones"}</GradBtn>
         <Btn2 onClick={()=>setView("ranking")}>🏆 Ranking del grupo</Btn2>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setView("reglamento")} style={{flex:1,padding:"11px",borderRadius:12,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>📋 Reglamento</button>
-          <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>📤 Invitar</button>
+          <button onClick={()=>setView("reglamento")} style={{flex:1,padding:"11px",borderRadius:12,border:"1px solid "+C.border,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>📋 Reglamento</button>
+          <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:"1px solid "+C.border,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>📤 Invitar</button>
         </div>
-        {isGroupAdmin&&(<button onClick={()=>setShowManage(true)} style={{width:"100%",padding:"13px",borderRadius:12,border:`1px solid ${C.gold}`,cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>⚙️ Administrar grupo</button>)}
+        {isGroupAdmin&&(<button onClick={()=>setShowManage(true)} style={{width:"100%",padding:"13px",borderRadius:12,border:"1px solid "+C.gold,cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>⚙️ Administrar grupo</button>)}
       </div>
       <div style={{padding:"0 16px 16px"}}>
         <SectionLabel>Miembros ({members.length}/{activeGroup?.max_members})</SectionLabel>
@@ -776,7 +776,7 @@ function GroupView({ctx}){
               {m.profiles?.nombre&&m.profiles?.nick&&(<div style={{fontSize:11,color:C.sub,marginTop:1}}>({m.profiles.nombre})</div>)}
             </div>
             {m.role==="admin"&&<span style={{fontSize:10,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>Admin</span>}
-            {m.user_id!==profile.id&&(<button onClick={()=>setSelectedUser(m)} style={{background:"none",border:`1px solid ${C.border}`,color:C.sub2,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:font}}>Ver planilla</button>)}
+            {m.user_id!==profile.id&&(<button onClick={()=>setSelectedUser(m)} style={{background:"none",border:"1px solid "+C.border,color:C.sub2,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:font}}>Ver planilla</button>)}
           </div>
         ))}
       </div>
@@ -823,7 +823,7 @@ function OfficialResultsView({ctx}){
       <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={ag} onSelect={setAg} small/>
       {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
       {!loading&&!hasAnyResult&&(<div style={{textAlign:"center",marginTop:48,padding:"0 24px"}}><div style={{fontSize:40,marginBottom:12}}>⏳</div><div style={{color:C.sub,fontSize:14}}>El torneo aún no comenzó</div><div style={{color:C.sub2,fontSize:12,marginTop:6}}>Los resultados aparecerán aquí el 11 de junio</div></div>)}
-      {!loading&&(<div style={{padding:"10px 14px 40px"}}>{sortedMatches.map(m=>{const off=official[m.id];const played=off?.home!=null&&off?.home!=="";return(<div key={m.id} style={{...card,marginBottom:10,borderLeft:`3px solid ${played?C.accentS:C.border}`}}><div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} · {m.time} hs · {m.venue}</div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span><div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?`1px solid ${C.border}`:"none"}}>{played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} – {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}</div><span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span></div></div>);})}
+      {!loading&&(<div style={{padding:"10px 14px 40px"}}>{sortedMatches.map(m=>{const off=official[m.id];const played=off?.home!=null&&off?.home!=="";return(<div key={m.id} style={{...card,marginBottom:10,borderLeft:"3px solid "+played?C.accentS:C.border}}><div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} · {m.time} hs · {m.venue}</div><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span><div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?"1px solid "+C.border:"none"}}>{played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} – {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}</div><span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span></div></div>);})}
       </div>)}
     </div>
   );
@@ -867,11 +867,11 @@ function GlobalRankingView({ctx}){
     <div style={{minHeight:"100vh"}}>
       <Bar title="Ranking Global 🌍" onBack={()=>setView("groups_list")}/>
       <div style={{padding:"16px 14px 80px"}}>
-        <div style={{...card,marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:`1px solid rgba(255,208,96,0.2)`}}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma, sin importar el grupo.</p></div>
+        <div style={{...card,marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:"1px solid rgba(255,208,96,0.2)"}}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma, sin importar el grupo.</p></div>
         {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
         {ranking.map((r,i)=>(
-          <div key={r.uid} style={{...rankRow,background:r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,borderLeft:`2px solid ${r.uid===profile.id?C.accentS:i<3?"rgba(255,208,96,0.4)":C.border}`,marginBottom:8,borderRadius:12}}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{medals[i]||`${i+1}`}</span>
+          <div key={r.uid} style={{...rankRow,background:r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,borderLeft:"2px solid "+(r.uid===profile.id?C.accentS:i<3?"rgba(255,208,96,0.4)":C.border}),marginBottom:8,borderRadius:12}}>
+            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{medals[i]||(i+1)}</span>
             <Ava name={r.nick} size={32}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,fontWeight:r.uid===profile.id?700:500,color:r.uid===profile.id?C.accentS:C.text}}>{r.nick}</div>
@@ -950,7 +950,7 @@ function PredictionsView({ctx}){
   return(
     <div style={{minHeight:"100vh"}}>
       <Bar title="Mis predicciones" onBack={()=>setView("group")}/>
-      {locked&&(<div style={{margin:"8px 14px",background:"rgba(224,92,106,0.08)",borderRadius:8,padding:"8px 12px",border:`1px solid rgba(224,92,106,0.2)`,fontSize:12,color:C.red}}>🔒 Planilla cerrada — solo lectura</div>)}
+      {locked&&(<div style={{margin:"8px 14px",background:"rgba(224,92,106,0.08)",borderRadius:8,padding:"8px 12px",border:"1px solid rgba(224,92,106,0.2)",fontSize:12,color:C.red}}>🔒 Planilla cerrada — solo lectura</div>)}
       <Tabs items={[{id:"groups",label:"Grupos"},{id:"knockout",label:"Cruces"},{id:"extras",label:"⭐ Extras"}]} active={tab} onSelect={setTab}/>
 
       {tab==="groups"&&(
@@ -977,7 +977,7 @@ function PredictionsView({ctx}){
 
       {tab==="extras"&&(
         <div style={{padding:"10px 14px 100px"}}>
-          <div style={{...card,marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:`1px solid rgba(255,208,96,0.2)`}}>
+          <div style={{...card,marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:"1px solid rgba(255,208,96,0.2)"}}>
             <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Predicciones especiales con puntos extra. Solo podés elegir un equipo por posición.</p>
           </div>
           {[
@@ -991,7 +991,7 @@ function PredictionsView({ctx}){
             const correct=offVal&&predVal&&offVal===predVal;
             const incorrect=offVal&&predVal&&offVal!==predVal;
             return(
-              <div key={key} style={{...card,marginBottom:10,borderLeft:`3px solid ${correct?C.green:incorrect?C.red:C.border}`}}>
+              <div key={key} style={{...card,marginBottom:10,borderLeft:"3px solid "+correct?C.green:incorrect?C.red:C.border}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <span style={{fontSize:14,fontWeight:600,color:C.text}}>{label}</span>
                   <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{pts} pts</span>
@@ -1004,7 +1004,7 @@ function PredictionsView({ctx}){
         </div>
       )}
 
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:`1px solid ${C.border}`,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
         <GradBtn onClick={save} disabled={saving||locked}>{locked?"🔒 Planilla cerrada":saving?"Guardando...":"Guardar predicciones"}</GradBtn>
       </div>
 
@@ -1033,14 +1033,14 @@ function TeamSelector({value,onChange,locked}){
       </button>
       {open&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"20px 20px 0",border:`1px solid ${C.border}`,borderBottom:"none",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
+          <div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"20px 20px 0",border:"1px solid "+C.border,borderBottom:"none",maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
             <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
               <span style={{flex:1,fontSize:15,fontWeight:700,color:C.text}}>Seleccionar equipo</span>
               <button onClick={()=>{setOpen(false);setQ("");}} style={{background:"none",border:"none",color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button>
             </div>
             <input style={{...inp,marginBottom:12}} placeholder="Buscar..." value={q} onChange={e=>setQ(e.target.value)} autoFocus/>
             <div style={{overflowY:"auto",paddingBottom:20}}>
-              {filtered.map(t=>(<button key={t} onClick={()=>{onChange(t);setOpen(false);setQ("");}} style={{width:"100%",padding:"12px 14px",background:value===t?"rgba(0,200,224,0.1)":C.surface2,border:`1px solid ${value===t?C.accentS:C.border}`,borderRadius:8,color:value===t?C.accentS:C.text,fontSize:14,cursor:"pointer",fontFamily:font,textAlign:"left",marginBottom:6}}>{t}</button>))}
+              {filtered.map(t=>(<button key={t} onClick={()=>{onChange(t);setOpen(false);setQ("");}} style={{width:"100%",padding:"12px 14px",background:value===t?"rgba(0,200,224,0.1)":C.surface2,border:"1px solid "+(value===t?C.accentS:C.border),borderRadius:8,color:value===t?C.accentS:C.text,fontSize:14,cursor:"pointer",fontFamily:font,textAlign:"left",marginBottom:6}}>{t}</button>))}
             </div>
           </div>
         </div>
@@ -1067,7 +1067,7 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
         </div>
         <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
       </div>
-      {hasOff&&(<div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}><span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}–{off.away}</span></div>)}
+      {hasOff&&(<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid "+C.border}}><span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}–{off.away}</span></div>)}
     </div>
   );
 }
@@ -1080,7 +1080,7 @@ function KOPredCard({slot,pred,off,onUpd,phase,locked}){
     <div style={{...card,marginBottom:10,opacity:locked?0.85:1}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
         <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>{fmtDate(slot.date)} · {slot.time} hs · {slot.venue}</span>
-        <span style={{fontSize:10,color:C.sub,background:C.surface2,padding:"2px 8px",borderRadius:10,border:`1px solid ${C.border}`}}>{slot.label}</span>
+        <span style={{fontSize:10,color:C.sub,background:C.surface2,padding:"2px 8px",borderRadius:10,border:"1px solid "+C.border}}>{slot.label}</span>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:8}}>
         <input style={{...inp,flex:1}} placeholder="Equipo local" value={pred.home_team||""} onChange={e=>onUpd("home_team",e.target.value)} readOnly={locked}/>
@@ -1093,7 +1093,7 @@ function KOPredCard({slot,pred,off,onUpd,phase,locked}){
         {showPen&&<span style={{fontSize:10,color:C.gold,marginLeft:4}}>⚡ Penales</span>}
         <span style={{fontSize:10,color:C.sub,marginLeft:"auto"}}>{pts?.team}pts/eq</span>
       </div>
-      {showPen&&(<div style={{display:"flex",gap:8,padding:"10px",background:C.surface2,borderRadius:8,border:`1px solid ${C.border}`}}>
+      {showPen&&(<div style={{display:"flex",gap:8,padding:"10px",background:C.surface2,borderRadius:8,border:"1px solid "+C.border}}>
         <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Pen E1</div><input type="number" style={inp} value={pred.pen_home||""} onChange={e=>onUpd("pen_home",e.target.value)} min="0" readOnly={locked}/></div>
         <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Pen E2</div><input type="number" style={inp} value={pred.pen_away||""} onChange={e=>onUpd("pen_away",e.target.value)} min="0" readOnly={locked}/></div>
         <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador</div><input style={inp} value={pred.winner||""} onChange={e=>onUpd("winner",e.target.value)} placeholder="País" readOnly={locked}/></div>
@@ -1137,8 +1137,8 @@ function RankingView({ctx}){
       <div style={{padding:"16px 14px 80px"}}>
         {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
         {ranking.map((r,i)=>(
-          <div key={r.uid} style={{...rankRow,background:r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,borderLeft:`2px solid ${r.uid===profile.id?C.accentS:i<3?"rgba(0,200,224,0.25)":C.border}`,marginBottom:8}}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{medals[i]||`${i+1}`}</span>
+          <div key={r.uid} style={{...rankRow,background:r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,borderLeft:"2px solid "+(r.uid===profile.id?C.accentS:i<3?"rgba(0,200,224,0.25)":C.border}),marginBottom:8}}>
+            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{medals[i]||(i+1)}</span>
             <Ava name={r.nick} size={32}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,fontWeight:r.uid===profile.id?600:400,color:r.uid===profile.id?C.accentS:C.text}}>{r.nick}</div>
@@ -1225,7 +1225,7 @@ function AdminView({ctx}){
 
   return(
     <div style={{minHeight:"100vh"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid "+C.border}}>
         <div style={{...gradText,fontSize:15,fontWeight:700}}>⚙️ Panel Admin</div>
         <IconBtn onClick={signOut}>⏻</IconBtn>
       </div>
@@ -1248,7 +1248,7 @@ function AdminView({ctx}){
               </div>
             ))}
           </div>
-          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:`1px solid ${C.border}`,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
+          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
             <GradBtn onClick={save} disabled={saving}>{saving?"Guardando...":"Guardar resultados"}</GradBtn>
           </div>
         </>
@@ -1256,7 +1256,7 @@ function AdminView({ctx}){
 
       {tab==="extras_admin"&&(
         <div style={{padding:"12px 14px 100px"}}>
-          <div style={{...card,marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:`1px solid rgba(255,208,96,0.2)`}}>
+          <div style={{...card,marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:"1px solid rgba(255,208,96,0.2)"}}>
             <p style={{color:C.sub,fontSize:13,margin:0}}>Cargá los resultados finales del torneo para calcular los puntos extras.</p>
           </div>
           {[{key:"champion",label:"🥇 Campeón"},{key:"runner_up",label:"🥈 Subcampeón"},{key:"third",label:"🥉 3° puesto"},{key:"fourth",label:"4° puesto"}].map(({key,label})=>(
@@ -1300,22 +1300,22 @@ function AdminGroupsTab({toast$}){
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 function Page({children}){return<div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:font,maxWidth:480,margin:"0 auto",position:"relative"}}>{children}</div>;}
-function Bar({title,onBack}){return(<div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:`1px solid ${C.border}`,background:C.bg,position:"sticky",top:0,zIndex:10}}>{onBack&&<button onClick={onBack} style={{background:"none",border:"none",color:C.sub2,fontSize:22,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>}<span style={{fontSize:15,fontWeight:700,color:C.text,flex:1}}>{title}</span></div>);}
-function Tabs({items,active,onSelect,small}){return(<div style={{display:"flex",overflowX:"auto",borderBottom:`1px solid ${C.border}`,scrollbarWidth:"none",background:C.bg}}>{items.map(it=>(<button key={it.id} onClick={()=>onSelect(it.id)} style={{background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 12px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub,borderBottom:`2px solid ${active===it.id?C.accentS:"transparent"}`}}>{it.label}</button>))}</div>);}
+function Bar({title,onBack}){return(<div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:"1px solid "+C.border,background:C.bg,position:"sticky",top:0,zIndex:10}}>{onBack&&<button onClick={onBack} style={{background:"none",border:"none",color:C.sub2,fontSize:22,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>}<span style={{fontSize:15,fontWeight:700,color:C.text,flex:1}}>{title}</span></div>);}
+function Tabs({items,active,onSelect,small}){return(<div style={{display:"flex",overflowX:"auto",borderBottom:"1px solid "+C.border,scrollbarWidth:"none",background:C.bg}}>{items.map(it=>(<button key={it.id} onClick={()=>onSelect(it.id)} style={{background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 12px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub,borderBottom:active===it.id?"2px solid "+C.accentS:"2px solid transparent"}}>{it.label}</button>))}</div>);}
 function Field({label,value,onChange,type="text"}){return(<div><div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>{label}</div><input type={type} style={inp} value={value} onChange={e=>onChange(e.target.value)}/></div>);}
-function ScoreBox({value,onChange,state,readOnly}){const col=state==="ok"?C.green:state==="err"?C.red:C.border2;return(<input type="number" min="0" max="20" value={value} onChange={e=>!readOnly&&onChange&&onChange(e.target.value)} readOnly={readOnly} style={{width:42,height:42,textAlign:"center",background:C.surface2,border:`1.5px solid ${col}`,borderRadius:8,color:state==="ok"?C.green:state==="err"?C.red:C.text,fontSize:18,fontWeight:700,fontFamily:mono,outline:"none",MozAppearance:"textfield",opacity:readOnly?0.7:1}}/>);}
-function PtsBadge({pts}){return(<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:pts>0?"rgba(76,223,154,0.12)":"rgba(255,255,255,0.04)",color:pts>0?C.green:C.sub,border:`1px solid ${pts>0?"rgba(76,223,154,0.3)":C.border}`}}>{pts} pts</span>);}
+function ScoreBox({value,onChange,state,readOnly}){const col=state==="ok"?C.green:state==="err"?C.red:C.border2;return(<input type="number" min="0" max="20" value={value} onChange={e=>!readOnly&&onChange&&onChange(e.target.value)} readOnly={readOnly} style={{width:42,height:42,textAlign:"center",background:C.surface2,border:"1.5px solid "+col,borderRadius:8,color:state==="ok"?C.green:state==="err"?C.red:C.text,fontSize:18,fontWeight:700,fontFamily:mono,outline:"none",MozAppearance:"textfield",opacity:readOnly?0.7:1}}/>);}
+function PtsBadge({pts}){return(<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:pts>0?"rgba(76,223,154,0.12)":"rgba(255,255,255,0.04)",color:pts>0?C.green:C.sub,border:"1px solid "+(pts>0?"rgba(76,223,154,0.3)":C.border)}}>{pts} pts</span>);}
 function GradBtn({onClick,children,disabled}){return(<button onClick={onClick} disabled={disabled} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:disabled?"not-allowed":"pointer",fontSize:15,fontWeight:700,letterSpacing:0.3,fontFamily:font,background:disabled?"#1a2a3a":C.accent,color:disabled?C.sub:"#040a10",boxShadow:disabled?"none":"0 0 20px rgba(0,200,224,0.25)"}}>{children}</button>);}
-function Btn2({onClick,children}){return(<button onClick={onClick} style={{width:"100%",padding:"13px",borderRadius:12,border:`1px solid ${C.border}`,cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:C.surface,color:C.text}}>{children}</button>);}
-function IconBtn({onClick,children,title}){return(<button onClick={onClick} title={title} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,width:38,height:38,cursor:"pointer",color:C.sub2,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>{children}</button>);}
+function Btn2({onClick,children}){return(<button onClick={onClick} style={{width:"100%",padding:"13px",borderRadius:12,border:"1px solid "+C.border,cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:C.surface,color:C.text}}>{children}</button>);}
+function IconBtn({onClick,children,title}){return(<button onClick={onClick} title={title} style={{background:C.surface,border:"1px solid "+C.border,borderRadius:10,width:38,height:38,cursor:"pointer",color:C.sub2,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>{children}</button>);}
 function SectionLabel({children}){return<div style={{fontSize:10,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:10,marginTop:4}}>{children}</div>;}
 function Ava({name,size=34}){const h=hashColor(name);const initials=name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();return(<div style={{width:size,height:size,borderRadius:"50%",background:h,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.35,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{initials}</div>);}
-function Modal({title,onClose,children}){return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:50,display:"flex",alignItems:"flex-end",justifyContent:"center"}}><div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"24px 20px 32px",border:`1px solid ${C.border}`,borderBottom:"none"}}><div style={{display:"flex",alignItems:"center",marginBottom:20}}><span style={{fontSize:16,fontWeight:700,color:C.text,flex:1}}>{title}</span><button onClick={onClose} style={{background:"none",border:"none",color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button></div>{children}</div></div>);}
-function Toast({msg,type}){return(<div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:type==="err"?"rgba(224,92,106,0.15)":"rgba(0,200,224,0.12)",border:`1px solid ${type==="err"?C.red:C.accentS}`,color:type==="err"?C.red:C.accentS,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:600,letterSpacing:0.3,zIndex:100,whiteSpace:"nowrap",boxShadow:"0 4px 24px rgba(0,0,0,0.5)",fontFamily:font}}>{msg}</div>);}
+function Modal({title,onClose,children}){return(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:50,display:"flex",alignItems:"flex-end",justifyContent:"center"}}><div style={{background:C.surface,borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:"24px 20px 32px",border:"1px solid "+C.border,borderBottom:"none"}}><div style={{display:"flex",alignItems:"center",marginBottom:20}}><span style={{fontSize:16,fontWeight:700,color:C.text,flex:1}}>{title}</span><button onClick={onClose} style={{background:"none",border:"none",color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button></div>{children}</div></div>);}
+function Toast({msg,type}){return(<div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",background:type==="err"?"rgba(224,92,106,0.15)":"rgba(0,200,224,0.12)",border:"1px solid "+(type==="err"?C.red:C.accentS),color:type==="err"?C.red:C.accentS,padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:600,letterSpacing:0.3,zIndex:100,whiteSpace:"nowrap",boxShadow:"0 4px 24px rgba(0,0,0,0.5)",fontFamily:font}}>{msg}</div>);}
 
-const inp={width:"100%",background:C.surface2,border:`1px solid ${C.border}`,borderRadius:10,color:C.text,padding:"11px 13px",fontSize:14,boxSizing:"border-box",fontFamily:font,outline:"none"};
-const card={background:C.surface,borderRadius:14,padding:"14px",border:`1px solid ${C.border}`};
-const pill={fontSize:12,color:C.sub2,background:C.surface2,padding:"4px 11px",borderRadius:20,border:`1px solid ${C.border}`};
+const inp={width:"100%",background:C.surface2,border:"1px solid "+C.border,borderRadius:10,color:C.text,padding:"11px 13px",fontSize:14,boxSizing:"border-box",fontFamily:font,outline:"none"};
+const card={background:C.surface,borderRadius:14,padding:"14px",border:"1px solid "+C.border};
+const pill={fontSize:12,color:C.sub2,background:C.surface2,padding:"4px 11px",borderRadius:20,border:"1px solid "+C.border};
 const rankRow={display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:12};
 const gradText={background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"};
 const grad={background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"};
