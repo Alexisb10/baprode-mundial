@@ -1,1555 +1,303 @@
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useState } from "react";
 
-const SUPABASE_URL = "https://iffjdqfwdawqfxwowdqp.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZmpkcWZ3ZGF3cWZ4d293ZHFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTgyNjIsImV4cCI6MjA5MzU5NDI2Mn0.J3oSgvOBNbO7Kg26HeKiDagkBbrMNsgm5tkClA_0QXI";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SECTIONS = [
+  {
+    id: "general", title: "Datos Generales", icon: "🏢",
+    fields: [
+      { key: "nombreNegocio", label: "Nombre del gimnasio", type: "text", placeholder: "Ej: FitZone Gym" },
+      { key: "propietario", label: "Propietario / Responsable", type: "text", placeholder: "Nombre completo" },
+      { key: "ciudad", label: "Ciudad", type: "text", placeholder: "Ej: Buenos Aires" },
+      { key: "antiguedad", label: "Años en operación", type: "number", placeholder: "Ej: 3" },
+      { key: "m2", label: "Superficie total (m²)", type: "number", placeholder: "Ej: 450" },
+      { key: "horario", label: "Horario de atención", type: "text", placeholder: "Ej: 6am–11pm, L-S" },
+    ],
+  },
+  {
+    id: "membresias", title: "Membresías y Socios", icon: "👥",
+    fields: [
+      { key: "sociosTotales", label: "Total socios activos", type: "number", placeholder: "Ej: 320" },
+      { key: "sociosNuevosMes", label: "Altas promedio por mes", type: "number", placeholder: "Ej: 25" },
+      { key: "sociosBajaMes", label: "Bajas promedio por mes", type: "number", placeholder: "Ej: 18" },
+      { key: "ticketMensual", label: "Cuota mensual promedio ($)", type: "number", placeholder: "Ej: 35" },
+      { key: "asistenciaPromedio", label: "Asistencia diaria promedio", type: "number", placeholder: "Ej: 85" },
+    ],
+  },
+  {
+    id: "ingresos", title: "Ingresos Mensuales", icon: "💰",
+    fields: [
+      { key: "ingresosMembresías", label: "Ingresos por membresías ($)", type: "number", placeholder: "Ej: 11200" },
+      { key: "ingresosClases", label: "Clases grupales / personales ($)", type: "number", placeholder: "Ej: 1800" },
+      { key: "ingresosBar", label: "Bar / Nutrición / Suplementos ($)", type: "number", placeholder: "Ej: 900" },
+      { key: "ingresosOtros", label: "Otros ingresos ($)", type: "number", placeholder: "Ej: 300" },
+      { key: "ingresosMorosidad", label: "Cuotas impagas estimadas ($)", type: "number", placeholder: "Ej: 1200" },
+    ],
+  },
+  {
+    id: "costos", title: "Costos y Gastos", icon: "📉",
+    fields: [
+      { key: "alquiler", label: "Alquiler / hipoteca ($)", type: "number", placeholder: "Ej: 3500" },
+      { key: "servicios", label: "Servicios públicos ($)", type: "number", placeholder: "Ej: 800" },
+      { key: "internet", label: "Internet / sistemas ($)", type: "number", placeholder: "Ej: 150" },
+      { key: "mantenimiento", label: "Mantenimiento ($)", type: "number", placeholder: "Ej: 400" },
+      { key: "marketing", label: "Marketing / publicidad ($)", type: "number", placeholder: "Ej: 350" },
+      { key: "suministros", label: "Suministros / limpieza ($)", type: "number", placeholder: "Ej: 250" },
+      { key: "otrosGastos", label: "Otros gastos fijos ($)", type: "number", placeholder: "Ej: 200" },
+    ],
+  },
+  {
+    id: "personal", title: "Personal y Nómina", icon: "🧑‍💼",
+    fields: [
+      { key: "cantEmpleados", label: "Total empleados", type: "number", placeholder: "Ej: 7" },
+      { key: "nominaTotal", label: "Nómina total mensual ($)", type: "number", placeholder: "Ej: 5800" },
+      { key: "instructoresCount", label: "Instructores / profesores", type: "number", placeholder: "Ej: 4" },
+      { key: "sueldoDueno", label: "Sueldo del dueño incluido ($)", type: "number", placeholder: "Ej: 1500" },
+      { key: "rolesClaves", label: "Roles críticos que faltan o sobran", type: "textarea", placeholder: "Describí brevemente..." },
+    ],
+  },
+  {
+    id: "deuda", title: "Deuda y Financiamiento", icon: "🏦",
+    fields: [
+      { key: "deudaTotal", label: "Deuda total vigente ($)", type: "number", placeholder: "Ej: 22000" },
+      { key: "cuotaDeuda", label: "Cuota mensual de deudas ($)", type: "number", placeholder: "Ej: 1800" },
+      { key: "tasaInteres", label: "Tasa de interés promedio (%)", type: "number", placeholder: "Ej: 18" },
+      { key: "descripcionDeuda", label: "Descripción de las deudas", type: "textarea", placeholder: "Ej: Banco $15k, proveedor $7k..." },
+    ],
+  },
+  {
+    id: "operaciones", title: "Operaciones y Gestión", icon: "⚙️",
+    fields: [
+      { key: "softwareGestion", label: "¿Usa software de gestión?", type: "select", options: ["No", "Sí — básico (Excel/manual)", "Sí — software específico"] },
+      { key: "controlFinanciero", label: "¿Lleva control financiero?", type: "select", options: ["No", "Informal (cuaderno/Excel)", "Contador externo", "Contador interno"] },
+      { key: "procesosDocumentados", label: "¿Tiene procesos documentados?", type: "select", options: ["No", "Parcialmente", "Sí"] },
+      { key: "principalesCuellos", label: "Principales cuellos de botella", type: "textarea", placeholder: "Ej: Recepción colapsada a las 7am..." },
+      { key: "mayorProblema", label: "Mayor problema del negocio HOY", type: "textarea", placeholder: "Sé directo y honesto..." },
+    ],
+  },
+  {
+    id: "mercado", title: "Mercado y Competencia", icon: "📊",
+    fields: [
+      { key: "competidoresDirectos", label: "Competidores directos en zona", type: "number", placeholder: "Ej: 4" },
+      { key: "diferencialPercibido", label: "Tu diferencial frente a competencia", type: "textarea", placeholder: "Ej: Precio, equipamiento, instructores..." },
+      { key: "precioComparativo", label: "Tu precio vs competencia", type: "select", options: ["Más barato", "Similar", "Más caro"] },
+      { key: "canalesAdquisicion", label: "¿Cómo conseguís nuevos socios?", type: "textarea", placeholder: "Ej: Instagram, boca a boca..." },
+    ],
+  },
+  {
+    id: "objetivos", title: "Objetivos", icon: "🎯",
+    fields: [
+      { key: "metaIngresos", label: "Meta de ingresos mensuales ($)", type: "number", placeholder: "Ej: 18000" },
+      { key: "plazo", label: "¿En cuántos meses querés lograrlo?", type: "number", placeholder: "Ej: 6" },
+      { key: "prioridad1", label: "Prioridad #1 ahora", type: "select", options: ["Reducir costos", "Aumentar socios", "Mejorar rentabilidad", "Ordenar operaciones", "Conseguir financiamiento", "Crecer / expandirse"] },
+      { key: "contextoExtra", label: "Información adicional relevante", type: "textarea", placeholder: "Cualquier dato importante para el análisis..." },
+    ],
+  },
+];
 
 const C = {
-  bg:       "#050a10",
-  surface:  "#091520",
-  surface2: "#0d1e2e",
-  border:   "#0e2a40",
-  border2:  "#153a55",
-  text:     "#d4ecf8",
-  sub:      "#2e6880",
-  sub2:     "#4a90a8",
-  accent:   "linear-gradient(135deg, #2280ff 0%, #00b8d4 50%, #00e5cc 100%)",
-  accentS:  "#00c8e0",
-  accentB:  "#2280ff",
-  green:    "#4cdf9a",
-  red:      "#e05c6a",
-  gold:     "#ffd060",
-  glow:     "0 0 20px rgba(0,200,224,0.15)",
+  bg: "#0f1117", bgCard: "#1a1d27", bgSection: "#13161f",
+  accent: "#6c63ff", accentGlow: "rgba(108,99,255,0.15)",
+  gold: "#f5c518", text: "#e8e9f0", muted: "#6b7280",
+  border: "#2a2d3a", success: "#22c55e", danger: "#ef4444",
+  inputBg: "#0f1117",
 };
 
-const font = "'DM Sans', 'Segoe UI', system-ui, sans-serif";
-const mono = "'DM Mono', 'Fira Mono', monospace";
-
-const GROUPS = {
-  A: ["Mexico","Corea del Sur","Sudáfrica","Chequia"],
-  B: ["Canadá","Bosnia-Herz.","Qatar","Suiza"],
-  C: ["Brasil","Marruecos","Haití","Escocia"],
-  D: ["USA","Paraguay","Australia","Türkiye"],
-  E: ["Alemania","Curazao","Costa Marfil","Ecuador"],
-  F: ["Países Bajos","Japón","Suecia","Túnez"],
-  G: ["Bélgica","Egipto","Irán","Nueva Zelanda"],
-  H: ["España","Arabia Saudita","Uruguay","Cabo Verde"],
-  I: ["Francia","Senegal","Noruega","Irak"],
-  J: ["Argentina","Argelia","Austria","Jordania"],
-  K: ["Portugal","Colombia","Uzbekistán","DR Congo"],
-  L: ["Inglaterra","Croacia","Ghana","Panamá"],
-};
-
-const GROUP_MATCHES = [
-  {id:"A1",group:"A",home:"Mexico",away:"Sudáfrica",date:"2026-06-11",time:"16:00",venue:"Ciudad de México"},
-  {id:"A2",group:"A",home:"Corea del Sur",away:"Chequia",date:"2026-06-11",time:"23:00",venue:"Zapopan"},
-  {id:"A3",group:"A",home:"Mexico",away:"Chequia",date:"2026-06-15",time:"23:00",venue:"Ciudad de México"},
-  {id:"A4",group:"A",home:"Corea del Sur",away:"Sudáfrica",date:"2026-06-15",time:"20:00",venue:"Zapopan"},
-  {id:"A5",group:"A",home:"Mexico",away:"Corea del Sur",date:"2026-06-19",time:"23:00",venue:"Ciudad de México"},
-  {id:"A6",group:"A",home:"Sudáfrica",away:"Chequia",date:"2026-06-19",time:"23:00",venue:"Zapopan"},
-  {id:"B1",group:"B",home:"Canadá",away:"Bosnia-Herz.",date:"2026-06-12",time:"16:00",venue:"Toronto"},
-  {id:"B2",group:"B",home:"Qatar",away:"Suiza",date:"2026-06-13",time:"16:00",venue:"Santa Clara"},
-  {id:"B3",group:"B",home:"Canadá",away:"Suiza",date:"2026-06-17",time:"16:00",venue:"Toronto"},
-  {id:"B4",group:"B",home:"Qatar",away:"Bosnia-Herz.",date:"2026-06-17",time:"20:00",venue:"Santa Clara"},
-  {id:"B5",group:"B",home:"Canadá",away:"Qatar",date:"2026-06-21",time:"20:00",venue:"Toronto"},
-  {id:"B6",group:"B",home:"Bosnia-Herz.",away:"Suiza",date:"2026-06-21",time:"20:00",venue:"Kansas City"},
-  {id:"C1",group:"C",home:"Brasil",away:"Marruecos",date:"2026-06-13",time:"19:00",venue:"East Rutherford"},
-  {id:"C2",group:"C",home:"Haití",away:"Escocia",date:"2026-06-13",time:"22:00",venue:"Foxborough"},
-  {id:"C3",group:"C",home:"Brasil",away:"Escocia",date:"2026-06-17",time:"22:00",venue:"East Rutherford"},
-  {id:"C4",group:"C",home:"Marruecos",away:"Haití",date:"2026-06-17",time:"19:00",venue:"Foxborough"},
-  {id:"C5",group:"C",home:"Brasil",away:"Haití",date:"2026-06-21",time:"16:00",venue:"East Rutherford"},
-  {id:"C6",group:"C",home:"Escocia",away:"Marruecos",date:"2026-06-21",time:"16:00",venue:"Foxborough"},
-  {id:"D1",group:"D",home:"USA",away:"Paraguay",date:"2026-06-12",time:"22:00",venue:"Los Ángeles"},
-  {id:"D2",group:"D",home:"Australia",away:"Türkiye",date:"2026-06-13",time:"13:00",venue:"Philadelphia"},
-  {id:"D3",group:"D",home:"USA",away:"Türkiye",date:"2026-06-17",time:"13:00",venue:"Los Ángeles"},
-  {id:"D4",group:"D",home:"Paraguay",away:"Australia",date:"2026-06-17",time:"22:00",venue:"Philadelphia"},
-  {id:"D5",group:"D",home:"USA",away:"Australia",date:"2026-06-22",time:"20:00",venue:"Los Ángeles"},
-  {id:"D6",group:"D",home:"Türkiye",away:"Paraguay",date:"2026-06-22",time:"20:00",venue:"Philadelphia"},
-  {id:"E1",group:"E",home:"Alemania",away:"Costa Marfil",date:"2026-06-14",time:"16:00",venue:"Atlanta"},
-  {id:"E2",group:"E",home:"Curazao",away:"Ecuador",date:"2026-06-14",time:"22:00",venue:"Seattle"},
-  {id:"E3",group:"E",home:"Alemania",away:"Ecuador",date:"2026-06-18",time:"16:00",venue:"Atlanta"},
-  {id:"E4",group:"E",home:"Costa Marfil",away:"Curazao",date:"2026-06-18",time:"22:00",venue:"Seattle"},
-  {id:"E5",group:"E",home:"Alemania",away:"Curazao",date:"2026-06-22",time:"16:00",venue:"Atlanta"},
-  {id:"E6",group:"E",home:"Ecuador",away:"Costa Marfil",date:"2026-06-22",time:"16:00",venue:"Seattle"},
-  {id:"F1",group:"F",home:"Países Bajos",away:"Túnez",date:"2026-06-14",time:"13:00",venue:"Miami"},
-  {id:"F2",group:"F",home:"Japón",away:"Suecia",date:"2026-06-14",time:"19:00",venue:"Dallas"},
-  {id:"F3",group:"F",home:"Países Bajos",away:"Suecia",date:"2026-06-18",time:"13:00",venue:"Miami"},
-  {id:"F4",group:"F",home:"Túnez",away:"Japón",date:"2026-06-18",time:"19:00",venue:"Dallas"},
-  {id:"F5",group:"F",home:"Países Bajos",away:"Japón",date:"2026-06-22",time:"22:00",venue:"Miami"},
-  {id:"F6",group:"F",home:"Suecia",away:"Túnez",date:"2026-06-22",time:"22:00",venue:"Dallas"},
-  {id:"G1",group:"G",home:"Bélgica",away:"Irán",date:"2026-06-15",time:"13:00",venue:"Dallas"},
-  {id:"G2",group:"G",home:"Egipto",away:"Nueva Zelanda",date:"2026-06-15",time:"16:00",venue:"Seattle"},
-  {id:"G3",group:"G",home:"Bélgica",away:"Nueva Zelanda",date:"2026-06-19",time:"13:00",venue:"Dallas"},
-  {id:"G4",group:"G",home:"Irán",away:"Egipto",date:"2026-06-19",time:"16:00",venue:"Seattle"},
-  {id:"G5",group:"G",home:"Bélgica",away:"Egipto",date:"2026-06-23",time:"20:00",venue:"Dallas"},
-  {id:"G6",group:"G",home:"Nueva Zelanda",away:"Irán",date:"2026-06-23",time:"20:00",venue:"Seattle"},
-  {id:"H1",group:"H",home:"España",away:"Arabia Saudita",date:"2026-06-15",time:"19:00",venue:"Kansas City"},
-  {id:"H2",group:"H",home:"Uruguay",away:"Cabo Verde",date:"2026-06-15",time:"22:00",venue:"Miami"},
-  {id:"H3",group:"H",home:"España",away:"Cabo Verde",date:"2026-06-19",time:"19:00",venue:"Kansas City"},
-  {id:"H4",group:"H",home:"Arabia Saudita",away:"Uruguay",date:"2026-06-19",time:"22:00",venue:"Miami"},
-  {id:"H5",group:"H",home:"España",away:"Uruguay",date:"2026-06-23",time:"16:00",venue:"Kansas City"},
-  {id:"H6",group:"H",home:"Cabo Verde",away:"Arabia Saudita",date:"2026-06-23",time:"16:00",venue:"Miami"},
-  {id:"I1",group:"I",home:"Francia",away:"Senegal",date:"2026-06-16",time:"13:00",venue:"Atlanta"},
-  {id:"I2",group:"I",home:"Noruega",away:"Irak",date:"2026-06-16",time:"16:00",venue:"Los Ángeles"},
-  {id:"I3",group:"I",home:"Francia",away:"Irak",date:"2026-06-20",time:"13:00",venue:"Atlanta"},
-  {id:"I4",group:"I",home:"Senegal",away:"Noruega",date:"2026-06-20",time:"16:00",venue:"Los Ángeles"},
-  {id:"I5",group:"I",home:"Francia",away:"Noruega",date:"2026-06-24",time:"20:00",venue:"Atlanta"},
-  {id:"I6",group:"I",home:"Irak",away:"Senegal",date:"2026-06-24",time:"20:00",venue:"Los Ángeles"},
-  {id:"J1",group:"J",home:"Argentina",away:"Argelia",date:"2026-06-16",time:"19:00",venue:"Miami"},
-  {id:"J2",group:"J",home:"Austria",away:"Jordania",date:"2026-06-16",time:"22:00",venue:"East Rutherford"},
-  {id:"J3",group:"J",home:"Argentina",away:"Jordania",date:"2026-06-20",time:"19:00",venue:"Miami"},
-  {id:"J4",group:"J",home:"Argelia",away:"Austria",date:"2026-06-20",time:"22:00",venue:"East Rutherford"},
-  {id:"J5",group:"J",home:"Argentina",away:"Austria",date:"2026-06-24",time:"16:00",venue:"Miami"},
-  {id:"J6",group:"J",home:"Jordania",away:"Argelia",date:"2026-06-24",time:"16:00",venue:"East Rutherford"},
-  {id:"K1",group:"K",home:"Portugal",away:"Uzbekistán",date:"2026-06-17",time:"13:00",venue:"Kansas City"},
-  {id:"K2",group:"K",home:"Colombia",away:"DR Congo",date:"2026-06-17",time:"16:00",venue:"Santa Clara"},
-  {id:"K3",group:"K",home:"Portugal",away:"DR Congo",date:"2026-06-21",time:"13:00",venue:"Kansas City"},
-  {id:"K4",group:"K",home:"Uzbekistán",away:"Colombia",date:"2026-06-21",time:"16:00",venue:"Santa Clara"},
-  {id:"K5",group:"K",home:"Portugal",away:"Colombia",date:"2026-06-25",time:"20:00",venue:"Kansas City"},
-  {id:"K6",group:"K",home:"DR Congo",away:"Uzbekistán",date:"2026-06-25",time:"20:00",venue:"Santa Clara"},
-  {id:"L1",group:"L",home:"Inglaterra",away:"Panamá",date:"2026-06-18",time:"13:00",venue:"Foxborough"},
-  {id:"L2",group:"L",home:"Croacia",away:"Ghana",date:"2026-06-18",time:"16:00",venue:"Vancouver"},
-  {id:"L3",group:"L",home:"Inglaterra",away:"Ghana",date:"2026-06-22",time:"13:00",venue:"Foxborough"},
-  {id:"L4",group:"L",home:"Panamá",away:"Croacia",date:"2026-06-22",time:"16:00",venue:"Vancouver"},
-  {id:"L5",group:"L",home:"Inglaterra",away:"Croacia",date:"2026-06-26",time:"20:00",venue:"Foxborough"},
-  {id:"L6",group:"L",home:"Ghana",away:"Panamá",date:"2026-06-26",time:"20:00",venue:"Vancouver"},
-];
-
-const R32_SLOTS = [
-  {id:"r32_0", label:"1°A vs 2°B", home_src:{g:"A",pos:1}, away_src:{g:"B",pos:2}, date:"2026-06-28", time:"16:00", venue:"Los Ángeles"},
-  {id:"r32_1", label:"1°B vs 2°A", home_src:{g:"B",pos:1}, away_src:{g:"A",pos:2}, date:"2026-06-28", time:"22:00", venue:"Los Ángeles"},
-  {id:"r32_2", label:"1°C vs 2°F", home_src:{g:"C",pos:1}, away_src:{g:"F",pos:2}, date:"2026-06-29", time:"14:00", venue:"Houston"},
-  {id:"r32_3", label:"1°F vs 2°C", home_src:{g:"F",pos:1}, away_src:{g:"C",pos:2}, date:"2026-06-29", time:"22:00", venue:"Guadalajara"},
-  {id:"r32_4", label:"1°E vs 2°I", home_src:{g:"E",pos:1}, away_src:{g:"I",pos:2}, date:"2026-06-29", time:"17:30", venue:"Foxborough"},
-  {id:"r32_5", label:"1°I vs 2°E", home_src:{g:"I",pos:1}, away_src:{g:"E",pos:2}, date:"2026-06-30", time:"18:00", venue:"East Rutherford"},
-  {id:"r32_6", label:"1°D vs 2°G", home_src:{g:"D",pos:1}, away_src:{g:"G",pos:2}, date:"2026-07-01", time:"18:00", venue:"Santa Clara"},
-  {id:"r32_7", label:"1°G vs 2°D", home_src:{g:"G",pos:1}, away_src:{g:"D",pos:2}, date:"2026-07-01", time:"17:00", venue:"Seattle"},
-  {id:"r32_8", label:"1°J vs 2°K", home_src:{g:"J",pos:1}, away_src:{g:"K",pos:2}, date:"2026-07-02", time:"19:00", venue:"Miami"},
-  {id:"r32_9", label:"1°K vs 2°J", home_src:{g:"K",pos:1}, away_src:{g:"J",pos:2}, date:"2026-07-02", time:"22:30", venue:"Kansas City"},
-  {id:"r32_10",label:"1°H vs 2°L", home_src:{g:"H",pos:1}, away_src:{g:"L",pos:2}, date:"2026-07-03", time:"16:00", venue:"Dallas"},
-  {id:"r32_11",label:"1°L vs 2°H", home_src:{g:"L",pos:1}, away_src:{g:"H",pos:2}, date:"2026-07-03", time:"19:00", venue:"Philadelphia"},
-];
-
-function scoreGroup(pred, off) {
-  if (!off || off.home == null || off.home === "" || off.away == null || off.away === "") return null;
-  const oh=+off.home, oa=+off.away, ph=+(pred?.home??-1), pa=+(pred?.away??-1);
-  if (isNaN(oh)||isNaN(oa)||ph<0||pa<0) return null;
-  const oR=oh>oa?"H":oh<oa?"A":"D", pR=ph>pa?"H":ph<pa?"A":"D";
-  let p=0;
-  if(oR===pR) p+=2;
-  if(ph===oh&&pa===oa) p+=8;
-  else { if(ph===oh) p+=1; if(pa===oa) p+=1; }
-  return p;
+function Field({ field, value, onChange }) {
+  const base = {
+    width: "100%", boxSizing: "border-box",
+    background: C.inputBg, border: `1.5px solid ${C.border}`,
+    borderRadius: 8, padding: "10px 13px",
+    fontSize: 14, color: C.text, outline: "none", fontFamily: "inherit",
+    transition: "border-color 0.2s",
+  };
+  if (field.type === "textarea")
+    return <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={field.placeholder} rows={3}
+      style={{ ...base, resize: "vertical", lineHeight: 1.6, color: C.text }} />;
+  if (field.type === "select")
+    return (
+      <select value={value || ""} onChange={e => onChange(e.target.value)}
+        style={{ ...base, cursor: "pointer", color: value ? C.text : C.muted }}>
+        <option value="">— Seleccionar —</option>
+        {field.options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  return <input type={field.type} value={value || ""} onChange={e => onChange(e.target.value)}
+    placeholder={field.placeholder} style={base} />;
 }
 
-function fmtDate(d) {
-  if (!d) return "";
-  const [y,m,day] = d.split("-");
-  const months = ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  return `${parseInt(day)} ${months[parseInt(m)]}`;
-}
-
-function ageOk(dob) {
-  const now = new Date(), birth = new Date(dob);
-  const age = now.getFullYear() - birth.getFullYear();
-  const m = now.getMonth() - birth.getMonth();
-  return age > 18 || (age === 18 && (m > 0 || (m === 0 && now.getDate() >= birth.getDate())));
-}
-
-function hashColor(str) {
-  let h=0; for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h);
-  return `hsl(${Math.abs(h)%360},40%,30%)`;
+function SectionCard({ section, data, onChange, isActive, onToggle }) {
+  const filled = section.fields.filter(f => data[f.key] && data[f.key] !== "").length;
+  const pct = Math.round((filled / section.fields.length) * 100);
+  return (
+    <div style={{
+      marginBottom: 8, borderRadius: 12, overflow: "hidden",
+      border: `1px solid ${isActive ? C.accent : C.border}`,
+      background: C.bgCard,
+      boxShadow: isActive ? `0 0 20px ${C.accentGlow}` : "none",
+      transition: "all 0.2s",
+    }}>
+      <button onClick={onToggle} style={{
+        width: "100%", display: "flex", alignItems: "center", gap: 12,
+        padding: "13px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left"
+      }}>
+        <span style={{ fontSize: 18 }}>{section.icon}</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: C.text, fontFamily: "'Syne', sans-serif" }}>{section.title}</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{filled}/{section.fields.length} campos completados</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 44, height: 3, borderRadius: 2, background: C.border, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: pct === 100 ? C.success : C.accent, borderRadius: 2 }} />
+          </div>
+          <span style={{ fontSize: 10, color: isActive ? C.accent : C.muted }}>{isActive ? "▲" : "▼"}</span>
+        </div>
+      </button>
+      {isActive && (
+        <div style={{ padding: "4px 16px 16px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+          {section.fields.map(f => (
+            <div key={f.key} style={{ gridColumn: f.type === "textarea" ? "1 / -1" : "auto" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>{f.label}</div>
+              <Field field={f} value={data[f.key]} onChange={v => onChange(f.key, v)} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function App() {
-  const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [view, setView]       = useState("splash");
-  const [activeGroup, setActiveGroup] = useState(null);
-  const [toast, setToast]     = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({});
+  const [openSection, setOpenSection] = useState("general");
+  const [code, setCode] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [showCode, setShowCode] = useState(false);
 
-  const toast$ = (msg, type="ok") => { setToast({msg,type}); setTimeout(()=>setToast(null),2500); };
+  const totalFields = SECTIONS.flatMap(s => s.fields).length;
+  const filledFields = SECTIONS.flatMap(s => s.fields).filter(f => formData[f.key] && formData[f.key] !== "").length;
+  const progress = Math.round((filledFields / totalFields) * 100);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({data:{session}}) => {
-      setSession(session);
-      if (session) loadProfile(session.user.id);
-      else { setLoading(false); setView("splash"); }
+  const generateCode = () => {
+    if (!formData.nombreNegocio) {
+      alert("Completá al menos el nombre del negocio.");
+      return;
+    }
+    const json = JSON.stringify(formData);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    setCode(b64);
+    setShowCode(true);
+  };
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     });
-    const {data:{subscription}} = supabase.auth.onAuthStateChange((_,session) => {
-      setSession(session);
-      if (session) loadProfile(session.user.id);
-      else { setProfile(null); setView("splash"); }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function loadProfile(uid) {
-    setLoading(true);
-    const {data} = await supabase.from("profiles").select("*").eq("id", uid).single();
-    setProfile(data);
-    setLoading(false);
-    setView(data ? "groups_list" : "splash");
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    setView("splash");
-  }
-
-  if (loading) return <Splash/>;
-
-  const ctx = { session, profile, setProfile, activeGroup, setActiveGroup, setView, toast$, signOut };
+  };
 
   return (
-    <Page>
-      {view==="splash"         && <SplashView ctx={ctx}/>}
-      {view==="login"          && <LoginView ctx={ctx}/>}
-      {view==="register"       && <RegisterView ctx={ctx}/>}
-      {view==="groups_list"    && <GroupsListView ctx={ctx}/>}
-      {view==="group"          && <GroupView ctx={ctx}/>}
-      {view==="predictions"    && <PredictionsView ctx={ctx}/>}
-      {view==="ranking"        && <RankingView ctx={ctx}/>}
-      {view==="global_ranking" && <GlobalRankingView ctx={ctx}/>}
-      {view==="official"       && <OfficialResultsView ctx={ctx}/>}
-      {view==="admin"          && <AdminView ctx={ctx}/>}
-      {toast && <Toast msg={toast.msg} type={toast.type}/>}
-    </Page>
-  );
-}
-
-function Splash() {
-  return (
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
-      justifyContent:"center",background:C.bg}}>
-      <div style={{fontSize:56,marginBottom:16}}>⚽</div>
-      <div style={{...grad, fontSize:11,letterSpacing:3,marginBottom:8}}>Cargando...</div>
-    </div>
-  );
-}
-
-function SplashView({ctx}) {
-  const {setView} = ctx;
-  return (
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:C.bg}}>
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'DM Sans', sans-serif", color: C.text }}>
       <style>{`
-        @keyframes ballFloat {
-          0%,100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-12px) rotate(8deg); }
-        }
-        @keyframes ballGlow {
-          0%,100% { filter: drop-shadow(0 0 20px #2280ff88) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
-          33% { filter: drop-shadow(0 0 28px #00b8d488) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
-          66% { filter: drop-shadow(0 0 28px #00e5cc88) drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        input,textarea,select { color-scheme: dark; }
+        input::placeholder,textarea::placeholder { color: #4b5563; }
+        input:focus,textarea:focus,select:focus { border-color: #6c63ff !important; outline: none; box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #0f1117; } ::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 2px; }
       `}</style>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-        justifyContent:"center",padding:"48px 24px 32px"}}>
-        <div style={{fontSize:90,marginBottom:20,lineHeight:1,
-          animation:"ballFloat 2.5s ease-in-out infinite, ballGlow 2.4s ease-in-out infinite"}}>⚽</div>
-        <div style={{fontSize:10,letterSpacing:4,color:C.sub2,marginBottom:6,textTransform:"uppercase"}}>Baprode</div>
-        <h1 style={{...gradText,fontSize:36,fontWeight:800,textAlign:"center",lineHeight:1.1,margin:0}}>
-          Mundial<br/>2026
+
+      <div style={{ background: "linear-gradient(135deg, #13161f 0%, #1a1d27 100%)", borderBottom: `1px solid ${C.border}`, padding: "24px 20px 20px" }}>
+        <div style={{ fontSize: 9, color: C.accent, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 8, fontWeight: 700 }}>
+          Formulario de Diagnóstico
+        </div>
+        <h1 style={{ margin: 0, fontSize: 26, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: C.text, lineHeight: 1.1 }}>
+          Gym<span style={{ color: C.accent }}>Diag</span><br />
+          <span style={{ fontSize: 14, fontWeight: 400, color: C.muted, fontFamily: "'DM Sans', sans-serif" }}>Completá tus datos · Tu consultor los analiza</span>
         </h1>
-        <p style={{color:C.sub,fontSize:13,marginTop:10,letterSpacing:0.5}}>USA · México · Canadá</p>
-      </div>
-      <div style={{padding:"0 20px 48px",display:"flex",flexDirection:"column",gap:10}}>
-        <GradBtn onClick={()=>setView("login")}>Iniciar sesión</GradBtn>
-        <Btn2 onClick={()=>setView("register")}>Crear cuenta</Btn2>
-      </div>
-    </div>
-  );
-}
-
-function LoginView({ctx}) {
-  const {setView, toast$} = ctx;
-  const [identifier, setIdentifier] = useState("");
-  const [pw, setPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function login() {
-    if (!identifier || !pw) return toast$("Completá todos los campos", "err");
-    setLoading(true);
-    let emailToUse = identifier;
-    if (!identifier.includes("@")) {
-      const {data} = await supabase.from("profiles").select("email").eq("nick", identifier).single();
-      if (!data) { toast$("Usuario no encontrado", "err"); setLoading(false); return; }
-      emailToUse = data.email;
-    }
-    const {error} = await supabase.auth.signInWithPassword({email: emailToUse, password: pw});
-    if (error) { toast$("Email, usuario o contraseña incorrectos", "err"); setLoading(false); }
-  }
-
-  async function forgotPw() {
-    if (!identifier) return toast$("Ingresá tu email primero", "err");
-    const email = identifier.includes("@") ? identifier : null;
-    if (!email) return toast$("Usá tu email para recuperar contraseña", "err");
-    await supabase.auth.resetPasswordForEmail(email, {redirectTo: "https://baprode-mundial.vercel.app"});
-    toast$("Email de recuperación enviado");
-  }
-
-  return (
-    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column"}}>
-      <Bar title="Iniciar sesión" onBack={()=>setView("splash")}/>
-      <div style={{padding:"24px 20px",display:"flex",flexDirection:"column",gap:14}}>
-        <div>
-          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Email o Nick</div>
-          <input style={inp} placeholder="nombre@email.com o tu nick"
-            value={identifier} onChange={e=>setIdentifier(e.target.value)}/>
-        </div>
-        <div>
-          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contraseña</div>
-          <div style={{position:"relative"}}>
-            <input type={showPw?"text":"password"} style={{...inp,paddingRight:44}}
-              placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)}/>
-            <button onClick={()=>setShowPw(p=>!p)} style={{
-              position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
-              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0}}>
-              {showPw ? "🙈" : "👁"}
-            </button>
+        <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+            <div style={{ width: `${progress}%`, height: "100%", background: `linear-gradient(90deg, ${C.accent}, ${C.gold})`, borderRadius: 2, transition: "width 0.4s" }} />
           </div>
+          <span style={{ fontSize: 11, color: progress === 100 ? C.gold : C.muted, fontWeight: 700, minWidth: 40 }}>{progress}%</span>
         </div>
-        <GradBtn onClick={login} disabled={loading}>{loading?"Ingresando...":"Entrar"}</GradBtn>
-        <button onClick={forgotPw} style={{background:"none",border:"none",color:C.sub2,
-          fontSize:13,cursor:"pointer",padding:"4px 0",fontFamily:font}}>
-          Olvidé mi contraseña
-        </button>
-        <div style={{textAlign:"center",marginTop:8}}>
-          <span style={{color:C.sub,fontSize:13}}>¿No tenés cuenta? </span>
-          <button onClick={()=>setView("register")} style={{background:"none",border:"none",
-            color:C.accentS,fontSize:13,cursor:"pointer",fontFamily:font,fontWeight:600}}>
-            Registrate
-          </button>
-        </div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{filledFields} de {totalFields} campos completados</div>
       </div>
-    </div>
-  );
-}
 
-function WheelPicker({items, value, onChange, width=70}) {
-  const idx = items.indexOf(value);
-  return (
-    <div style={{width,height:120,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:40,
-        background:`linear-gradient(to bottom, ${C.surface2}, transparent)`,zIndex:2,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,
-        background:`linear-gradient(to top, ${C.surface2}, transparent)`,zIndex:2,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,
-        marginTop:-18,border:`1px solid ${C.accentS}`,borderRadius:8,
-        background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
-      <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",
-        scrollbarWidth:"none",paddingTop:42,paddingBottom:42}}
-        onScroll={e=>{
-          const el=e.target;
-          const i=Math.round((el.scrollTop)/(36));
-          if(items[i] && items[i]!==value) onChange(items[i]);
+      <div style={{ padding: "14px 14px 120px" }}>
+        {SECTIONS.map(s => (
+          <SectionCard key={s.id} section={s} data={formData}
+            onChange={(k, v) => setFormData(p => ({ ...p, [k]: v }))}
+            isActive={openSection === s.id}
+            onToggle={() => setOpenSection(openSection === s.id ? null : s.id)} />
+        ))}
+      </div>
+
+      {showCode && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 200,
+          display: "flex", alignItems: "flex-end", padding: "0",
         }}>
-        {items.map((item,i)=>(
-          <div key={item} style={{height:36,display:"flex",alignItems:"center",
-            justifyContent:"center",scrollSnapAlign:"start",
-            fontSize:15,fontWeight:i===idx?700:400,
-            color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>
-            {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const DAYS   = Array.from({length:31},(_,i)=>String(i+1).padStart(2,"0"));
-const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const YEARS  = Array.from({length:90},(_,i)=>String(2006-i));
-
-function DOBPicker({value, onChange}) {
-  const [open, setOpen] = useState(false);
-  const [temp, setTemp] = useState(value || "2000-01-01");
-  const parts = temp.split("-");
-  const year=parts[0], month=parts[1], day=parts[2];
-  const monthIdx = parseInt(month)-1;
-
-  function update(y,m,d) {
-    const mm = String(MONTHS.indexOf(m)+1).padStart(2,"0");
-    setTemp(`${y}-${mm}-${d}`);
-  }
-
-  function confirm() { onChange(temp); setOpen(false); }
-
-  function displayDate(v) {
-    if (!v) return "";
-    const p = v.split("-");
-    return `${p[2]} ${MONTHS[parseInt(p[1])-1]} ${p[0]}`;
-  }
-
-  return (
-    <div>
-      <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>
-        Fecha de nacimiento *
-      </div>
-      <button onClick={()=>setOpen(true)} style={{
-        ...inp, textAlign:"left", cursor:"pointer", display:"flex",
-        alignItems:"center", justifyContent:"space-between"}}>
-        <span style={{color: value && value!=="2000-01-01" ? C.text : C.sub}}>
-          {value && value!=="2000-01-01" ? displayDate(value) : "Seleccionar fecha"}
-        </span>
-        <span style={{color:C.sub2, fontSize:16}}>📅</span>
-      </button>
-      {open && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,
-          display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div style={{background:C.surface,borderRadius:"20px 20px 0 0",
-            width:"100%",maxWidth:480,padding:"20px 20px 32px",
-            border:`1px solid ${C.border}`,borderBottom:"none"}}>
-            <div style={{display:"flex",alignItems:"center",marginBottom:16}}>
-              <span style={{flex:1,fontSize:15,fontWeight:700,color:C.text}}>Fecha de nacimiento</span>
-              <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",
-                color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button>
-            </div>
-            <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:20}}>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>DÍA</div>
-                <WheelPicker items={DAYS} value={day} onChange={d=>update(year,MONTHS[monthIdx],d)} width={60}/>
-              </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>MES</div>
-                <WheelPicker items={MONTHS} value={MONTHS[monthIdx]} onChange={m=>update(year,m,day)} width={72}/>
-              </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:9,color:C.sub,marginBottom:4,letterSpacing:0.5}}>AÑO</div>
-                <WheelPicker items={YEARS} value={year} onChange={y=>update(y,MONTHS[monthIdx],day)} width={72}/>
+          <div style={{
+            width: "100%", background: C.bgCard, borderRadius: "20px 20px 0 0",
+            border: `1px solid ${C.border}`, padding: "24px 20px 40px",
+          }}>
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: C.text }}>¡Listo!</div>
+              <div style={{ fontSize: 13, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>
+                Copiá este código y enviáselo<br />a tu consultor por WhatsApp o email.
               </div>
             </div>
-            <GradBtn onClick={confirm}>Confirmar</GradBtn>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RegisterView({ctx}) {
-  const {setView, toast$} = ctx;
-  const [f,setF] = useState({nombre:"",dni:"",dob:"2000-01-01",email:"",nick:"",pw:"",cel:""});
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const upd = k => v => setF(p=>({...p,[k]:v}));
-
-  async function register() {
-    if (!f.nombre||!f.dni||!f.dob||!f.email||!f.nick||!f.pw)
-      return toast$("Completá los campos obligatorios","err");
-    if (!ageOk(f.dob)) return toast$("Debés ser mayor de 18 años","err");
-    setLoading(true);
-    const {data,error} = await supabase.auth.signUp({
-      email:f.email, password:f.pw,
-      options:{data:{nombre:f.nombre,dni:f.dni,dob:f.dob,nick:f.nick,cel:f.cel}}
-    });
-    if (error) { toast$(error.message,"err"); setLoading(false); return; }
-    await supabase.from("profiles").insert({
-      id:data.user.id, nombre:f.nombre, dni:f.dni, dob:f.dob,
-      email:f.email, nick:f.nick, cel:f.cel, is_admin:false
-    });
-    toast$("¡Cuenta creada! Ya podés ingresar");
-    setLoading(false);
-    setView("login");
-  }
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title="Crear cuenta" onBack={()=>setView("splash")}/>
-      <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:14,paddingBottom:40}}>
-        <SectionLabel>Datos personales</SectionLabel>
-        <Field label="Nombre completo *" value={f.nombre} onChange={upd("nombre")}/>
-        <Field label="DNI *" value={f.dni} onChange={upd("dni")} type="number"/>
-        <DOBPicker value={f.dob} onChange={upd("dob")}/>
-        <SectionLabel>Cuenta</SectionLabel>
-        <Field label="Email *" value={f.email} onChange={upd("email")} type="email"/>
-        <Field label="Nick (nombre en el juego) *" value={f.nick} onChange={upd("nick")}/>
-        <div>
-          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contraseña *</div>
-          <div style={{position:"relative"}}>
-            <input type={showPw?"text":"password"} style={{...inp,paddingRight:44}}
-              placeholder="Mínimo 6 caracteres" value={f.pw} onChange={e=>upd("pw")(e.target.value)}/>
-            <button onClick={()=>setShowPw(p=>!p)} style={{
-              position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
-              background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0}}>
-              {showPw?"🙈":"👁"}
+            <div style={{
+              background: C.inputBg, borderRadius: 12, padding: "14px",
+              border: `1px solid ${C.border}`, marginBottom: 16, position: "relative"
+            }}>
+              <div style={{ fontSize: 9, color: C.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+                Tu código de diagnóstico
+              </div>
+              <div style={{
+                fontSize: 10, color: C.muted, wordBreak: "break-all", lineHeight: 1.6,
+                maxHeight: 80, overflow: "hidden", fontFamily: "monospace"
+              }}>
+                {code.substring(0, 120)}...
+              </div>
+            </div>
+            <button onClick={copyCode} style={{
+              width: "100%", padding: "16px", borderRadius: 12, border: "none",
+              background: copied ? C.success : `linear-gradient(135deg, ${C.accent}, #9c8fff)`,
+              color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer",
+              fontFamily: "'Syne', sans-serif", marginBottom: 10,
+              transition: "background 0.3s",
+            }}>
+              {copied ? "✓ Código copiado" : "📋 Copiar código"}
+            </button>
+            <button onClick={() => setShowCode(false)} style={{
+              width: "100%", padding: "12px", borderRadius: 12,
+              border: `1px solid ${C.border}`, background: "transparent",
+              color: C.muted, fontSize: 13, cursor: "pointer"
+            }}>
+              Cerrar
             </button>
           </div>
         </div>
-        <div>
-          <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Celular (opcional)</div>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <div style={{...inp,width:"auto",padding:"10px 12px",display:"flex",
-              alignItems:"center",gap:6,flexShrink:0,color:C.text,fontSize:14}}>
-              <span style={{fontSize:18}}>🇦🇷</span>
-              <span style={{color:C.sub2,fontFamily:mono}}>+54</span>
-            </div>
-            <input type="tel" style={{...inp,flex:1}} placeholder="9 11 1234 5678"
-              value={f.cel} onChange={e=>upd("cel")(e.target.value.replace(/^\+54/,"").replace(/^54/,""))}/>
-          </div>
-        </div>
-        <div style={{marginTop:4}}>
-          <GradBtn onClick={register} disabled={loading}>{loading?"Creando...":"Crear cuenta"}</GradBtn>
-        </div>
-        <p style={{fontSize:11,color:C.sub,textAlign:"center",lineHeight:1.6,margin:0}}>
-          Debés ser mayor de 18 años para registrarte
-        </p>
-      </div>
-    </div>
-  );
-}
+      )}
 
-// ─── GROUPS LIST ──────────────────────────────────────────────────────────────
-function GroupsListView({ctx}) {
-  const {profile,setView,setActiveGroup,toast$,signOut} = ctx;
-  const [myGroups,setMyGroups] = useState([]);
-  const [loading,setLoading]   = useState(true);
-  const [showJoin,setShowJoin] = useState(false);
-  const [showCreate,setShowCreate] = useState(false);
-
-  useEffect(()=>{ fetchGroups(); },[]);
-
-  async function fetchGroups() {
-    setLoading(true);
-    const {data} = await supabase
-      .from("group_members").select("group_id, groups(id,name,max_members,created_by,updated_at)")
-      .eq("user_id", profile.id);
-    setMyGroups(data?.map(d=>d.groups).filter(Boolean)||[]);
-    setLoading(false);
-  }
-
-  if (profile?.is_admin) return <AdminView ctx={ctx}/>;
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-        padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
-        <div>
-          <div style={{fontSize:10,color:C.sub,letterSpacing:1,textTransform:"uppercase"}}>Bienvenido</div>
-          <div style={{fontSize:16,fontWeight:700,color:C.text}}>{profile?.nick||profile?.nombre}</div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <IconBtn onClick={()=>setShowCreate(true)} title="Crear grupo">＋</IconBtn>
-          <IconBtn onClick={signOut} title="Salir">⏻</IconBtn>
-        </div>
-      </div>
-
-      {/* Botones de acceso rápido */}
-      <div style={{padding:"12px 16px 0",display:"flex",gap:8}}>
-        <button onClick={()=>setView("official")} style={{
-          flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
-          background:C.surface,color:C.accentS,fontSize:12,fontWeight:600,
-          cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",
-          justifyContent:"center",gap:6}}>
-          🏟 Resultados oficiales
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: C.bgCard, borderTop: `1px solid ${C.border}`,
+        padding: "12px 16px 20px"
+      }}>
+        <button onClick={generateCode} style={{
+          width: "100%", padding: "16px", borderRadius: 12, border: "none",
+          background: `linear-gradient(135deg, ${C.accent}, #9c8fff)`,
+          color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer",
+          fontFamily: "'Syne', sans-serif",
+          boxShadow: `0 4px 20px ${C.accentGlow}`,
+        }}>
+          Generar código para el consultor →
         </button>
-        <button onClick={()=>setView("global_ranking")} style={{
-          flex:1,padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
-          background:C.surface,color:C.gold,fontSize:12,fontWeight:600,
-          cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",
-          justifyContent:"center",gap:6}}>
-          🌍 Ranking global
-        </button>
-      </div>
-
-      <div style={{padding:"16px",paddingBottom:100}}>
-        <SectionLabel>Mis grupos</SectionLabel>
-        {loading && <p style={{color:C.sub,fontSize:13,textAlign:"center",marginTop:24}}>Cargando...</p>}
-        {!loading && myGroups.length===0 && (
-          <div style={{textAlign:"center",marginTop:32,color:C.sub,fontSize:13}}>
-            <div style={{fontSize:32,marginBottom:12}}>🏟</div>
-            <p>No estás en ningún grupo todavía</p>
-          </div>
-        )}
-        {myGroups.map(g=>(
-          <div key={g.id} style={{...card,cursor:"pointer",marginBottom:10}}
-            onClick={()=>{setActiveGroup(g);setView("group");}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:42,height:42,borderRadius:12,background:hashColor(g.name),
-                display:"flex",alignItems:"center",justifyContent:"center",
-                fontSize:18,fontWeight:700,color:"#fff"}}>
-                {g.name[0]}
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:C.text}}>{g.name}</div>
-                <div style={{fontSize:11,color:C.sub,marginTop:2}}>
-                  Última act: {g.updated_at ? new Date(g.updated_at).toLocaleString("es-AR",{timeZone:"America/Argentina/Buenos_Aires",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "—"}
-                </div>
-              </div>
-              <span style={{color:C.sub2,fontSize:20}}>›</span>
-            </div>
-          </div>
-        ))}
-        <div style={{marginTop:16}}>
-          <Btn2 onClick={()=>setShowJoin(true)}>Unirse a un grupo</Btn2>
-        </div>
-      </div>
-
-      {showCreate && <CreateGroupModal profile={profile} onClose={()=>setShowCreate(false)} onCreated={()=>{fetchGroups();setShowCreate(false);}} toast$={toast$}/>}
-      {showJoin   && <JoinGroupModal profile={profile} onClose={()=>setShowJoin(false)} onJoined={()=>{fetchGroups();setShowJoin(false);}} toast$={toast$}/>}
-    </div>
-  );
-}
-
-function CreateGroupModal({profile,onClose,onCreated,toast$}) {
-  const [name,setName]=useState(""), [max,setMax]=useState("10"), [loading,setLoading]=useState(false);
-  async function create() {
-    if (!name) return toast$("Ingresá un nombre","err");
-    setLoading(true);
-    const {data,error} = await supabase.from("groups")
-      .insert({name,max_members:+max,created_by:profile.id}).select().single();
-    if (error) { toast$(error.message,"err"); setLoading(false); return; }
-    await supabase.from("group_members").insert({group_id:data.id,user_id:profile.id,role:"admin"});
-    onCreated();
-  }
-  return (
-    <Modal title="Crear grupo" onClose={onClose}>
-      <Field label="Nombre del grupo" value={name} onChange={setName}/>
-      <div style={{marginTop:12}}>
-        <Field label="Máximo de participantes" value={max} onChange={setMax} type="number"/>
-      </div>
-      <div style={{marginTop:16}}>
-        <GradBtn onClick={create} disabled={loading}>{loading?"Creando...":"Crear"}</GradBtn>
-      </div>
-    </Modal>
-  );
-}
-
-function JoinGroupModal({profile,onClose,onJoined,toast$}) {
-  const [q,setQ]=useState(""), [results,setResults]=useState([]), [loading,setLoading]=useState(false);
-
-  async function search() {
-    if (!q) return;
-    const {data} = await supabase.from("groups").select("*").ilike("name",`%${q}%`).limit(10);
-    setResults(data||[]);
-  }
-
-  async function join(g) {
-    setLoading(true);
-    const {data:members} = await supabase.from("group_members").select("*").eq("group_id",g.id);
-    if (members?.length >= g.max_members) { toast$("El grupo está lleno","err"); setLoading(false); return; }
-    const already = members?.find(m=>m.user_id===profile.id);
-    if (already) { toast$("Ya sos miembro de este grupo","err"); setLoading(false); return; }
-    await supabase.from("group_members").insert({group_id:g.id,user_id:profile.id,role:"member"});
-    toast$("¡Te uniste al grupo!");
-    onJoined();
-  }
-
-  return (
-    <Modal title="Unirse a grupo" onClose={onClose}>
-      <div style={{display:"flex",gap:8}}>
-        <input style={{...inp,flex:1}} placeholder="Buscar grupo..." value={q} onChange={e=>setQ(e.target.value)}/>
-        <button onClick={search} style={{...gradBtnS,padding:"0 14px",fontSize:13}}>Buscar</button>
-      </div>
-      <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:8}}>
-        {results.map(g=>(
-          <div key={g.id} style={{...card,display:"flex",alignItems:"center",gap:10}}>
-            <span style={{flex:1,fontSize:14,color:C.text}}>{g.name}</span>
-            <span style={{fontSize:11,color:C.sub}}>Máx {g.max_members}</span>
-            <button onClick={()=>join(g)} style={{...gradBtnS,padding:"6px 12px",fontSize:12}} disabled={loading}>
-              Unirse
-            </button>
-          </div>
-        ))}
-      </div>
-    </Modal>
-  );
-}
-
-// ─── GROUP VIEW ───────────────────────────────────────────────────────────────
-function GroupView({ctx}) {
-  const {profile,activeGroup,setView,setActiveGroup,toast$} = ctx;
-  const [members,setMembers] = useState([]);
-  const [selectedUser,setSelectedUser] = useState(null);
-  const [showManage,setShowManage] = useState(false);
-  const [myRole,setMyRole] = useState(null);
-
-  useEffect(()=>{ fetchMembers(); },[]);
-
-  async function fetchMembers() {
-    const {data} = await supabase.from("group_members")
-      .select("user_id, role, profiles(id,nick,nombre)")
-      .eq("group_id",activeGroup.id);
-    setMembers(data||[]);
-    const me = data?.find(m=>m.user_id===profile.id);
-    setMyRole(me?.role);
-  }
-
-  const updatedAt = activeGroup?.updated_at
-    ? new Date(activeGroup.updated_at).toLocaleString("es-AR",{timeZone:"America/Argentina/Buenos_Aires",
-        day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})
-    : "Sin datos cargados";
-
-  const isGroupAdmin = myRole==="admin" || activeGroup?.created_by===profile?.id;
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title={activeGroup?.name} onBack={()=>setView("groups_list")}/>
-
-      <div style={{margin:"12px 16px 0",background:C.surface2,borderRadius:10,
-        padding:"10px 14px",border:`1px solid ${C.border}`,
-        display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:14}}>🕐</span>
-        <div>
-          <div style={{fontSize:10,color:C.sub,letterSpacing:0.5}}>Última actualización oficial</div>
-          <div style={{fontSize:13,fontWeight:600,color:C.accentS}}>{updatedAt}</div>
-        </div>
-      </div>
-
-      <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-        <GradBtn onClick={()=>setView("predictions")}>📋 Mis predicciones</GradBtn>
-        <Btn2 onClick={()=>setView("ranking")}>🏆 Ranking del grupo</Btn2>
-        {isGroupAdmin && (
-          <button onClick={()=>setShowManage(true)} style={{
-            width:"100%",padding:"13px",borderRadius:12,
-            border:`1px solid ${C.gold}`,cursor:"pointer",
-            fontSize:14,fontWeight:600,fontFamily:font,
-            background:"rgba(255,208,96,0.05)",color:C.gold,
-          }}>⚙️ Administrar grupo</button>
-        )}
-      </div>
-
-      <div style={{padding:"0 16px 16px"}}>
-        <SectionLabel>Miembros ({members.length}/{activeGroup?.max_members})</SectionLabel>
-        {members.map(m=>(
-          <div key={m.user_id} style={{...card,marginBottom:8,display:"flex",alignItems:"center",gap:10}}>
-            <Ava name={m.profiles?.nick||m.profiles?.nombre||"?"} size={34}/>
-            <span style={{flex:1,fontSize:14,color:m.user_id===profile.id?C.accentS:C.text}}>
-              {m.profiles?.nick||m.profiles?.nombre}
-              {m.user_id===profile.id?" (vos)":""}
-            </span>
-            {m.role==="admin" && <span style={{fontSize:10,color:C.gold,background:"rgba(255,208,96,0.1)",
-              padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>Admin</span>}
-            {m.user_id!==profile.id && (
-              <button onClick={()=>setSelectedUser(m)} style={{background:"none",border:`1px solid ${C.border}`,
-                color:C.sub2,borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:font}}>
-                Ver planilla
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {selectedUser && (
-        <ViewUserPredModal user={selectedUser} group={activeGroup} onClose={()=>setSelectedUser(null)}/>
-      )}
-
-      {showManage && (
-        <ManageGroupModal
-          group={activeGroup}
-          onClose={()=>setShowManage(false)}
-          onUpdated={(updated)=>{ setActiveGroup(updated); setShowManage(false); }}
-          toast$={toast$}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── MANAGE GROUP MODAL ───────────────────────────────────────────────────────
-function ManageGroupModal({group,onClose,onUpdated,toast$}) {
-  const [max,setMax] = useState(String(group.max_members));
-  const [loading,setLoading] = useState(false);
-
-  async function save() {
-    const val = parseInt(max);
-    if (isNaN(val) || val < 1) return toast$("Valor inválido","err");
-    setLoading(true);
-    const {data,error} = await supabase.from("groups")
-      .update({max_members:val}).eq("id",group.id).select().single();
-    if (error) { toast$(error.message,"err"); setLoading(false); return; }
-    toast$("Grupo actualizado ✓");
-    onUpdated(data);
-  }
-
-  return (
-    <Modal title={`Administrar · ${group.name}`} onClose={onClose}>
-      <div style={{marginBottom:16}}>
-        <div style={{fontSize:12,color:C.sub,marginBottom:8,lineHeight:1.5}}>
-          Podés cambiar el máximo de participantes del grupo en cualquier momento.
-        </div>
-        <Field label="Máximo de participantes" value={max} onChange={setMax} type="number"/>
-      </div>
-      <GradBtn onClick={save} disabled={loading}>{loading?"Guardando...":"Guardar cambios"}</GradBtn>
-    </Modal>
-  );
-}
-
-// ─── OFFICIAL RESULTS VIEW (solo lectura para usuarios) ───────────────────────
-function OfficialResultsView({ctx}) {
-  const {setView} = ctx;
-  const [ag,setAg] = useState("A");
-  const [official,setOfficial] = useState({});
-  const [loading,setLoading] = useState(true);
-
-  useEffect(()=>{
-    (async()=>{
-      const {data} = await supabase.from("official_results").select("*");
-      const map={}; data?.forEach(r=>{map[r.match_id]=r;}); setOfficial(map);
-      setLoading(false);
-    })();
-  },[]);
-
-  const sortedMatches = [...GROUP_MATCHES.filter(m=>m.group===ag)]
-    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-
-  const hasAnyResult = Object.values(official).some(r=>r.home!=null&&r.home!=="");
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title="Resultados Oficiales" onBack={()=>setView("groups_list")}/>
-      <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={ag} onSelect={setAg} small/>
-
-      {loading && <p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
-
-      {!loading && !hasAnyResult && (
-        <div style={{textAlign:"center",marginTop:48,padding:"0 24px"}}>
-          <div style={{fontSize:40,marginBottom:12}}>⏳</div>
-          <div style={{color:C.sub,fontSize:14}}>El torneo aún no comenzó</div>
-          <div style={{color:C.sub2,fontSize:12,marginTop:6}}>Los resultados aparecerán aquí una vez que empiecen los partidos</div>
-        </div>
-      )}
-
-      {!loading && (
-        <div style={{padding:"10px 14px 40px"}}>
-          {sortedMatches.map(m=>{
-            const off = official[m.id];
-            const played = off?.home!=null && off?.home!=="";
-            return (
-              <div key={m.id} style={{...card,marginBottom:10,
-                borderLeft:`3px solid ${played?C.accentS:C.border}`}}>
-                <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>
-                  {fmtDate(m.date)} · {m.time} hs · {m.venue}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
-                  <div style={{
-                    minWidth:70,textAlign:"center",
-                    background:played?C.surface2:"transparent",
-                    borderRadius:8,padding:played?"6px 12px":"4px 12px",
-                    border:played?`1px solid ${C.border}`:"none",
-                  }}>
-                    {played
-                      ? <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>
-                          {off.home} – {off.away}
-                        </span>
-                      : <span style={{color:C.sub,fontSize:13}}>vs</span>
-                    }
-                  </div>
-                  <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── GLOBAL RANKING VIEW ──────────────────────────────────────────────────────
-function GlobalRankingView({ctx}) {
-  const {profile,setView} = ctx;
-  const [ranking,setRanking] = useState([]);
-  const [loading,setLoading] = useState(true);
-
-  useEffect(()=>{ loadGlobalRanking(); },[]);
-
-  async function loadGlobalRanking() {
-    const {data:off} = await supabase.from("official_results").select("*");
-    const offMap={};
-    off?.forEach(r=>{ offMap[r.match_id]=r; });
-
-    // Get all unique users with predictions
-    const {data:allPreds} = await supabase.from("predictions").select("user_id,match_id,home,away");
-    if (!allPreds?.length) { setLoading(false); return; }
-
-    // Group by user_id
-    const byUser={};
-    allPreds.forEach(p=>{
-      if (!byUser[p.user_id]) byUser[p.user_id]=[];
-      byUser[p.user_id].push(p);
-    });
-
-    // Get profile info for each user
-    const uids = Object.keys(byUser);
-    const {data:profiles} = await supabase.from("profiles").select("id,nick,nombre").in("id",uids);
-    const profMap={};
-    profiles?.forEach(p=>{ profMap[p.id]=p; });
-
-    const results = uids.map(uid=>{
-      let pts=0;
-      byUser[uid].forEach(p=>{
-        const sc=scoreGroup(p,offMap[p.match_id]);
-        if(sc!=null) pts+=sc;
-      });
-      const prof = profMap[uid];
-      return {
-        uid,
-        pts,
-        nick: prof?.nick||"—",
-        nombre: prof?.nombre||"",
-      };
-    });
-
-    setRanking(results.sort((a,b)=>b.pts-a.pts));
-    setLoading(false);
-  }
-
-  const medals=["🥇","🥈","🥉"];
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title="Ranking Global 🌍" onBack={()=>setView("groups_list")}/>
-      <div style={{padding:"16px 14px 80px"}}>
-        <div style={{...card,marginBottom:16,padding:"10px 14px",
-          background:"rgba(255,208,96,0.05)",border:`1px solid rgba(255,208,96,0.2)`}}>
-          <p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>
-            Todos los participantes de la plataforma, sin importar el grupo.
-          </p>
-        </div>
-        {loading && <p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
-        {ranking.map((r,i)=>(
-          <div key={r.uid} style={{
-            ...rankRow,
-            background: r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,
-            borderLeft:`2px solid ${r.uid===profile.id?C.accentS:i<3?"rgba(255,208,96,0.4)":C.border}`,
-            marginBottom:8,borderRadius:12,
-          }}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,
-              color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>
-              {medals[i]||`${i+1}`}
-            </span>
-            <Ava name={r.nick} size={32}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:r.uid===profile.id?700:500,
-                color:r.uid===profile.id?C.accentS:C.text,fontFamily:font}}>
-                {r.nick}
-              </div>
-              {r.nombre && (
-                <div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>
-              )}
-            </div>
-            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
-            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
-          </div>
-        ))}
-        {!loading && ranking.every(r=>r.pts===0) && (
-          <p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aún</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── PREDICTIONS ──────────────────────────────────────────────────────────────
-function PredictionsView({ctx}) {
-  const {profile,activeGroup,setView,toast$} = ctx;
-  const [tab,setTab]       = useState("groups");
-  const [activeGrp,setActiveGrp] = useState("A");
-  const [preds,setPreds]   = useState({});
-  const [official,setOfficial] = useState({});
-  const [saving,setSaving] = useState(false);
-  const [showCopyModal, setShowCopyModal] = useState(false);
-
-  useEffect(()=>{ loadData(); },[]);
-
-  async function loadData() {
-    const {data:off} = await supabase.from("official_results").select("*");
-    const offMap={};
-    off?.forEach(r=>{ offMap[r.match_id]=r; });
-    setOfficial(offMap);
-
-    const {data:myPreds} = await supabase.from("predictions")
-      .select("*").eq("user_id",profile.id).eq("group_id",activeGroup.id);
-
-    if (myPreds?.length > 0) {
-      const map={};
-      myPreds.forEach(p=>{ map[p.match_id]=p; });
-      setPreds(map);
-    } else {
-      const {data:otherPreds} = await supabase.from("predictions")
-        .select("*").eq("user_id",profile.id).neq("group_id",activeGroup.id).limit(1);
-      if (otherPreds?.length>0) setShowCopyModal(true);
-    }
-  }
-
-  async function copyFromExisting() {
-    const {data:otherPreds} = await supabase.from("predictions")
-      .select("*").eq("user_id",profile.id).neq("group_id",activeGroup.id);
-    const map={};
-    otherPreds?.forEach(p=>{ map[p.match_id]={...p,group_id:activeGroup.id,id:undefined}; });
-    setPreds(map);
-    setShowCopyModal(false);
-    toast$("Planilla cargada. Guardá cuando quieras");
-  }
-
-  function upd(matchId,field,val) {
-    setPreds(p=>({...p,[matchId]:{...(p[matchId]||{}),[field]:val}}));
-  }
-
-  async function save() {
-    setSaving(true);
-    const rows = Object.entries(preds).map(([match_id,p])=>({
-      user_id:profile.id, group_id:activeGroup.id, match_id,
-      home:p.home??null, away:p.away??null, winner:p.winner??null,
-      pen_home:p.pen_home??null, pen_away:p.pen_away??null
-    }));
-    await supabase.from("predictions").upsert(rows, {onConflict:"user_id,group_id,match_id"});
-    setSaving(false);
-    toast$("Guardado ✓");
-  }
-
-  const sortedGroupMatches = [...GROUP_MATCHES.filter(m=>m.group===activeGrp)]
-    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title="Mis predicciones" onBack={()=>setView("group")}/>
-      <Tabs items={[{id:"groups",label:"Grupos"},{id:"knockout",label:"Cruces"}]}
-        active={tab} onSelect={setTab}/>
-
-      {tab==="groups" && (
-        <>
-          <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={activeGrp}
-            onSelect={setActiveGrp} small/>
-          <div style={{padding:"10px 14px 100px"}}>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-              {GROUPS[activeGrp].map(t=><span key={t} style={pill}>{t}</span>)}
-            </div>
-            {sortedGroupMatches.map(m=>(
-              <PredMatchCard key={m.id} match={m}
-                pred={preds[m.id]||{}}
-                off={official[m.id]||{}}
-                onUpd={(f,v)=>upd(m.id,f,v)}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {tab==="knockout" && (
-        <div style={{padding:"10px 14px 100px"}}>
-          <div style={{...card,marginBottom:12,padding:"12px 14px"}}>
-            <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>
-              Los cruces se completan automáticamente según los resultados de grupos.
-            </p>
-          </div>
-          {R32_SLOTS.map((slot)=>(
-            <KOPredCard key={slot.id} slot={slot}
-              pred={preds[slot.id]||{}}
-              off={official[slot.id]||{}}
-              onUpd={(f,v)=>upd(slot.id,f,v)}
-            />
-          ))}
-        </div>
-      )}
-
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
-        width:"100%",maxWidth:480,background:C.bg,borderTop:`1px solid ${C.border}`,
-        padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
-        <GradBtn onClick={save} disabled={saving}>{saving?"Guardando...":"Guardar predicciones"}</GradBtn>
-      </div>
-
-      {showCopyModal && (
-        <Modal title="Planilla existente" onClose={()=>setShowCopyModal(false)}>
-          <p style={{color:C.sub,fontSize:14,lineHeight:1.6,marginBottom:16}}>
-            Ya tenés una planilla en otro grupo. ¿Querés usarla como base o empezar de cero?
-          </p>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <GradBtn onClick={copyFromExisting}>Usar planilla existente</GradBtn>
-            <Btn2 onClick={()=>setShowCopyModal(false)}>Empezar de cero</Btn2>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
-
-function PredMatchCard({match,pred,off,onUpd}) {
-  const hasOff = off.home!=null&&off.home!==""&&off.away!=null&&off.away!=="";
-  const sc = hasOff ? scoreGroup(pred,off) : null;
-
-  return (
-    <div style={{...card,marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>
-          {fmtDate(match.date)} · {match.time} hs · {match.venue}
-        </span>
-        {sc!=null && <PtsBadge pts={sc}/>}
-      </div>
-      <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <span style={{flex:1,fontSize:13,color:C.sub,lineHeight:1.3}}>{match.home}</span>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <ScoreBox value={pred.home??""} onChange={v=>onUpd("home",v)}
-            state={hasOff?(+pred.home===+off.home?"ok":"err"):null}/>
-          <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>—</span>
-          <ScoreBox value={pred.away??""} onChange={v=>onUpd("away",v)}
-            state={hasOff?(+pred.away===+off.away?"ok":"err"):null}/>
-        </div>
-        <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
-      </div>
-      {hasOff && (
-        <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
-          <span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}–{off.away}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function KOPredCard({slot,pred,off,onUpd}) {
-  const isDraw = pred.home!=="" && pred.away!=="" && +pred.home===+pred.away;
-  const showPen = isDraw;
-
-  return (
-    <div style={{...card,marginBottom:10}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>
-          {fmtDate(slot.date)} · {slot.time} hs · {slot.venue}
-        </span>
-        <span style={{fontSize:10,color:C.sub,background:C.surface2,
-          padding:"2px 8px",borderRadius:10,border:`1px solid ${C.border}`}}>{slot.label}</span>
-      </div>
-      <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-        <ScoreBox value={pred.home??""} onChange={v=>onUpd("home",v)}/>
-        <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>—</span>
-        <ScoreBox value={pred.away??""} onChange={v=>onUpd("away",v)}/>
-        {showPen && <span style={{fontSize:10,color:C.gold,marginLeft:4}}>⚡ Penales</span>}
-      </div>
-      {showPen && (
-        <div style={{display:"flex",gap:8,padding:"10px",background:C.surface2,
-          borderRadius:8,border:`1px solid ${C.border}`}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Penales E1</div>
-            <input type="number" style={inp} value={pred.pen_home||""}
-              onChange={e=>onUpd("pen_home",e.target.value)} min="0"/>
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Penales E2</div>
-            <input type="number" style={inp} value={pred.pen_away||""}
-              onChange={e=>onUpd("pen_away",e.target.value)} min="0"/>
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador</div>
-            <input style={inp} value={pred.winner||""} onChange={e=>onUpd("winner",e.target.value)}
-              placeholder="País"/>
-          </div>
-        </div>
-      )}
-      {!showPen && (
-        <div>
-          <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador</div>
-          <input style={inp} value={pred.winner||""} onChange={e=>onUpd("winner",e.target.value)}
-            placeholder="País"/>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── RANKING ──────────────────────────────────────────────────────────────────
-function RankingView({ctx}) {
-  const {profile,activeGroup,setView} = ctx;
-  const [ranking,setRanking] = useState([]);
-  const [official,setOfficial] = useState({});
-  const [loading,setLoading]   = useState(true);
-
-  useEffect(()=>{ loadRanking(); },[]);
-
-  async function loadRanking() {
-    const {data:off} = await supabase.from("official_results").select("*");
-    const offMap={};
-    off?.forEach(r=>{ offMap[r.match_id]=r; });
-    setOfficial(offMap);
-
-    const {data:members} = await supabase.from("group_members")
-      .select("user_id, profiles(id,nick,nombre)").eq("group_id",activeGroup.id);
-
-    const results = await Promise.all(members.map(async m=>{
-      const {data:preds} = await supabase.from("predictions")
-        .select("*").eq("user_id",m.user_id).eq("group_id",activeGroup.id);
-      let pts=0;
-      preds?.forEach(p=>{
-        const sc=scoreGroup(p,offMap[p.match_id]);
-        if(sc!=null) pts+=sc;
-      });
-      return {
-        nick: m.profiles?.nick||"—",
-        nombre: m.profiles?.nombre||"",
-        pts,
-        uid: m.user_id
-      };
-    }));
-    setRanking(results.sort((a,b)=>b.pts-a.pts));
-    setLoading(false);
-  }
-
-  const medals=["🥇","🥈","🥉"];
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <Bar title={`Ranking · ${activeGroup?.name}`} onBack={()=>setView("group")}/>
-      <div style={{padding:"16px 14px 80px"}}>
-        {loading && <p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
-        {ranking.map((r,i)=>(
-          <div key={r.uid} style={{
-            ...rankRow,
-            background: r.uid===profile.id?"rgba(0,200,224,0.07)":C.surface,
-            borderLeft:`2px solid ${r.uid===profile.id?C.accentS:i<3?"rgba(0,200,224,0.25)":C.border}`,
-            marginBottom:8,
-          }}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,
-              color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>
-              {medals[i]||`${i+1}`}
-            </span>
-            <Ava name={r.nick} size={32}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:r.uid===profile.id?600:400,
-                color:r.uid===profile.id?C.accentS:C.text,fontFamily:font}}>
-                {r.nick}
-              </div>
-              {r.nombre && (
-                <div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>
-              )}
-            </div>
-            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
-            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
-          </div>
-        ))}
-        {!loading && ranking.every(r=>r.pts===0) && (
-          <p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aún</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── VIEW USER PREDICTIONS (read-only) ───────────────────────────────────────
-function ViewUserPredModal({user,group,onClose}) {
-  const [preds,setPreds]=useState({});
-  const [official,setOfficial]=useState({});
-  const [ag,setAg]=useState("A");
-  useEffect(()=>{
-    (async()=>{
-      const {data:off} = await supabase.from("official_results").select("*");
-      const offMap={}; off?.forEach(r=>{offMap[r.match_id]=r;}); setOfficial(offMap);
-      const {data:p} = await supabase.from("predictions").select("*")
-        .eq("user_id",user.user_id).eq("group_id",group.id);
-      const map={}; p?.forEach(x=>{map[x.match_id]=x;}); setPreds(map);
-    })();
-  },[]);
-  const name = user.profiles?.nick||user.profiles?.nombre;
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,overflowY:"auto"}}>
-      <div style={{background:C.bg,minHeight:"100%",maxWidth:480,margin:"0 auto"}}>
-        <Bar title={`Planilla de ${name}`} onBack={onClose}/>
-        <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={ag} onSelect={setAg} small/>
-        <div style={{padding:"10px 14px 40px"}}>
-          {GROUP_MATCHES.filter(m=>m.group===ag)
-            .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
-            .map(m=>(
-            <div key={m.id} style={{...card,marginBottom:8}}>
-              <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>
-                {fmtDate(m.date)} · {m.time} hs
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
-                <span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text,minWidth:60,textAlign:"center"}}>
-                  {preds[m.id]?.home??"-"} — {preds[m.id]?.away??"-"}
-                </span>
-                <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
-              </div>
-            </div>
-          ))}
+        <div style={{ textAlign: "center", fontSize: 10, color: C.muted, marginTop: 8 }}>
+          Tus datos quedan privados. Solo el consultor los ve.
         </div>
       </div>
     </div>
   );
 }
-
-// ─── ADMIN ────────────────────────────────────────────────────────────────────
-function AdminView({ctx}) {
-  const {setView,signOut} = ctx;
-  const [tab,setTab]=useState("results");
-  const [ag,setAg]=useState("A");
-  const [official,setOfficial]=useState({});
-  const [saving,setSaving]=useState(false);
-  const toast$ = ctx.toast$;
-
-  useEffect(()=>{ loadOfficial(); },[]);
-
-  async function loadOfficial() {
-    const {data} = await supabase.from("official_results").select("*");
-    const map={}; data?.forEach(r=>{map[r.match_id]=r;}); setOfficial(map);
-  }
-
-  function upd(matchId,field,val) {
-    setOfficial(p=>({...p,[matchId]:{...(p[matchId]||{match_id:matchId}),[field]:val}}));
-  }
-
-  async function save() {
-    setSaving(true);
-    const rows=Object.values(official).map(r=>({
-      match_id:r.match_id, home:r.home??null, away:r.away??null,
-      winner:r.winner??null, pen_home:r.pen_home??null, pen_away:r.pen_away??null
-    }));
-    await supabase.from("official_results").upsert(rows,{onConflict:"match_id"});
-    await supabase.from("groups").update({updated_at:new Date().toISOString()}).neq("id","");
-    setSaving(false);
-    toast$("Resultados guardados ✓");
-  }
-
-  const sortedGroupMatches = [...GROUP_MATCHES.filter(m=>m.group===ag)]
-    .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-        padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
-        <div style={{...gradText,fontSize:15,fontWeight:700}}>⚙️ Panel Admin</div>
-        <IconBtn onClick={signOut}>⏻</IconBtn>
-      </div>
-      <Tabs items={[{id:"results",label:"Resultados"},{id:"groups_admin",label:"Grupos"}]}
-        active={tab} onSelect={setTab}/>
-
-      {tab==="results" && (
-        <>
-          <Tabs items={Object.keys(GROUPS).map(g=>({id:g,label:g}))} active={ag} onSelect={setAg} small/>
-          <div style={{padding:"10px 14px 100px"}}>
-            {sortedGroupMatches.map(m=>(
-              <div key={m.id} style={{...card,marginBottom:10}}>
-                <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>
-                  {fmtDate(m.date)} · {m.time} hs · {m.venue}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
-                  <ScoreBox value={official[m.id]?.home??""} onChange={v=>upd(m.id,"home",v)}/>
-                  <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>—</span>
-                  <ScoreBox value={official[m.id]?.away??""} onChange={v=>upd(m.id,"away",v)}/>
-                  <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",
-            width:"100%",maxWidth:480,background:C.bg,borderTop:`1px solid ${C.border}`,
-            padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
-            <GradBtn onClick={save} disabled={saving}>{saving?"Guardando...":"Guardar resultados"}</GradBtn>
-          </div>
-        </>
-      )}
-
-      {tab==="groups_admin" && <AdminGroupsTab toast$={toast$}/>}
-    </div>
-  );
-}
-
-function AdminGroupsTab({toast$}) {
-  const [groups,setGroups]=useState([]);
-  useEffect(()=>{ supabase.from("groups").select("*,group_members(count)").then(({data})=>setGroups(data||[])); },[]);
-
-  async function updateMax(id,val) {
-    await supabase.from("groups").update({max_members:+val}).eq("id",id);
-    setGroups(p=>p.map(g=>g.id===id?{...g,max_members:+val}:g));
-    toast$("Actualizado");
-  }
-
-  return (
-    <div style={{padding:"12px 14px 40px"}}>
-      {groups.map(g=>(
-        <div key={g.id} style={{...card,marginBottom:10}}>
-          <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{g.name}</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:12,color:C.sub,flex:1}}>Máx participantes</span>
-            <input type="number" style={{...inp,width:70,textAlign:"center"}}
-              defaultValue={g.max_members}
-              onBlur={e=>updateMax(g.id,e.target.value)}/>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
-function Page({children}) {
-  return <div style={{minHeight:"100vh",background:C.bg,color:C.text,
-    fontFamily:font,maxWidth:480,margin:"0 auto",position:"relative"}}>{children}</div>;
-}
-
-function Bar({title,onBack}) {
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",
-      borderBottom:`1px solid ${C.border}`,background:C.bg,
-      position:"sticky",top:0,zIndex:10}}>
-      {onBack && <button onClick={onBack} style={{background:"none",border:"none",
-        color:C.sub2,fontSize:22,cursor:"pointer",padding:"0 4px",lineHeight:1}}>←</button>}
-      <span style={{fontSize:15,fontWeight:700,color:C.text,flex:1}}>{title}</span>
-    </div>
-  );
-}
-
-function Tabs({items,active,onSelect,small}) {
-  return (
-    <div style={{display:"flex",overflowX:"auto",borderBottom:`1px solid ${C.border}`,
-      scrollbarWidth:"none",background:C.bg}}>
-      {items.map(it=>(
-        <button key={it.id} onClick={()=>onSelect(it.id)} style={{
-          background:"none",border:"none",cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,
-          padding:small?"8px 12px":"10px 16px",
-          fontSize:small?12:13,fontWeight:600,
-          color:active===it.id?C.accentS:C.sub,
-          borderBottom:`2px solid ${active===it.id?C.accentS:"transparent"}`,
-        }}>{it.label}</button>
-      ))}
-    </div>
-  );
-}
-
-function Field({label,value,onChange,type="text"}) {
-  return (
-    <div>
-      <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>{label}</div>
-      <input type={type} style={inp} value={value} onChange={e=>onChange(e.target.value)}/>
-    </div>
-  );
-}
-
-function ScoreBox({value,onChange,state}) {
-  const col=state==="ok"?C.green:state==="err"?C.red:C.border2;
-  return (
-    <input type="number" min="0" max="20" value={value} onChange={e=>onChange&&onChange(e.target.value)}
-      style={{width:42,height:42,textAlign:"center",background:C.surface2,
-        border:`1.5px solid ${col}`,borderRadius:8,
-        color:state==="ok"?C.green:state==="err"?C.red:C.text,
-        fontSize:18,fontWeight:700,fontFamily:mono,outline:"none",
-        MozAppearance:"textfield"}}
-    />
-  );
-}
-
-function PtsBadge({pts}) {
-  return (
-    <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,
-      background:pts>0?"rgba(76,223,154,0.12)":"rgba(255,255,255,0.04)",
-      color:pts>0?C.green:C.sub,
-      border:`1px solid ${pts>0?"rgba(76,223,154,0.3)":C.border}`}}>
-      {pts} pts
-    </span>
-  );
-}
-
-function GradBtn({onClick,children,disabled}) {
-  return (
-    <button onClick={onClick} disabled={disabled} style={{
-      width:"100%",padding:"15px",borderRadius:12,border:"none",cursor:disabled?"not-allowed":"pointer",
-      fontSize:15,fontWeight:700,letterSpacing:0.3,fontFamily:font,
-      background:disabled?"#1a2a3a":C.accent,
-      color:disabled?C.sub:"#040a10",
-      boxShadow:disabled?"none":`0 0 20px rgba(0,200,224,0.25)`,
-    }}>{children}</button>
-  );
-}
-
-function Btn2({onClick,children}) {
-  return (
-    <button onClick={onClick} style={{
-      width:"100%",padding:"13px",borderRadius:12,
-      border:`1px solid ${C.border}`,cursor:"pointer",
-      fontSize:14,fontWeight:600,fontFamily:font,
-      background:C.surface,color:C.text,
-    }}>{children}</button>
-  );
-}
-
-function IconBtn({onClick,children,title}) {
-  return (
-    <button onClick={onClick} title={title} style={{
-      background:C.surface,border:`1px solid ${C.border}`,
-      borderRadius:10,width:38,height:38,cursor:"pointer",
-      color:C.sub2,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",
-    }}>{children}</button>
-  );
-}
-
-function SectionLabel({children}) {
-  return <div style={{fontSize:10,color:C.sub,letterSpacing:1,textTransform:"uppercase",
-    marginBottom:10,marginTop:4}}>{children}</div>;
-}
-
-function Ava({name,size=34}) {
-  const h=hashColor(name);
-  let initials=name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-  return (
-    <div style={{width:size,height:size,borderRadius:"50%",background:h,flexShrink:0,
-      display:"flex",alignItems:"center",justifyContent:"center",
-      fontSize:size*0.35,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>
-      {initials}
-    </div>
-  );
-}
-
-function Modal({title,onClose,children}) {
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:50,
-      display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div style={{background:C.surface,borderRadius:"20px 20px 0 0",
-        width:"100%",maxWidth:480,padding:"24px 20px 32px",
-        border:`1px solid ${C.border}`,borderBottom:"none"}}>
-        <div style={{display:"flex",alignItems:"center",marginBottom:20}}>
-          <span style={{fontSize:16,fontWeight:700,color:C.text,flex:1}}>{title}</span>
-          <button onClick={onClose} style={{background:"none",border:"none",
-            color:C.sub,fontSize:22,cursor:"pointer"}}>✕</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Toast({msg,type}) {
-  return (
-    <div style={{position:"fixed",bottom:90,left:"50%",transform:"translateX(-50%)",
-      background:type==="err"?"rgba(224,92,106,0.15)":"rgba(0,200,224,0.12)",
-      border:`1px solid ${type==="err"?C.red:C.accentS}`,
-      color:type==="err"?C.red:C.accentS,
-      padding:"10px 20px",borderRadius:20,fontSize:13,fontWeight:600,
-      letterSpacing:0.3,zIndex:100,whiteSpace:"nowrap",
-      boxShadow:"0 4px 24px rgba(0,0,0,0.5)",fontFamily:font}}>
-      {msg}
-    </div>
-  );
-}
-
-const inp = {
-  width:"100%",background:C.surface2,border:`1px solid ${C.border}`,
-  borderRadius:10,color:C.text,padding:"11px 13px",fontSize:14,
-  boxSizing:"border-box",fontFamily:font,outline:"none",
-};
-const card = {
-  background:C.surface,borderRadius:14,padding:"14px",
-  border:`1px solid ${C.border}`,
-};
-const pill = {
-  fontSize:12,color:C.sub2,background:C.surface2,
-  padding:"4px 11px",borderRadius:20,border:`1px solid ${C.border}`,
-};
-const rankRow = {
-  display:"flex",alignItems:"center",gap:10,
-  padding:"12px 14px",borderRadius:12,
-};
-const gradText = {
-  background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
-  backgroundClip:"text",
-};
-const grad = {
-  background:C.accent,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
-};
-const gradBtnS = {
-  background:C.accent,border:"none",borderRadius:8,cursor:"pointer",
-  fontSize:13,fontWeight:700,color:"#040a10",fontFamily:font,
-};
