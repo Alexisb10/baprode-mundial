@@ -1004,7 +1004,7 @@ function PredictionsView({ctx}){
         </div>
       )}
 
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px 12px",zIndex:20}}>
         <GradBtn onClick={save} disabled={saving||locked}>{locked?"🔒 Planilla cerrada":saving?"Guardando...":"Guardar predicciones"}</GradBtn>
       </div>
 
@@ -1248,7 +1248,7 @@ function AdminView({ctx}){
               </div>
             ))}
           </div>
-          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px calc(12px + env(safe-area-inset-bottom))",zIndex:20}}>
+          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:"1px solid "+C.border,padding:"12px 16px 12px",zIndex:20}}>
             <GradBtn onClick={save} disabled={saving}>{saving?"Guardando...":"Guardar resultados"}</GradBtn>
           </div>
         </>
