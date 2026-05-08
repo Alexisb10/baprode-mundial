@@ -151,6 +151,24 @@ const KO_PTS = {
   f:{team:20,goal:7,pen:10},"3rd":{team:20,goal:7,pen:10},
 };
 
+// Define which match feeds into which next match (and as home/away)
+// Note: only 12 r32 matches feed into 8 r16 (top performers advance)
+const KO_NEXT = {
+  r32_0:{next:"r16_0",pos:"home"},r32_1:{next:"r16_0",pos:"away"},
+  r32_2:{next:"r16_1",pos:"home"},r32_3:{next:"r16_1",pos:"away"},
+  r32_4:{next:"r16_2",pos:"home"},r32_5:{next:"r16_2",pos:"away"},
+  r32_6:{next:"r16_3",pos:"home"},r32_7:{next:"r16_3",pos:"away"},
+  r32_8:{next:"r16_4",pos:"home"},r32_9:{next:"r16_4",pos:"away"},
+  r32_10:{next:"r16_5",pos:"home"},r32_11:{next:"r16_5",pos:"away"},
+  r16_0:{next:"qf_0",pos:"home"},r16_1:{next:"qf_0",pos:"away"},
+  r16_2:{next:"qf_1",pos:"home"},r16_3:{next:"qf_1",pos:"away"},
+  r16_4:{next:"qf_2",pos:"home"},r16_5:{next:"qf_2",pos:"away"},
+  r16_6:{next:"qf_3",pos:"home"},r16_7:{next:"qf_3",pos:"away"},
+  qf_0:{next:"sf_0",pos:"home"},qf_1:{next:"sf_0",pos:"away"},
+  qf_2:{next:"sf_1",pos:"home"},qf_3:{next:"sf_1",pos:"away"},
+  sf_0:{next:"f_0",pos:"home"},sf_1:{next:"f_0",pos:"away"},
+};
+
 function scoreGroup(pred, off) {
   if (!off||off.home==null||off.home===""||off.away==null||off.away==="") return null;
   const oh=+off.home,oa=+off.away,ph=+(pred&&pred.home!=null?pred.home:-1),pa=+(pred&&pred.away!=null?pred.away:-1);
@@ -1062,19 +1080,7 @@ function PredictionsView({ctx}){
       </div>
     </>}
 
-    {tab==="knockout"&&<div style={{padding:"10px 14px 100px"}}>
-      {["r32","r16","qf","sf","3rd","f"].map(function(phase){
-        var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
-        if(!slots.length) return null;
-        var phaseLabels={r32:"32avos",r16:"Octavos",qf:"Cuartos",sf:"Semifinales","3rd":"3 y 4 puesto",f:"Final"};
-        return <div key={phase}>
-          <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:16}}>{phaseLabels[phase]}</div>
-          {slots.map(function(slot){
-            return <KOPredCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={function(f,v){upd(slot.id,f,v);}} phase={phase} locked={locked}/>;
-          })}
-        </div>;
-      })}
-    </div>}
+    {tab==="knockout"&&<KOBracket preds={preds} official={official} onUpd={upd} setPreds={setPreds} locked={locked}/>}
 
     {tab==="extras"&&<div style={{padding:"10px 14px 100px"}}>
       <div style={Object.assign({},card,{marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}>
@@ -1128,34 +1134,6 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
       <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
     </div>
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border)}}><span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}-{off.away}</span></div>}
-  </div>;
-}
-
-function KOPredCard({slot,pred,off,onUpd,phase,locked}){
-  var isDraw=pred.home!==""&&pred.away!==""&&+pred.home===+pred.away;
-  var pts=KO_PTS[phase];
-  return <div style={Object.assign({},card,{marginBottom:10,opacity:locked?0.85:1})}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-      <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>{fmtDate(slot.date)} - {slot.time} hs</span>
-      <span style={{fontSize:10,color:C.sub,background:C.surface2,padding:"2px 8px",borderRadius:10,border:b(C.border)}}>{slot.label}</span>
-    </div>
-    <div style={{display:"flex",gap:8,marginBottom:8}}>
-      <input style={Object.assign({},inp,{flex:1})} placeholder="Equipo local" value={pred.home_team||""} onChange={function(e){onUpd("home_team",e.target.value);}} readOnly={locked}/>
-      <input style={Object.assign({},inp,{flex:1})} placeholder="Equipo visitante" value={pred.away_team||""} onChange={function(e){onUpd("away_team",e.target.value);}} readOnly={locked}/>
-    </div>
-    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-      <ScoreBox value={pred.home!=null?pred.home:""} onChange={function(v){onUpd("home",v);}} readOnly={locked}/>
-      <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
-      <ScoreBox value={pred.away!=null?pred.away:""} onChange={function(v){onUpd("away",v);}} readOnly={locked}/>
-      {isDraw&&<span style={{fontSize:10,color:C.gold,marginLeft:4}}>Penales</span>}
-      <span style={{fontSize:10,color:C.sub,marginLeft:"auto"}}>{pts&&pts.team}pts/eq</span>
-    </div>
-    {isDraw&&<div style={{display:"flex",gap:8,padding:"10px",background:C.surface2,borderRadius:8,border:b(C.border)}}>
-      <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Pen E1</div><input type="number" style={inp} value={pred.pen_home||""} onChange={function(e){onUpd("pen_home",e.target.value);}} min="0" readOnly={locked}/></div>
-      <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Pen E2</div><input type="number" style={inp} value={pred.pen_away||""} onChange={function(e){onUpd("pen_away",e.target.value);}} min="0" readOnly={locked}/></div>
-      <div style={{flex:1}}><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador</div><input style={inp} value={pred.winner||""} onChange={function(e){onUpd("winner",e.target.value);}} placeholder="Pais" readOnly={locked}/></div>
-    </div>}
-    {!isDraw&&<div><div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador</div><input style={inp} value={pred.winner||""} onChange={function(e){onUpd("winner",e.target.value);}} placeholder="Pais" readOnly={locked}/></div>}
   </div>;
 }
 
@@ -1400,10 +1378,15 @@ function FixtureView({ctx}){
           <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:14}}>{phaseLabels[phase]}</div>
           {slots.map(function(s){
             var off=official[s.id];
-            return <div key={s.id} style={Object.assign({},card,{marginBottom:8})}>
-              <div style={{fontSize:10,color:C.sub2,marginBottom:4}}>{fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
-              <div style={{fontSize:13,color:C.text}}>{s.label}</div>
-              {off&&off.home_team&&<div style={{fontSize:12,color:C.accentS,marginTop:4}}>{off.home_team} {off.home!=null?off.home:""} - {off.away!=null?off.away:""} {off.away_team}</div>}
+            var played=off&&off.home!=null&&off.home!=="";
+            return <div key={s.id} style={Object.assign({},card,{marginBottom:8,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+              <div style={{fontSize:10,color:C.sub2,marginBottom:4}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
+              {played?<div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+                <span style={{flex:1,fontSize:13,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
+                <span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text}}>{off.home}-{off.away}</span>
+                <span style={{flex:1,fontSize:13,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
+              </div>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
+              {played&&off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:4}}>Penales: {off.pen_home}-{off.pen_away}</div>}
             </div>;
           })}
         </div>;
@@ -1453,4 +1436,102 @@ function StatsModal({profile,group,onClose}){
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>% acierto</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.pct}%</span></div>
     </div>}
   </Modal>;
+}
+
+function KOBracket({preds,official,onUpd,setPreds,locked}){
+  const [phase,setPhase]=useState("r32");
+  var phaseLabels={r32:"32avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var phaseList=["r32","r16","qf","sf","3rd","f"];
+  var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
+  return <>
+    <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
+      {phaseList.map(function(p){
+        return <button key={p} onClick={function(){setPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:phase===p?b(C.accentS):b(C.border),background:phase===p?"rgba(0,200,224,0.1)":C.surface,color:phase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{phaseLabels[p]}</button>;
+      })}
+    </div>
+    <div style={{padding:"12px 14px 100px"}}>
+      {slots.map(function(slot){
+        return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={onUpd} preds={preds} setPreds={setPreds} locked={locked}/>;
+      })}
+    </div>
+  </>;
+}
+
+function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked}){
+  var phase=slot.phase;
+  var pts=KO_PTS[phase];
+  var ph=pred.home,pa=pred.away;
+  var isDraw=ph!=null&&pa!=null&&ph!==""&&pa!==""&&+ph===+pa;
+  var hasOff=off&&off.home!=null&&off.home!=="";
+  var sc=hasOff?scoreKO(pred,off,phase):null;
+
+  function setField(field,val){
+    onUpd(slot.id,field,val);
+    if(field==="winner"&&val&&KO_NEXT[slot.id]){
+      var next=KO_NEXT[slot.id];
+      setPreds(function(p){
+        var n=Object.assign({},p);
+        n[next.next]=Object.assign({},n[next.next]||{});
+        n[next.next][next.pos+"_team"]=val;
+        return n;
+      });
+    }
+  }
+
+  function setScore(field,val){
+    onUpd(slot.id,field,val);
+    var nh=field==="home"?val:ph,na=field==="away"?val:pa;
+    if(nh!==""&&na!==""&&nh!=null&&na!=null){
+      var nhn=+nh,nan=+na;
+      if(!isNaN(nhn)&&!isNaN(nan)&&nhn!==nan){
+        var winner=nhn>nan?pred.home_team:pred.away_team;
+        if(winner) setField("winner",winner);
+      }
+    }
+  }
+
+  return <div style={Object.assign({},card,{marginBottom:12,opacity:locked?0.85:1,borderLeft:hasOff?b3(C.accentS):b3(C.border)})}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+      <span style={{fontSize:10,color:C.sub2,letterSpacing:0.3}}>{slot.label} - {fmtDate(slot.date)} - {slot.time} hs</span>
+      {sc!=null&&<PtsBadge pts={sc}/>}
+    </div>
+    <div style={{fontSize:10,color:C.sub,marginBottom:10}}>&#128205; {slot.venue}</div>
+
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:9,color:C.sub,marginBottom:3}}>EQUIPO 1</div>
+        <input style={Object.assign({},inp,{padding:"8px 10px",fontSize:13})} placeholder="Pais" value={pred.home_team||""} onChange={function(e){onUpd(slot.id,"home_team",e.target.value);}} readOnly={locked}/>
+      </div>
+      <ScoreBox value={ph!=null?ph:""} onChange={function(v){setScore("home",v);}} readOnly={locked}/>
+      <span style={{color:C.border2}}>-</span>
+      <ScoreBox value={pa!=null?pa:""} onChange={function(v){setScore("away",v);}} readOnly={locked}/>
+      <div style={{flex:1}}>
+        <div style={{fontSize:9,color:C.sub,marginBottom:3}}>EQUIPO 2</div>
+        <input style={Object.assign({},inp,{padding:"8px 10px",fontSize:13})} placeholder="Pais" value={pred.away_team||""} onChange={function(e){onUpd(slot.id,"away_team",e.target.value);}} readOnly={locked}/>
+      </div>
+    </div>
+
+    {isDraw&&<div style={{padding:"10px",background:C.surface2,borderRadius:8,border:b("rgba(255,208,96,0.3)"),marginTop:6}}>
+      <div style={{fontSize:10,color:C.gold,marginBottom:6,fontWeight:700,letterSpacing:0.5}}>&#9917; PENALES</div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_home||""} onChange={function(e){onUpd(slot.id,"pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <span style={{color:C.sub2}}>-</span>
+        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){onUpd(slot.id,"pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
+      </div>
+      <div style={{marginTop:8}}>
+        <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador (pasa de fase)</div>
+        <div style={{display:"flex",gap:6}}>
+          {pred.home_team&&<button onClick={function(){if(!locked)setField("winner",pred.home_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.home_team?b(C.accentS):b(C.border),background:pred.winner===pred.home_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.home_team}</button>}
+          {pred.away_team&&<button onClick={function(){if(!locked)setField("winner",pred.away_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.away_team?b(C.accentS):b(C.border),background:pred.winner===pred.away_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.away_team}</button>}
+        </div>
+      </div>
+    </div>}
+
+    {pred.winner&&!isDraw&&<div style={{marginTop:6,fontSize:11,color:C.green}}>&#10003; Pasa: <b>{pred.winner}</b></div>}
+
+    {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),fontSize:11,color:C.sub}}>
+      Oficial: <b style={{color:C.text}}>{off.home_team||"?"} {off.home}-{off.away} {off.away_team||"?"}</b>
+      {off.pen_home!=null&&off.pen_home!==""&&<span> (pen {off.pen_home}-{off.pen_away})</span>}
+    </div>}
+  </div>;
 }
