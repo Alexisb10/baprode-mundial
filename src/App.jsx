@@ -271,7 +271,33 @@ export default function App() {
     setLoading(true);
     supabase.from("profiles").select("*").eq("id",uid).single().then(function(r){
       setProfile(r.data);setLoading(false);
-      setView(r.data?"groups_list":"splash");
+      var params=new URLSearchParams(window.location.search);
+      var joinId=params.get("join");
+      if(joinId&&r.data){
+        supabase.from("group_members").select("*").eq("group_id",joinId).eq("user_id",uid).maybeSingle().then(function(m){
+          if(!m.data){
+            supabase.from("groups").select("*").eq("id",joinId).single().then(function(g){
+              if(g.data){
+                supabase.from("group_members").select("user_id").eq("group_id",joinId).then(function(mm){
+                  if((mm.data||[]).length<g.data.max_members){
+                    supabase.from("group_members").insert({group_id:joinId,user_id:uid,role:"member"}).then(function(){
+                      setActiveGroup(g.data);setView("group");
+                      window.history.replaceState({},"","/");
+                    });
+                  } else {showToast("El grupo esta lleno","err");setView("groups_list");window.history.replaceState({},"","/");}
+                });
+              } else {setView(r.data?"groups_list":"splash");}
+            });
+          } else {
+            supabase.from("groups").select("*").eq("id",joinId).single().then(function(g){
+              if(g.data){setActiveGroup(g.data);setView("group");window.history.replaceState({},"","/");}
+              else setView("groups_list");
+            });
+          }
+        });
+      } else {
+        setView(r.data?"groups_list":"splash");
+      }
     });
   }
 
@@ -295,6 +321,7 @@ export default function App() {
       {view==="official"&&<OfficialResultsView ctx={ctx}/>}
       {view==="reglamento"&&<ReglamentoView ctx={ctx}/>}
       {view==="contacto"&&<ContactoView ctx={ctx}/>}
+      {view==="fixture"&&<FixtureView ctx={ctx}/>}
       {view==="admin"&&<AdminView ctx={ctx}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
     </Page>
@@ -737,17 +764,23 @@ function JoinGroupModal({profile,onClose,onJoined,toast$}){
 function GroupView({ctx}){
   var profile=ctx.profile,activeGroup=ctx.activeGroup,setView=ctx.setView,setActiveGroup=ctx.setActiveGroup,toast$=ctx.toast$;
   const [members,setMembers]=useState([]);
+  const [completed,setCompleted]=useState({});
   const [selectedUser,setSelectedUser]=useState(null);
   const [showManage,setShowManage]=useState(false);
+  const [showStats,setShowStats]=useState(false);
   const [myRole,setMyRole]=useState(null);
 
   useEffect(function(){fetchMembers();},[]);
 
   function fetchMembers(){
     supabase.from("group_members").select("user_id,role,profiles(id,nick,nombre)").eq("group_id",activeGroup.id).then(function(r){
-      setMembers(r.data||[]);
-      var me=(r.data||[]).find(function(m){return m.user_id===profile.id;});
+      var mem=r.data||[];
+      setMembers(mem);
+      var me=mem.find(function(m){return m.user_id===profile.id;});
       setMyRole(me&&me.role);
+      supabase.from("predictions").select("user_id").eq("group_id",activeGroup.id).then(function(p){
+        var done={};(p.data||[]).forEach(function(x){done[x.user_id]=(done[x.user_id]||0)+1;});setCompleted(done);
+      });
     });
   }
 
@@ -755,7 +788,7 @@ function GroupView({ctx}){
   var isGroupAdmin=myRole==="admin"||(activeGroup&&activeGroup.created_by===profile.id);
 
   function shareGroup(){
-    var url="https://baprode-mundial.vercel.app";
+    var url="https://baprode-mundial.vercel.app?join="+activeGroup.id;
     var text="Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026!";
     if(navigator.share) navigator.share({title:"Baprode",text:text,url:url});
     else{navigator.clipboard.writeText(text+" "+url);toast$("Link copiado");}
@@ -774,6 +807,10 @@ function GroupView({ctx}){
       <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
       <Btn2 onClick={function(){setView("ranking");}}>Ranking del grupo</Btn2>
       <div style={{display:"flex",gap:8}}>
+        <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
+        <button onClick={function(){setView("fixture");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.accentS}}>Fixture</button>
+      </div>
+      <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setView("reglamento");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Reglamento</button>
         <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Invitar</button>
       </div>
@@ -782,10 +819,14 @@ function GroupView({ctx}){
     <div style={{padding:"0 16px 16px"}}>
       <SectionLabel>Miembros ({members.length}/{activeGroup&&activeGroup.max_members})</SectionLabel>
       {members.map(function(m){
+        var hasPlanilla=completed[m.user_id]>0;
         return <div key={m.user_id} style={Object.assign({},card,{marginBottom:8,display:"flex",alignItems:"center",gap:10})}>
           <Ava name={(m.profiles&&(m.profiles.nick||m.profiles.nombre))||"?"} size={34}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,color:m.user_id===profile.id?C.accentS:C.text}}>{m.profiles&&(m.profiles.nick||m.profiles.nombre)}{m.user_id===profile.id?" (vos)":""}</div>
+            <div style={{fontSize:14,color:m.user_id===profile.id?C.accentS:C.text,display:"flex",alignItems:"center",gap:6}}>
+              {m.profiles&&(m.profiles.nick||m.profiles.nombre)}{m.user_id===profile.id?" (vos)":""}
+              {hasPlanilla&&<span title="Planilla completada" style={{color:C.green,fontSize:14}}>&#10003;</span>}
+            </div>
             {m.profiles&&m.profiles.nombre&&m.profiles.nick&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({m.profiles.nombre})</div>}
           </div>
           {m.role==="admin"&&<span style={{fontSize:10,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>Admin</span>}
@@ -795,6 +836,7 @@ function GroupView({ctx}){
     </div>
     {selectedUser&&<ViewUserPredModal user={selectedUser} group={activeGroup} onClose={function(){setSelectedUser(null);}}/>}
     {showManage&&<ManageGroupModal group={activeGroup} onClose={function(){setShowManage(false);}} onUpdated={function(updated){setActiveGroup(updated);setShowManage(false);}} toast$={toast$}/>}
+    {showStats&&<StatsModal profile={profile} group={activeGroup} onClose={function(){setShowStats(false);}}/>}
   </div>;
 }
 
@@ -1315,4 +1357,100 @@ function AdminGroupsTab({toast$}){
       </div>;
     })}
   </div>;
+}
+
+function FixtureView({ctx}){
+  var setView=ctx.setView,activeGroup=ctx.activeGroup;
+  const [ag,setAg]=useState("A");
+  const [tab,setTab]=useState("groups");
+  const [official,setOfficial]=useState({});
+  useEffect(function(){
+    supabase.from("official_results").select("*").then(function(r){
+      var map={};(r.data||[]).forEach(function(x){map[x.match_id]=x;});setOfficial(map);
+    });
+  },[]);
+  function back(){if(activeGroup) setView("group"); else setView("groups_list");}
+  return <div style={{minHeight:"100vh"}}>
+    <Bar title="Fixture completo" onBack={back}/>
+    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Cruces"}]} active={tab} onSelect={setTab}/>
+    {tab==="groups"&&<>
+      <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
+      <div style={{padding:"10px 14px 40px"}}>
+        {GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).map(function(m){
+          var off=official[m.id];
+          var played=off&&off.home!=null&&off.home!=="";
+          return <div key={m.id} style={Object.assign({},card,{marginBottom:8,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{flex:1,fontSize:13,color:C.text}}>{m.home}</span>
+              <div style={{minWidth:60,textAlign:"center"}}>
+                {played?<span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:12}}>vs</span>}
+              </div>
+              <span style={{flex:1,fontSize:13,color:C.text,textAlign:"right"}}>{m.away}</span>
+            </div>
+          </div>;
+        })}
+      </div>
+    </>}
+    {tab==="ko"&&<div style={{padding:"10px 14px 40px"}}>
+      {["r32","r16","qf","sf","3rd","f"].map(function(phase){
+        var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
+        var phaseLabels={r32:"32avos",r16:"Octavos",qf:"Cuartos",sf:"Semifinales","3rd":"3 y 4 puesto",f:"Final"};
+        return <div key={phase}>
+          <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:14}}>{phaseLabels[phase]}</div>
+          {slots.map(function(s){
+            var off=official[s.id];
+            return <div key={s.id} style={Object.assign({},card,{marginBottom:8})}>
+              <div style={{fontSize:10,color:C.sub2,marginBottom:4}}>{fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
+              <div style={{fontSize:13,color:C.text}}>{s.label}</div>
+              {off&&off.home_team&&<div style={{fontSize:12,color:C.accentS,marginTop:4}}>{off.home_team} {off.home!=null?off.home:""} - {off.away!=null?off.away:""} {off.away_team}</div>}
+            </div>;
+          })}
+        </div>;
+      })}
+    </div>}
+  </div>;
+}
+
+function StatsModal({profile,group,onClose}){
+  const [stats,setStats]=useState(null);
+  useEffect(function(){
+    Promise.all([
+      supabase.from("predictions").select("*").eq("user_id",profile.id).eq("group_id",group.id),
+      supabase.from("official_results").select("*"),
+    ]).then(function(r){
+      var preds=r[0].data||[];
+      var offMap={};(r[1].data||[]).forEach(function(x){offMap[x.match_id]=x;});
+      var total=preds.length,exact=0,result=0,played=0,totalPts=0,bestStreak=0,curStreak=0;
+      preds.sort(function(a,b){return (a.match_id||"").localeCompare(b.match_id||"");});
+      preds.forEach(function(p){
+        var off=offMap[p.match_id];
+        if(!off||off.home==null||off.home==="") return;
+        played++;
+        var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
+        if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
+        var sc=scorePred(p,off,p.match_id);
+        totalPts+=sc;
+        if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
+        else{
+          var oR=oh>oa?"H":oh<oa?"A":"D",pR=ph>pa?"H":ph<pa?"A":"D";
+          if(oR===pR){result++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
+          else curStreak=0;
+        }
+      });
+      setStats({total:total,played:played,exact:exact,result:result,totalPts:totalPts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0});
+    });
+  },[]);
+  return <Modal title="Mis estadisticas" onClose={onClose}>
+    {!stats&&<p style={{color:C.sub,textAlign:"center"}}>Cargando...</p>}
+    {stats&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Predicciones cargadas</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.total}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Partidos jugados</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.played}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exact}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.accentS)})}><span style={{color:C.sub,fontSize:13}}>Resultado correcto</span><span style={{color:C.accentS,fontWeight:700,fontFamily:mono}}>{stats.result}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold)})}><span style={{color:C.sub,fontSize:13}}>Total puntos</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.totalPts}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Mejor racha</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.bestStreak}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>% acierto</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.pct}%</span></div>
+    </div>}
+  </Modal>;
 }
