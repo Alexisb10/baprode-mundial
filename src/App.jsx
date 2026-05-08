@@ -898,7 +898,7 @@ function GlobalRankingView({ctx}){
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Ranking Global" onBack={function(){setView("groups_list");}}/>
     <div style={{padding:"16px 14px 80px"}}>
-      <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)"})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma, sin importar el grupo.</p></div>
+      <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma, sin importar el grupo.</p></div>
       {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
       {ranking.map(function(r,i){
         var isMine=r.uid===profile.id;
