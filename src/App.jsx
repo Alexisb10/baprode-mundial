@@ -414,7 +414,7 @@ function LoginView({ctx}){
     setLoading(true);
     var emailToUse=identifier;
     if(identifier.indexOf("@")<0){
-      supabase.from("profiles").select("email").eq("nick",identifier).single().then(function(r){
+      supabase.from("profiles").select("email").ilike("nick",identifier).maybeSingle().then(function(r){
         if(!r.data){toast$("Usuario no encontrado","err");setLoading(false);return;}
         supabase.auth.signInWithPassword({email:r.data.email,password:pw}).then(function(r2){
           if(r2.error){toast$("Contrasena incorrecta","err");setLoading(false);}
