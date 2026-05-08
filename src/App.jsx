@@ -278,7 +278,7 @@ export default function App() {
   function signOut(){supabase.auth.signOut();setView("splash");}
   function markResultsSeen(){localStorage.setItem("last_seen_results",new Date().toISOString());setHasNewResults(false);}
 
-  if(loading) return React.createElement("div",{style:{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}},React.createElement("div",{style:{fontSize:56}},"⚽"));
+  if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}><div style={{fontSize:56}}>⚽</div></div>;
 
   var ctx={session,profile,setProfile,activeGroup,setActiveGroup,setView,toast$:showToast,signOut,hasNewResults,markResultsSeen};
 
