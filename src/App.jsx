@@ -1349,6 +1349,7 @@ function AdminView({ctx}){
     });
   }
   const [koPhase,setKoPhase]=useState("r32");
+  const [resultPhase,setResultPhase]=useState("grupos");
 
   var sortedGroupMatches=GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
   var koPhaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
