@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://iffjdqfwdawqfxwowdqp.supabase.co";
@@ -115,33 +115,43 @@ const GROUP_MATCHES = [
 ];
 
 const KO_SLOTS = [
-  {id:"r32_0",phase:"r32",label:"1A vs 2B",date:"2026-06-28",time:"16:00",venue:"Los Angeles"},
-  {id:"r32_1",phase:"r32",label:"1B vs 2A",date:"2026-06-28",time:"22:00",venue:"Los Angeles"},
-  {id:"r32_2",phase:"r32",label:"1C vs 2F",date:"2026-06-29",time:"14:00",venue:"Houston"},
-  {id:"r32_3",phase:"r32",label:"1F vs 2C",date:"2026-06-29",time:"22:00",venue:"Guadalajara"},
-  {id:"r32_4",phase:"r32",label:"1E vs 2I",date:"2026-06-29",time:"17:30",venue:"Foxborough"},
-  {id:"r32_5",phase:"r32",label:"1I vs 2E",date:"2026-06-30",time:"18:00",venue:"East Rutherford"},
-  {id:"r32_6",phase:"r32",label:"1D vs 2G",date:"2026-07-01",time:"18:00",venue:"Santa Clara"},
-  {id:"r32_7",phase:"r32",label:"1G vs 2D",date:"2026-07-01",time:"17:00",venue:"Seattle"},
-  {id:"r32_8",phase:"r32",label:"1J vs 2K",date:"2026-07-02",time:"19:00",venue:"Miami"},
-  {id:"r32_9",phase:"r32",label:"1K vs 2J",date:"2026-07-02",time:"22:30",venue:"Kansas City"},
-  {id:"r32_10",phase:"r32",label:"1H vs 2L",date:"2026-07-03",time:"16:00",venue:"Dallas"},
-  {id:"r32_11",phase:"r32",label:"1L vs 2H",date:"2026-07-03",time:"19:00",venue:"Philadelphia"},
-  {id:"r16_0",phase:"r16",label:"Octavos 1",date:"2026-07-05",time:"16:00",venue:"Por definir"},
-  {id:"r16_1",phase:"r16",label:"Octavos 2",date:"2026-07-05",time:"20:00",venue:"Por definir"},
-  {id:"r16_2",phase:"r16",label:"Octavos 3",date:"2026-07-06",time:"16:00",venue:"Por definir"},
-  {id:"r16_3",phase:"r16",label:"Octavos 4",date:"2026-07-06",time:"20:00",venue:"Por definir"},
-  {id:"r16_4",phase:"r16",label:"Octavos 5",date:"2026-07-07",time:"16:00",venue:"Por definir"},
-  {id:"r16_5",phase:"r16",label:"Octavos 6",date:"2026-07-07",time:"20:00",venue:"Por definir"},
-  {id:"r16_6",phase:"r16",label:"Octavos 7",date:"2026-07-08",time:"16:00",venue:"Por definir"},
-  {id:"r16_7",phase:"r16",label:"Octavos 8",date:"2026-07-08",time:"20:00",venue:"Por definir"},
-  {id:"qf_0",phase:"qf",label:"Cuartos 1",date:"2026-07-11",time:"16:00",venue:"Por definir"},
-  {id:"qf_1",phase:"qf",label:"Cuartos 2",date:"2026-07-11",time:"20:00",venue:"Por definir"},
-  {id:"qf_2",phase:"qf",label:"Cuartos 3",date:"2026-07-12",time:"16:00",venue:"Por definir"},
-  {id:"qf_3",phase:"qf",label:"Cuartos 4",date:"2026-07-12",time:"20:00",venue:"Por definir"},
-  {id:"sf_0",phase:"sf",label:"Semifinal 1",date:"2026-07-14",time:"20:00",venue:"Por definir"},
-  {id:"sf_1",phase:"sf",label:"Semifinal 2",date:"2026-07-15",time:"20:00",venue:"Por definir"},
-  {id:"3rd_0",phase:"3rd",label:"3 y 4 puesto",date:"2026-07-18",time:"16:00",venue:"Por definir"},
+  // Round of 32 — 16 partidos oficiales FIFA
+  {id:"r32_0",phase:"r32",label:"M73: 2°A vs 2°B",date:"2026-06-28",time:"16:00",venue:"Los Ángeles"},
+  {id:"r32_1",phase:"r32",label:"M74: 1°E vs Mejor 3° (A/B/C/D/F)",date:"2026-06-28",time:"17:30",venue:"Foxborough"},
+  {id:"r32_2",phase:"r32",label:"M75: 1°F vs 2°C",date:"2026-06-28",time:"22:00",venue:"Monterrey"},
+  {id:"r32_3",phase:"r32",label:"M76: 1°C vs 2°F",date:"2026-06-28",time:"14:00",venue:"Houston"},
+  {id:"r32_4",phase:"r32",label:"M77: 1°I vs Mejor 3° (C/D/F/G/H)",date:"2026-06-29",time:"18:00",venue:"East Rutherford"},
+  {id:"r32_5",phase:"r32",label:"M78: 2°E vs 2°I",date:"2026-06-30",time:"14:00",venue:"Dallas"},
+  {id:"r32_6",phase:"r32",label:"M79: 1°A vs Mejor 3° (C/E/F/H/I)",date:"2026-06-29",time:"22:00",venue:"Ciudad de México"},
+  {id:"r32_7",phase:"r32",label:"M80: 1°L vs Mejor 3° (E/H/I/J/K)",date:"2026-07-01",time:"13:00",venue:"Atlanta"},
+  {id:"r32_8",phase:"r32",label:"M81: 1°D vs Mejor 3° (B/E/F/I/J)",date:"2026-07-01",time:"21:00",venue:"Santa Clara"},
+  {id:"r32_9",phase:"r32",label:"M82: 1°G vs Mejor 3° (A/E/H/I/J)",date:"2026-07-01",time:"17:00",venue:"Seattle"},
+  {id:"r32_10",phase:"r32",label:"M83: 2°K vs 2°L",date:"2026-07-02",time:"20:00",venue:"Toronto"},
+  {id:"r32_11",phase:"r32",label:"M84: 1°H vs 2°J",date:"2026-07-02",time:"16:00",venue:"Los Ángeles"},
+  {id:"r32_12",phase:"r32",label:"M85: 1°B vs Mejor 3° (E/F/G/I/J)",date:"2026-07-03",time:"00:00",venue:"Vancouver"},
+  {id:"r32_13",phase:"r32",label:"M86: 1°J vs 2°H",date:"2026-07-03",time:"19:00",venue:"Miami"},
+  {id:"r32_14",phase:"r32",label:"M87: 1°K vs Mejor 3° (D/E/I/J/L)",date:"2026-07-03",time:"22:30",venue:"Kansas City"},
+  {id:"r32_15",phase:"r32",label:"M88: 2°D vs 2°G",date:"2026-07-03",time:"15:00",venue:"Dallas"},
+  // Round of 16 — 8 partidos
+  {id:"r16_0",phase:"r16",label:"M89: W73 vs W76",date:"2026-07-04",time:"13:00",venue:"Houston"},
+  {id:"r16_1",phase:"r16",label:"M90: W74 vs W75",date:"2026-07-04",time:"17:00",venue:"Philadelphia"},
+  {id:"r16_2",phase:"r16",label:"M91: W77 vs W79",date:"2026-07-05",time:"16:00",venue:"East Rutherford"},
+  {id:"r16_3",phase:"r16",label:"M92: W80 vs W82",date:"2026-07-05",time:"20:00",venue:"Ciudad de México"},
+  {id:"r16_4",phase:"r16",label:"M93: W78 vs W88",date:"2026-07-06",time:"15:00",venue:"Dallas"},
+  {id:"r16_5",phase:"r16",label:"M94: W81 vs W85",date:"2026-07-06",time:"21:00",venue:"Seattle"},
+  {id:"r16_6",phase:"r16",label:"M95: W83 vs W84",date:"2026-07-07",time:"13:00",venue:"Atlanta"},
+  {id:"r16_7",phase:"r16",label:"M96: W86 vs W87",date:"2026-07-07",time:"17:00",venue:"Vancouver"},
+  // Cuartos de final — 4 partidos
+  {id:"qf_0",phase:"qf",label:"Cuartos 1: W89 vs W90",date:"2026-07-09",time:"16:00",venue:"Foxborough"},
+  {id:"qf_1",phase:"qf",label:"Cuartos 2: W91 vs W92",date:"2026-07-10",time:"15:00",venue:"Los Ángeles"},
+  {id:"qf_2",phase:"qf",label:"Cuartos 3: W93 vs W94",date:"2026-07-11",time:"17:00",venue:"Miami"},
+  {id:"qf_3",phase:"qf",label:"Cuartos 4: W95 vs W96",date:"2026-07-11",time:"21:00",venue:"Kansas City"},
+  // Semifinales
+  {id:"sf_0",phase:"sf",label:"Semifinal 1",date:"2026-07-14",time:"15:00",venue:"Dallas"},
+  {id:"sf_1",phase:"sf",label:"Semifinal 2",date:"2026-07-15",time:"15:00",venue:"Atlanta"},
+  // 3° y 4° puesto
+  {id:"3rd_0",phase:"3rd",label:"3° y 4° puesto",date:"2026-07-18",time:"16:00",venue:"Miami"},
+  // Final
   {id:"f_0",phase:"f",label:"Final",date:"2026-07-19",time:"16:00",venue:"East Rutherford"},
 ];
 
@@ -154,19 +164,20 @@ const KO_PTS = {
 // Define which match feeds into which next match (and as home/away)
 // Note: only 12 r32 matches feed into 8 r16 (top performers advance)
 const KO_NEXT = {
-  r32_0:{next:"r16_0",pos:"home"},r32_1:{next:"r16_0",pos:"away"},
-  r32_2:{next:"r16_1",pos:"home"},r32_3:{next:"r16_1",pos:"away"},
-  r32_4:{next:"r16_2",pos:"home"},r32_5:{next:"r16_2",pos:"away"},
-  r32_6:{next:"r16_3",pos:"home"},r32_7:{next:"r16_3",pos:"away"},
-  r32_8:{next:"r16_4",pos:"home"},r32_9:{next:"r16_4",pos:"away"},
-  r32_10:{next:"r16_5",pos:"home"},r32_11:{next:"r16_5",pos:"away"},
+  r32_0:{next:"r16_0",pos:"home"},r32_3:{next:"r16_0",pos:"away"},
+  r32_1:{next:"r16_1",pos:"home"},r32_2:{next:"r16_1",pos:"away"},
+  r32_4:{next:"r16_2",pos:"home"},r32_6:{next:"r16_2",pos:"away"},
+  r32_7:{next:"r16_3",pos:"home"},r32_9:{next:"r16_3",pos:"away"},
+  r32_5:{next:"r16_4",pos:"home"},r32_15:{next:"r16_4",pos:"away"},
+  r32_8:{next:"r16_5",pos:"home"},r32_12:{next:"r16_5",pos:"away"},
+  r32_10:{next:"r16_6",pos:"home"},r32_11:{next:"r16_6",pos:"away"},
+  r32_13:{next:"r16_7",pos:"home"},r32_14:{next:"r16_7",pos:"away"},
   r16_0:{next:"qf_0",pos:"home"},r16_1:{next:"qf_0",pos:"away"},
   r16_2:{next:"qf_1",pos:"home"},r16_3:{next:"qf_1",pos:"away"},
   r16_4:{next:"qf_2",pos:"home"},r16_5:{next:"qf_2",pos:"away"},
   r16_6:{next:"qf_3",pos:"home"},r16_7:{next:"qf_3",pos:"away"},
   qf_0:{next:"sf_0",pos:"home"},qf_1:{next:"sf_0",pos:"away"},
   qf_2:{next:"sf_1",pos:"home"},qf_3:{next:"sf_1",pos:"away"},
-  sf_0:{next:"f_0",pos:"home"},sf_1:{next:"f_0",pos:"away"},
 };
 
 function scoreGroup(pred, off) {
@@ -289,33 +300,8 @@ export default function App() {
     setLoading(true);
     supabase.from("profiles").select("*").eq("id",uid).single().then(function(r){
       setProfile(r.data);setLoading(false);
-      var params=new URLSearchParams(window.location.search);
-      var joinId=params.get("join");
-      if(joinId&&r.data){
-        supabase.from("group_members").select("*").eq("group_id",joinId).eq("user_id",uid).maybeSingle().then(function(m){
-          if(!m.data){
-            supabase.from("groups").select("*").eq("id",joinId).single().then(function(g){
-              if(g.data){
-                supabase.from("group_members").select("user_id").eq("group_id",joinId).then(function(mm){
-                  if((mm.data||[]).length<g.data.max_members){
-                    supabase.from("group_members").insert({group_id:joinId,user_id:uid,role:"member"}).then(function(){
-                      setActiveGroup(g.data);setView("group");
-                      window.history.replaceState({},"","/");
-                    });
-                  } else {showToast("El grupo esta lleno","err");setView("groups_list");window.history.replaceState({},"","/");}
-                });
-              } else {setView(r.data?"groups_list":"splash");}
-            });
-          } else {
-            supabase.from("groups").select("*").eq("id",joinId).single().then(function(g){
-              if(g.data){setActiveGroup(g.data);setView("group");window.history.replaceState({},"","/");}
-              else setView("groups_list");
-            });
-          }
-        });
-      } else {
-        setView(r.data?"groups_list":"splash");
-      }
+      setView(r.data?"groups_list":"splash");
+      if(window.location.search) window.history.replaceState({},"","/");
     });
   }
 
@@ -634,7 +620,7 @@ function ReglamentoView({ctx}){
     <Bar title="Reglamento" onBack={back}/>
     <div style={{padding:"16px 16px 40px",display:"flex",flexDirection:"column",gap:4}}>
       {section(C.accentS,"Fase de Grupos",<span><b style={{color:C.gold}}>4 pts</b> resultado (L/E/V)<br/><b style={{color:C.gold}}>2 pts</b> goles equipo local exactos<br/><b style={{color:C.gold}}>2 pts</b> goles equipo visitante exactos<br/><b style={{color:C.gold}}>2 pts</b> extra si marcador exacto<br/><span style={{color:C.sub,fontSize:11}}>Max 10 pts por partido</span></span>)}
-      {section(C.gold,"32avos y Octavos",<span><b style={{color:C.gold}}>5 pts</b> pais en posicion exacta<br/><b style={{color:C.gold}}>2 pts</b> pais clasifico pero en otra posicion<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo (si predijiste empate)</span>)}
+      {section(C.gold,"16avos y Octavos",<span><b style={{color:C.gold}}>5 pts</b> pais en posicion exacta<br/><b style={{color:C.gold}}>2 pts</b> pais clasifico pero en otra posicion<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo (si predijiste empate)</span>)}
       {section(C.gold,"Cuartos",<span><b style={{color:C.gold}}>10 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo</span>)}
       {section(C.gold,"Semifinales",<span><b style={{color:C.gold}}>15 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo</span>)}
       {section(C.gold,"Final y 3/4 puesto",<span><b style={{color:C.gold}}>20 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>7 pts</b> goles por equipo<br/><b style={{color:C.gold}}>10 pts</b> penales por equipo</span>)}
@@ -656,7 +642,7 @@ function GroupsListView({ctx}){
 
   function fetchGroups(){
     setLoading(true);
-    supabase.from("group_members").select("group_id, groups(id,name,max_members,created_by,updated_at)").eq("user_id",profile.id).then(function(r){
+    supabase.from("group_members").select("group_id, groups(id,name,max_members,created_by,updated_at,join_code)").eq("user_id",profile.id).then(function(r){
       setMyGroups((r.data||[]).map(function(d){return d.groups;}).filter(Boolean));
       setLoading(false);
     });
@@ -717,7 +703,7 @@ function GroupsListView({ctx}){
       })}
       <div style={{marginTop:16}}><Btn2 onClick={function(){setShowJoin(true);}}>Unirse a un grupo</Btn2></div>
     </div>
-    {showCreate&&<CreateGroupModal profile={profile} onClose={function(){setShowCreate(false);}} onCreated={function(){fetchGroups();setShowCreate(false);}} toast$={toast$}/>}
+    {showCreate&&<CreateGroupModal profile={profile} onClose={function(){setShowCreate(false);}} onCreated={function(newGroup){setShowCreate(false);fetchGroups();setActiveGroup(newGroup);setView("group");}} toast$={toast$}/>}
     {showJoin&&<JoinGroupModal profile={profile} onClose={function(){setShowJoin(false);}} onJoined={function(){fetchGroups();setShowJoin(false);}} toast$={toast$}/>}
   </div>;
 }
@@ -729,50 +715,141 @@ function CreateGroupModal({profile,onClose,onCreated,toast$}){
   function create(){
     if(!name) return toast$("Ingresa un nombre","err");
     setLoading(true);
-    supabase.from("groups").insert({name:name,max_members:+max,created_by:profile.id}).select().single().then(function(r){
+    var join_code=String(Math.floor(Math.random()*100000)).padStart(5,"0");
+    supabase.from("groups").insert({name:name,max_members:+max,created_by:profile.id,join_code:join_code}).select().single().then(function(r){
       if(r.error){toast$(r.error.message,"err");setLoading(false);return;}
-      supabase.from("group_members").insert({group_id:r.data.id,user_id:profile.id,role:"admin"});
-      onCreated();
+      supabase.from("group_members").insert({group_id:r.data.id,user_id:profile.id,role:"admin"}).then(function(){
+        onCreated(r.data);
+      });
     });
   }
   return <Modal title="Crear grupo" onClose={onClose}>
     <Field label="Nombre del grupo" value={name} onChange={setName}/>
     <div style={{marginTop:12}}><Field label="Maximo de participantes" value={max} onChange={setMax} type="number"/></div>
+    <div style={{marginTop:12,padding:"10px 12px",background:"rgba(0,200,224,0.05)",borderRadius:8,border:b("rgba(0,200,224,0.15)")}}>
+      <p style={{color:C.sub2,fontSize:11,margin:0,lineHeight:1.5}}>Se generara una clave de 5 digitos. Cualquier miembro podra verla y compartirla para que otros se sumen.</p>
+    </div>
     <div style={{marginTop:16}}><GradBtn onClick={create} disabled={loading}>{loading?"Creando...":"Crear"}</GradBtn></div>
   </Modal>;
+}
+
+function PinInput({value,onChange,length,error,disabled}){
+  const inputRef=useRef(null);
+  const len=length||5;
+  useEffect(function(){
+    if(inputRef.current) inputRef.current.focus();
+  },[]);
+  function handleChange(e){
+    if(disabled) return;
+    var v=e.target.value.replace(/\D/g,"").slice(0,len);
+    onChange(v);
+  }
+  return <div style={{position:"relative"}} onClick={function(){if(inputRef.current&&!disabled) inputRef.current.focus();}}>
+    <input
+      ref={inputRef}
+      type="tel"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={value}
+      onChange={handleChange}
+      maxLength={len}
+      disabled={disabled}
+      style={{position:"absolute",opacity:0,top:0,left:0,width:"100%",height:"100%",border:"none",background:"transparent",fontSize:16,caretColor:"transparent"}}
+    />
+    <div style={{display:"flex",gap:10,justifyContent:"center",pointerEvents:"none"}}>
+      {Array.from({length:len}).map(function(_,i){
+        var ch=value[i]||"";
+        var filled=!!ch;
+        var current=i===value.length&&!disabled;
+        var brd=error?C.red:(current?C.accentS:(filled?C.border2:C.border));
+        return <div key={i} style={{
+          width:46,height:56,borderRadius:10,
+          border:b2(brd),
+          background:C.surface2,
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:24,fontWeight:700,color:error?C.red:C.text,
+          fontFamily:mono,
+          transition:"border-color 0.15s, color 0.15s"
+        }}>{ch}</div>;
+      })}
+    </div>
+  </div>;
 }
 
 function JoinGroupModal({profile,onClose,onJoined,toast$}){
   const [q,setQ]=useState("");
   const [results,setResults]=useState([]);
+  const [searching,setSearching]=useState(false);
   const [loading,setLoading]=useState(false);
+  const [pendingGroup,setPendingGroup]=useState(null);
+  const [code,setCode]=useState("");
+  const [codeError,setCodeError]=useState(false);
+
   function search(){
     if(!q) return;
-    supabase.from("groups").select("*").ilike("name","%"+q+"%").limit(10).then(function(r){setResults(r.data||[]);});
+    setSearching(true);
+    supabase.from("groups").select("*").ilike("name","%"+q+"%").limit(10).then(function(r){
+      setResults(r.data||[]);
+      setSearching(false);
+    });
   }
-  function join(g){
+
+  function startJoin(g){
+    setPendingGroup(g);
+    setCode("");
+    setCodeError(false);
+  }
+
+  useEffect(function(){
+    if(code.length===5&&pendingGroup&&!loading){
+      attemptJoin(code);
+    }
+  },[code]);
+
+  function attemptJoin(entered){
+    if(!pendingGroup) return;
+    if(entered!==pendingGroup.join_code){
+      setCodeError(true);
+      setTimeout(function(){setCode("");setCodeError(false);},900);
+      return;
+    }
     setLoading(true);
-    supabase.from("group_members").select("*").eq("group_id",g.id).then(function(r){
+    supabase.from("group_members").select("*").eq("group_id",pendingGroup.id).then(function(r){
       var members=r.data||[];
-      if(members.length>=g.max_members){toast$("El grupo esta lleno","err");setLoading(false);return;}
+      if(members.length>=pendingGroup.max_members){toast$("El grupo esta lleno","err");setLoading(false);setPendingGroup(null);return;}
       var already=members.find(function(m){return m.user_id===profile.id;});
-      if(already){toast$("Ya sos miembro de este grupo","err");setLoading(false);return;}
-      supabase.from("group_members").insert({group_id:g.id,user_id:profile.id,role:"member"}).then(function(){
+      if(already){toast$("Ya sos miembro","err");setLoading(false);setPendingGroup(null);return;}
+      supabase.from("group_members").insert({group_id:pendingGroup.id,user_id:profile.id,role:"member"}).then(function(){
         toast$("Te uniste al grupo!");onJoined();
       });
     });
   }
+
+  if(pendingGroup){
+    return <Modal title={pendingGroup.name} onClose={function(){setPendingGroup(null);setCode("");setCodeError(false);}}>
+      <p style={{color:C.sub2,fontSize:13,textAlign:"center",marginBottom:6,lineHeight:1.5}}>Ingresa la clave de 5 digitos</p>
+      <p style={{color:C.sub,fontSize:11,textAlign:"center",marginBottom:20,lineHeight:1.5}}>Pedisela a alguien que ya este en el grupo</p>
+      <PinInput value={code} onChange={function(v){setCode(v);setCodeError(false);}} length={5} error={codeError} disabled={loading}/>
+      <div style={{height:24,marginTop:14,textAlign:"center"}}>
+        {codeError&&<span style={{color:C.red,fontSize:12,fontWeight:600}}>Clave incorrecta</span>}
+        {loading&&<span style={{color:C.accentS,fontSize:12,fontWeight:600}}>Ingresando...</span>}
+      </div>
+    </Modal>;
+  }
+
   return <Modal title="Unirse a grupo" onClose={onClose}>
     <div style={{display:"flex",gap:8}}>
-      <input style={Object.assign({},inp,{flex:1})} placeholder="Buscar grupo..." value={q} onChange={function(e){setQ(e.target.value);}}/>
+      <input style={Object.assign({},inp,{flex:1})} placeholder="Buscar grupo..." value={q} onChange={function(e){setQ(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")search();}}/>
       <button onClick={search} style={Object.assign({},gradBtnS,{padding:"0 14px",fontSize:13})}>Buscar</button>
     </div>
     <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:8}}>
+      {searching&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:12}}>Buscando...</div>}
+      {!searching&&q&&results.length===0&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:12}}>No se encontraron grupos</div>}
       {results.map(function(g){
         return <div key={g.id} style={Object.assign({},card,{display:"flex",alignItems:"center",gap:10})}>
           <span style={{flex:1,fontSize:14,color:C.text}}>{g.name}</span>
           <span style={{fontSize:11,color:C.sub}}>Max {g.max_members}</span>
-          <button onClick={function(){join(g);}} style={Object.assign({},gradBtnS,{padding:"6px 12px",fontSize:12})} disabled={loading}>Unirse</button>
+          <button onClick={function(){startJoin(g);}} style={Object.assign({},gradBtnS,{padding:"6px 12px",fontSize:12})} disabled={loading}>Unirse</button>
         </div>;
       })}
     </div>
@@ -806,10 +883,16 @@ function GroupView({ctx}){
   var isGroupAdmin=myRole==="admin"||(activeGroup&&activeGroup.created_by===profile.id);
 
   function shareGroup(){
-    var url="https://baprode-mundial.vercel.app?join="+activeGroup.id;
-    var text="Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026!";
+    var url="https://baprode-mundial.vercel.app";
+    var text="Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026! Ingresa, busca el grupo y pedime la clave.";
     if(navigator.share) navigator.share({title:"Baprode",text:text,url:url});
-    else{navigator.clipboard.writeText(text+" "+url);toast$("Link copiado");}
+    else{navigator.clipboard.writeText(text+" "+url);toast$("Texto copiado");}
+  }
+
+  function copyJoinCode(){
+    if(!activeGroup||!activeGroup.join_code) return;
+    navigator.clipboard.writeText(activeGroup.join_code);
+    toast$("Clave copiada");
   }
 
   return <div style={{minHeight:"100vh"}}>
@@ -821,6 +904,13 @@ function GroupView({ctx}){
         <div style={{fontSize:13,fontWeight:600,color:C.accentS}}>{updatedAt}</div>
       </div>
     </div>
+    {activeGroup&&activeGroup.join_code&&<div style={{margin:"10px 16px 0",background:"rgba(0,200,224,0.05)",borderRadius:10,padding:"10px 14px",border:b("rgba(0,200,224,0.2)"),display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:10,color:C.sub,letterSpacing:0.5,textTransform:"uppercase"}}>Clave del grupo</div>
+        <div style={{fontSize:20,fontWeight:700,color:C.accentS,fontFamily:mono,letterSpacing:4,marginTop:2}}>{activeGroup.join_code}</div>
+      </div>
+      <button onClick={copyJoinCode} style={{background:C.surface2,border:b(C.border2),color:C.accentS,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Copiar</button>
+    </div>}
     <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
       <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
       <Btn2 onClick={function(){setView("ranking");}}>Ranking del grupo</Btn2>
@@ -1251,34 +1341,91 @@ function AdminView({ctx}){
       supabase.from("official_results").upsert(rows,{onConflict:"match_id"}),
       supabase.from("official_extras").upsert({id:1,champion:officialExtras.champion||null,runner_up:officialExtras.runner_up||null,third:officialExtras.third||null,fourth:officialExtras.fourth||null},{onConflict:"id"}),
       supabase.from("groups").update({updated_at:new Date().toISOString()}).neq("id",""),
-    ]).then(function(){setSaving(false);toast$("Guardado");});
+    ]).then(function(results){
+      setSaving(false);
+      var errors=results.filter(function(r){return r.error;}).map(function(r){return r.error.message;});
+      if(errors.length>0){toast$("Error: "+errors[0],"err");}
+      else{toast$("Guardado");}
+    });
   }
+  const [koPhase,setKoPhase]=useState("r32");
 
   var sortedGroupMatches=GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
+  var koPhaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var koPhaseList=["r32","r16","qf","sf","3rd","f"];
+  var koSlots=KO_SLOTS.filter(function(s){return s.phase===koPhase;});
 
   return <div style={{minHeight:"100vh"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:b(C.border)}}>
       <div style={Object.assign({},gradText,{fontSize:15,fontWeight:700})}>Panel Admin</div>
       <IconBtn onClick={signOut}>&#9211;</IconBtn>
     </div>
-    <Tabs items={[{id:"results",label:"Resultados"},{id:"extras_admin",label:"Extras"},{id:"groups_admin",label:"Grupos"},{id:"contacts",label:"Contactos"+(contactRequests.length>0?" ("+contactRequests.length+")":"")}]} active={tab} onSelect={setTab}/>
+    <Tabs items={[{id:"results",label:"Resultados"},{id:"extras_admin",label:"Extras"},{id:"groups_admin",label:"Grupos"},{id:"usuarios",label:"Usuarios"},{id:"contacts",label:"Contactos"+(contactRequests.length>0?" ("+contactRequests.length+")":"")}]} active={tab} onSelect={setTab}/>
 
     {tab==="results"&&<>
-      <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
-      <div style={{padding:"10px 14px 100px"}}>
-        {sortedGroupMatches.map(function(m){
-          return <div key={m.id} style={Object.assign({},card,{marginBottom:10})}>
-            <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
-              <ScoreBox value={official[m.id]&&official[m.id].home!=null?official[m.id].home:""} onChange={function(v){upd(m.id,"home",v);}}/>
-              <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
-              <ScoreBox value={official[m.id]&&official[m.id].away!=null?official[m.id].away:""} onChange={function(v){upd(m.id,"away",v);}}/>
-              <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
-            </div>
-          </div>;
+      <div style={{display:"flex",gap:0,borderBottom:b(C.border)}}>
+        {["grupos","eliminatorias"].map(function(p){
+          return <button key={p} onClick={function(){setResultPhase(p);}} style={{flex:1,padding:"10px",border:"none",borderBottom:resultPhase===p?b2(C.accentS):"2px solid transparent",background:"none",color:resultPhase===p?C.accentS:C.sub,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:font,textTransform:"capitalize"}}>{p==="grupos"?"Fase de Grupos":"Fase Eliminatoria"}</button>;
         })}
       </div>
+
+      {resultPhase==="grupos"&&<>
+        <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
+        <div style={{padding:"10px 14px 100px"}}>
+          {sortedGroupMatches.map(function(m){
+            return <div key={m.id} style={Object.assign({},card,{marginBottom:10})}>
+              <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
+                <ScoreBox value={official[m.id]&&official[m.id].home!=null?official[m.id].home:""} onChange={function(v){upd(m.id,"home",v);}}/>
+                <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
+                <ScoreBox value={official[m.id]&&official[m.id].away!=null?official[m.id].away:""} onChange={function(v){upd(m.id,"away",v);}}/>
+                <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
+              </div>
+            </div>;
+          })}
+        </div>
+      </>}
+
+      {resultPhase==="eliminatorias"&&<>
+        <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
+          {koPhaseList.map(function(p){
+            return <button key={p} onClick={function(){setKoPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:koPhase===p?b(C.accentS):b(C.border),background:koPhase===p?"rgba(0,200,224,0.1)":C.surface,color:koPhase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{koPhaseLabels[p]}</button>;
+          })}
+        </div>
+        <div style={{padding:"10px 14px 100px"}}>
+          {koSlots.map(function(slot){
+            var off=official[slot.id]||{};
+            var isDraw=off.home!=null&&off.away!=null&&off.home!==""&&off.away!==""&&+off.home===+off.away;
+            return <div key={slot.id} style={Object.assign({},card,{marginBottom:10})}>
+              <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{slot.label} · {fmtDate(slot.date)} · {slot.time} hs</div>
+              <div style={{fontSize:10,color:C.sub,marginBottom:8}}>📍 {slot.venue}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                <input style={Object.assign({},inp,{flex:1,padding:"7px 10px",fontSize:12})} placeholder="Equipo 1" value={off.home_team||""} onChange={function(e){upd(slot.id,"home_team",e.target.value);}}/>
+                <ScoreBox value={off.home!=null?off.home:""} onChange={function(v){upd(slot.id,"home",v);}}/>
+                <span style={{color:C.border2,fontFamily:mono}}>-</span>
+                <ScoreBox value={off.away!=null?off.away:""} onChange={function(v){upd(slot.id,"away",v);}}/>
+                <input style={Object.assign({},inp,{flex:1,padding:"7px 10px",fontSize:12,textAlign:"right"})} placeholder="Equipo 2" value={off.away_team||""} onChange={function(e){upd(slot.id,"away_team",e.target.value);}}/>
+              </div>
+              {isDraw&&<div style={{background:C.surface2,borderRadius:8,padding:"10px",border:b("rgba(255,208,96,0.3)"),marginBottom:8}}>
+                <div style={{fontSize:10,color:C.gold,fontWeight:700,marginBottom:6}}>⚽ PENALES</div>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+                  <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"6px"})} placeholder="0" value={off.pen_home||""} onChange={function(e){upd(slot.id,"pen_home",e.target.value);}}/>
+                  <span style={{color:C.sub2}}>-</span>
+                  <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"6px"})} placeholder="0" value={off.pen_away||""} onChange={function(e){upd(slot.id,"pen_away",e.target.value);}}/>
+                </div>
+                <div style={{fontSize:10,color:C.sub,marginBottom:6}}>Ganador (pasa de fase)</div>
+                <div style={{display:"flex",gap:6}}>
+                  {off.home_team&&<button onClick={function(){upd(slot.id,"winner",off.home_team);}} style={{flex:1,padding:"7px",borderRadius:6,border:off.winner===off.home_team?b(C.accentS):b(C.border),background:off.winner===off.home_team?"rgba(0,200,224,0.1)":C.surface,color:off.winner===off.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>{off.home_team}</button>}
+                  {off.away_team&&<button onClick={function(){upd(slot.id,"winner",off.away_team);}} style={{flex:1,padding:"7px",borderRadius:6,border:off.winner===off.away_team?b(C.accentS):b(C.border),background:off.winner===off.away_team?"rgba(0,200,224,0.1)":C.surface,color:off.winner===off.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>{off.away_team}</button>}
+                </div>
+              </div>}
+              {off.winner&&!isDraw&&<div style={{fontSize:11,color:C.green}}>✓ Pasa: <b>{off.winner}</b></div>}
+            </div>;
+          })}
+        </div>
+      </>}
+
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:b(C.border),padding:"12px 16px",zIndex:20}}>
         <GradBtn onClick={save} disabled={saving}>{saving?"Guardando...":"Guardar resultados"}</GradBtn>
       </div>
@@ -1299,22 +1446,143 @@ function AdminView({ctx}){
 
     {tab==="groups_admin"&&<AdminGroupsTab toast$={toast$}/>}
 
+    {tab==="usuarios"&&<AdminUsersTab toast$={toast$}/>}
+
     {tab==="contacts"&&<div style={{padding:"12px 14px 40px"}}>
       {contactRequests.length===0&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Sin solicitudes pendientes</p>}
       {contactRequests.map(function(c){
+        function resolve(){
+          supabase.rpc("admin_resolve_contact",{contact_id:c.id}).then(function(r){
+            if(r.error){return;}
+            setContactRequests(function(p){return p.filter(function(x){return x.id!==c.id;});});
+          });
+        }
         return <div key={c.id} style={Object.assign({},card,{marginBottom:10})}>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{c.nombre}</div>
           {c.nick&&<div style={{fontSize:12,color:C.sub2,marginBottom:4}}>Nick/email: {c.nick}</div>}
           <div style={{fontSize:13,color:C.sub,lineHeight:1.5}}>{c.motivo}</div>
-          <div style={{fontSize:10,color:C.sub,marginTop:6}}>{new Date(c.created_at).toLocaleString("es-AR",{timeZone:"America/Argentina/Buenos_Aires"})}</div>
+          <div style={{fontSize:10,color:C.sub,marginTop:6,marginBottom:10}}>{new Date(c.created_at).toLocaleString("es-AR",{timeZone:"America/Argentina/Buenos_Aires"})}</div>
+          <button onClick={resolve} style={{width:"100%",padding:"8px",borderRadius:8,border:b(C.green),background:"rgba(76,223,154,0.05)",color:C.green,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>&#10003; Marcar como resuelto</button>
         </div>;
       })}
     </div>}
   </div>;
 }
 
+function AdminUsersTab({toast$}){
+  const [users,setUsers]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [showReset,setShowReset]=useState(false);
+  const [realizado,setRealizado]=useState(function(){
+    try{return JSON.parse(localStorage.getItem("pw_realizado")||"[]");}catch(e){return[];}
+  });
+
+  useEffect(function(){
+    supabase.from("profiles").select("id,nick,nombre,email,is_admin,created_at").order("created_at",{ascending:false}).then(function(r){
+      setUsers(r.data||[]);
+      setLoading(false);
+    });
+  },[]);
+
+  function toggleRealizado(uid){
+    setRealizado(function(prev){
+      var next=prev.includes(uid)?prev.filter(function(x){return x!==uid;}):[...prev,uid];
+      localStorage.setItem("pw_realizado",JSON.stringify(next));
+      return next;
+    });
+  }
+
+  return <div style={{padding:"12px 14px 40px"}}>
+    {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Cargando...</p>}
+    {users.map(function(u){
+      if(u.nick==="superadmin") return null;
+      var done=realizado.includes(u.id);
+      return <div key={u.id} style={Object.assign({},card,{marginBottom:8})}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:done?8:0}}>
+          <Ava name={u.nick||u.nombre} size={34}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:600,color:done?C.sub:C.text}}>{u.nick||u.nombre}</div>
+            {u.nombre&&u.nick&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>{u.nombre}</div>}
+            <div style={{fontSize:10,color:C.sub,marginTop:1}}>{u.created_at?new Date(u.created_at).toLocaleDateString("es-AR"):""}</div>
+          </div>
+          <button onClick={function(){setSelected(u);setShowReset(true);}} style={{background:"none",border:b(C.border2),color:C.accentS,borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Reset pw</button>
+        </div>
+        <button onClick={function(){toggleRealizado(u.id);}} style={{width:"100%",padding:"7px",borderRadius:8,border:done?b(C.green):b(C.border),background:done?"rgba(76,223,154,0.08)":"transparent",color:done?C.green:C.sub,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font,marginTop:6}}>
+          {done?"✓ Realizado":"Marcar como realizado"}
+        </button>
+      </div>;
+    })}
+    {showReset&&selected&&<ResetPasswordModal user={selected} onClose={function(){setShowReset(false);setSelected(null);}} toast$={toast$}/>}
+  </div>;
+}
+
+function ResetPasswordModal({user,onClose,toast$}){
+  const [newPw,setNewPw]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [showPw,setShowPw]=useState(false);
+
+  function sendEmail(){
+    setLoading(true);
+    supabase.auth.resetPasswordForEmail(user.email,{redirectTo:"https://baprode-mundial.vercel.app"}).then(function(){
+      toast$("Email enviado a "+user.email);
+      setLoading(false);
+      onClose();
+    });
+  }
+
+  function setDirectPw(){
+    if(!newPw||newPw.length<6) return toast$("Minimo 6 caracteres","err");
+    setLoading(true);
+    supabase.rpc("admin_reset_password",{target_user_id:user.id,new_password:newPw}).then(function(r){
+      if(r.error){toast$(r.error.message,"err");setLoading(false);return;}
+      toast$("Contrasena actualizada");
+      setLoading(false);
+      onClose();
+    });
+  }
+
+  function copyMsg(){
+    if(!newPw) return toast$("Escribi la contrasena primero","err");
+    var msg="Hola "+( user.nick||user.nombre)+"! Tu contrasena de Baprode fue restablecida. Tu nueva contrasena es: "+newPw+" — Ingresa con tu nick y esta contrasena. Podes cambiarla desde \"Olvide mi contrasena\" cuando quieras.";
+    navigator.clipboard.writeText(msg);
+    toast$("Mensaje copiado");
+  }
+
+  return <Modal title={"Reset: "+(user.nick||user.nombre)} onClose={onClose}>
+    <div style={{marginBottom:16,padding:"10px 12px",background:C.surface2,borderRadius:8,border:b(C.border)}}>
+      <div style={{fontSize:11,color:C.sub}}>Email del usuario</div>
+      <div style={{fontSize:13,color:C.text,marginTop:2}}>{user.email}</div>
+    </div>
+
+    <div style={{marginBottom:16}}>
+      <div style={{fontSize:12,color:C.sub2,fontWeight:600,marginBottom:8}}>OPCION A — Enviar email de recuperacion</div>
+      <p style={{fontSize:11,color:C.sub,margin:"0 0 10px",lineHeight:1.5}}>Le llega un link al email. El usuario cambia su propia contrasena.</p>
+      <Btn2 onClick={sendEmail} disabled={loading}>Enviar email a {user.email}</Btn2>
+    </div>
+
+    <div style={{borderTop:b(C.border),paddingTop:16}}>
+      <div style={{fontSize:12,color:C.sub2,fontWeight:600,marginBottom:8}}>OPCION B — Poner contrasena directamente</div>
+      <p style={{fontSize:11,color:C.sub,margin:"0 0 10px",lineHeight:1.5}}>Para cuando el usuario no puede acceder al email.</p>
+      <div style={{position:"relative",marginBottom:10}}>
+        <input
+          type={showPw?"text":"password"}
+          style={Object.assign({},inp,{paddingRight:44})}
+          placeholder="Nueva contrasena (min 6 caracteres)"
+          value={newPw}
+          onChange={function(e){setNewPw(e.target.value);}}
+        />
+        <button onClick={function(){setShowPw(function(p){return !p;});}} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:13,fontFamily:font}}>{showPw?"Ocultar":"Ver"}</button>
+      </div>
+      <GradBtn onClick={setDirectPw} disabled={loading||!newPw}>{loading?"Guardando...":"Establecer contrasena"}</GradBtn>
+      {newPw&&<div style={{marginTop:10}}><Btn2 onClick={copyMsg}>Copiar mensaje para el usuario</Btn2></div>}
+    </div>
+  </Modal>;
+}
+
 function AdminGroupsTab({toast$}){
   const [groups,setGroups]=useState([]);
+  const [selectedGroup,setSelectedGroup]=useState(null);
   useEffect(function(){
     supabase.from("groups").select("*,group_members(count)").then(function(r){setGroups(r.data||[]);});
   },[]);
@@ -1326,15 +1594,140 @@ function AdminGroupsTab({toast$}){
   }
   return <div style={{padding:"12px 14px 40px"}}>
     {groups.map(function(g){
+      var count=g.group_members&&g.group_members[0]&&g.group_members[0].count||0;
       return <div key={g.id} style={Object.assign({},card,{marginBottom:10})}>
-        <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:8}}>{g.name}</div>
+        <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600,color:C.text}}>{g.name}</div>
+            <div style={{fontSize:11,color:C.sub,marginTop:2}}>{count}/{g.max_members} miembros · Clave: {g.join_code||"—"}</div>
+          </div>
+          <button onClick={function(){setSelectedGroup(g);}} style={{background:"none",border:b(C.accentS),color:C.accentS,borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver</button>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:12,color:C.sub,flex:1}}>Max participantes</span>
           <input type="number" style={Object.assign({},inp,{width:70,textAlign:"center"})} defaultValue={g.max_members} onBlur={function(e){updateMax(g.id,e.target.value);}}/>
         </div>
       </div>;
     })}
+    {selectedGroup&&<AdminGroupDetailModal group={selectedGroup} onClose={function(){setSelectedGroup(null);}}/>}
   </div>;
+}
+
+function AdminGroupDetailModal({group,onClose}){
+  const [ranking,setRanking]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selectedUser,setSelectedUser]=useState(null);
+  const [showStats,setShowStats]=useState(null);
+
+  useEffect(function(){
+    Promise.all([
+      supabase.from("official_results").select("*"),
+      supabase.from("group_members").select("user_id,role,profiles(id,nick,nombre)").eq("group_id",group.id),
+      supabase.from("prediction_extras").select("*").eq("group_id",group.id),
+      supabase.from("official_extras").select("*").single(),
+    ]).then(function(results){
+      var offMap={};(results[0].data||[]).forEach(function(r){offMap[r.match_id]=r;});
+      var members=results[1].data||[];
+      var extrasMap={};(results[2].data||[]).forEach(function(e){extrasMap[e.user_id]=e;});
+      var offExtras=results[3].data;
+      Promise.all(members.map(function(m){
+        return supabase.from("predictions").select("*").eq("user_id",m.user_id).eq("group_id",group.id).then(function(r){
+          var pts=0;
+          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id);});
+          pts+=scoreExtras(extrasMap[m.user_id],offExtras);
+          var hasPlanilla=(r.data||[]).length>0;
+          return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:pts,uid:m.user_id,role:m.role,hasPlanilla:hasPlanilla,profiles:m.profiles};
+        });
+      })).then(function(res){
+        setRanking(res.sort(function(a,b){return b.pts-a.pts;}));
+        setLoading(false);
+      });
+    });
+  },[]);
+
+  var medals=["🥇","🥈","🥉"];
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,overflowY:"auto"}}>
+    <div style={{background:C.bg,minHeight:"100%",maxWidth:480,margin:"0 auto"}}>
+      <Bar title={group.name} onBack={onClose}/>
+      <div style={{margin:"12px 16px",background:"rgba(0,200,224,0.05)",borderRadius:10,padding:"10px 14px",border:b("rgba(0,200,224,0.2)"),display:"flex",alignItems:"center",gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:C.sub,letterSpacing:0.5,textTransform:"uppercase"}}>Clave del grupo</div>
+          <div style={{fontSize:20,fontWeight:700,color:C.accentS,fontFamily:mono,letterSpacing:4,marginTop:2}}>{group.join_code||"—"}</div>
+        </div>
+        <div style={{fontSize:12,color:C.sub}}>{ranking.length}/{group.max_members} miembros</div>
+      </div>
+      <div style={{padding:"0 16px 40px"}}>
+        <SectionLabel>Ranking</SectionLabel>
+        {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:16}}>Calculando...</p>}
+        {ranking.map(function(r,i){
+          return <div key={r.uid} style={Object.assign({},card,{marginBottom:8,borderLeft:i<3?b3(C.accentS):b3(C.border)})}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{i<3?medals[i]:(i+1)+"."}</span>
+              <Ava name={r.nick} size={32}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:600,color:C.text,display:"flex",alignItems:"center",gap:6}}>
+                  {r.nick}
+                  {r.hasPlanilla&&<span style={{color:C.green,fontSize:12}}>✓</span>}
+                  {r.role==="admin"&&<span style={{fontSize:9,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"1px 6px",borderRadius:8,border:"1px solid rgba(255,208,96,0.2)"}}>Admin</span>}
+                </div>
+                {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
+              </div>
+              <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}<span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span></span>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={function(){setSelectedUser({user_id:r.uid,profiles:r.profiles});}} style={{flex:1,padding:"7px",borderRadius:8,border:b(C.border),background:"none",color:C.sub2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver planilla</button>
+              <button onClick={function(){setShowStats({uid:r.uid,nick:r.nick});}} style={{flex:1,padding:"7px",borderRadius:8,border:b(C.border),background:"none",color:C.green,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver stats</button>
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>
+    {selectedUser&&<ViewUserPredModal user={selectedUser} group={group} onClose={function(){setSelectedUser(null);}}/>}
+    {showStats&&<AdminUserStatsModal uid={showStats.uid} nick={showStats.nick} group={group} onClose={function(){setShowStats(null);}}/>}
+  </div>;
+}
+
+function AdminUserStatsModal({uid,nick,group,onClose}){
+  const [stats,setStats]=useState(null);
+  useEffect(function(){
+    Promise.all([
+      supabase.from("predictions").select("*").eq("user_id",uid).eq("group_id",group.id),
+      supabase.from("official_results").select("*"),
+    ]).then(function(r){
+      var preds=r[0].data||[];
+      var offMap={};(r[1].data||[]).forEach(function(x){offMap[x.match_id]=x;});
+      var total=preds.length,exact=0,result=0,played=0,totalPts=0,bestStreak=0,curStreak=0;
+      preds.sort(function(a,b){return (a.match_id||"").localeCompare(b.match_id||"");});
+      preds.forEach(function(p){
+        var off=offMap[p.match_id];
+        if(!off||off.home==null||off.home==="") return;
+        played++;
+        var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
+        if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
+        var sc=scorePred(p,off,p.match_id);
+        totalPts+=sc;
+        if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
+        else{
+          var oR=oh>oa?"H":oh<oa?"A":"D",pR=ph>pa?"H":ph<pa?"A":"D";
+          if(oR===pR){result++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
+          else curStreak=0;
+        }
+      });
+      setStats({total:total,played:played,exact:exact,result:result,totalPts:totalPts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0});
+    });
+  },[]);
+  return <Modal title={"Stats: "+nick} onClose={onClose}>
+    {!stats&&<p style={{color:C.sub,textAlign:"center"}}>Cargando...</p>}
+    {stats&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Predicciones cargadas</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.total}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Partidos jugados</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.played}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exact}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.accentS)})}><span style={{color:C.sub,fontSize:13}}>Resultado correcto</span><span style={{color:C.accentS,fontWeight:700,fontFamily:mono}}>{stats.result}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold)})}><span style={{color:C.sub,fontSize:13}}>Total puntos</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.totalPts}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Mejor racha</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.bestStreak}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>% acierto</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.pct}%</span></div>
+    </div>}
+  </Modal>;
 }
 
 function FixtureView({ctx}){
@@ -1373,7 +1766,7 @@ function FixtureView({ctx}){
     {tab==="ko"&&<div style={{padding:"10px 14px 40px"}}>
       {["r32","r16","qf","sf","3rd","f"].map(function(phase){
         var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
-        var phaseLabels={r32:"32avos",r16:"Octavos",qf:"Cuartos",sf:"Semifinales","3rd":"3 y 4 puesto",f:"Final"};
+        var phaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semifinales","3rd":"3 y 4 puesto",f:"Final"};
         return <div key={phase}>
           <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:14}}>{phaseLabels[phase]}</div>
           {slots.map(function(s){
@@ -1440,7 +1833,7 @@ function StatsModal({profile,group,onClose}){
 
 function KOBracket({preds,official,onUpd,setPreds,locked}){
   const [phase,setPhase]=useState("r32");
-  var phaseLabels={r32:"32avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var phaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
   var phaseList=["r32","r16","qf","sf","3rd","f"];
   var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
   return <>
