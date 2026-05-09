@@ -337,6 +337,7 @@ export default function App() {
       {view==="global_ranking"&&<GlobalRankingView ctx={ctx}/>}
       {view==="official"&&<OfficialResultsView ctx={ctx}/>}
       {view==="reglamento"&&<ReglamentoView ctx={ctx}/>}
+      {view==="stats"&&<StatsView ctx={ctx}/>}
       {view==="contacto"&&<ContactoView ctx={ctx}/>}
       {view==="fixture"&&<FixtureView ctx={ctx}/>}
       {view==="admin"&&<AdminView ctx={ctx}/>}
@@ -696,6 +697,8 @@ function GroupsListView({ctx}){
     <div style={{padding:"8px 16px 0"}}>
       <button onClick={function(){setView("reglamento");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.sub2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Reglamento</button>
     </div>
+    <div style={{padding:"8px 16px 0"}}>
+      <button onClick={function(){setView("stats");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:"#c084fc",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Estadísticas del torneo</button>
     {isLocked()&&<div style={{margin:"12px 16px 0",background:"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(C.red),display:"flex",alignItems:"center",gap:8}}>
       <span>&#128274;</span>
       <div style={{fontSize:12,color:C.red}}>Las planillas estan cerradas. El torneo ya comenzo.</div>
@@ -1370,7 +1373,8 @@ function ViewUserPredModal({user,group,onClose}){
 }
 
 function AdminView({ctx}){
-  var signOut=ctx.signOut,toast$=ctx.toast$;
+  var signOut=ctx.signOut,toast$=ctx.toast$,profile=ctx.profile;
+  var isSuperAdmin=profile&&profile.nick==="superadmin";
   const [tab,setTab]=useState("results");
   const [ag,setAg]=useState("A");
   const [official,setOfficial]=useState({});
@@ -1421,7 +1425,7 @@ function AdminView({ctx}){
       <div style={Object.assign({},gradText,{fontSize:15,fontWeight:700})}>Panel Admin</div>
       <IconBtn onClick={signOut}>&#9211;</IconBtn>
     </div>
-    <Tabs items={[{id:"results",label:"Resultados"},{id:"extras_admin",label:"Extras"},{id:"groups_admin",label:"Grupos"},{id:"usuarios",label:"Usuarios"},{id:"contacts",label:"Contactos"+(contactRequests.length>0?" ("+contactRequests.length+")":"")}]} active={tab} onSelect={setTab}/>
+    <Tabs items={[{id:"results",label:"Resultados"},{id:"extras_admin",label:"Extras"},{id:"groups_admin",label:"Grupos"},{id:"usuarios",label:"Usuarios"},{id:"contacts",label:"Contactos"+(contactRequests.length>0?" ("+contactRequests.length+")":"")},...(isSuperAdmin?[{id:"stats_admin",label:"Stats"}]:[])]} active={tab} onSelect={setTab}/>
 
     {tab==="results"&&<>
       <div style={{display:"flex",gap:0,borderBottom:b(C.border)}}>
@@ -1509,6 +1513,7 @@ function AdminView({ctx}){
 
     {tab==="usuarios"&&<AdminUsersTab toast$={toast$}/>}
 
+    {tab==="stats_admin"&&isSuperAdmin&&<AdminStatsTab/>}
     {tab==="contacts"&&<div style={{padding:"12px 14px 40px"}}>
       {contactRequests.length===0&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Sin solicitudes pendientes</p>}
       {contactRequests.map(function(c){
@@ -2003,6 +2008,206 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked}){
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),fontSize:11,color:C.sub}}>
       Oficial: <b style={{color:C.text}}>{off.home_team||"?"} {off.home}-{off.away} {off.away_team||"?"}</b>
       {off.pen_home!=null&&off.pen_home!==""&&<span> (pen {off.pen_home}-{off.pen_away})</span>}
+    </div>}
+  </div>;
+}
+
+function StatRow({label,value,sub,last}){
+  return <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:last?0:10,marginBottom:last?0:10,borderBottom:last?"none":b(C.border)}}>
+    <span style={{fontSize:13,color:C.sub}}>{label}</span>
+    <div style={{textAlign:"right"}}>
+      <span style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:mono}}>{value}</span>
+      {sub&&<div style={{fontSize:11,color:C.sub2}}>{sub}</div>}
+    </div>
+  </div>;
+}
+
+function AdminStatsTab(){
+  const [loading,setLoading]=useState(true);
+  const [totals,setTotals]=useState({users:0,withGroups:0,withKO:0,avgPts:0});
+  const [groupRanking,setGroupRanking]=useState([]);
+  useEffect(function(){
+    Promise.all([
+      supabase.from("profiles").select("id",{count:"exact"}).neq("nick","superadmin"),
+      supabase.from("predictions").select("user_id,match_id,home,away"),
+      supabase.from("official_results").select("*"),
+      supabase.from("groups").select("id,name,group_members(user_id)"),
+    ]).then(function(results){
+      var total=results[0].count||0;
+      var preds=results[1].data||[];
+      var offMap={};(results[2].data||[]).forEach(function(o){offMap[o.match_id]=o;});
+      var groups=results[3].data||[];
+      var usersWithGroups=new Set(),usersWithKO=new Set(),byUser={};
+      preds.forEach(function(p){
+        if(GROUP_MATCHES.find(function(m){return m.id===p.match_id;}))usersWithGroups.add(p.user_id);
+        if(KO_SLOTS.find(function(s){return s.id===p.match_id;}))usersWithKO.add(p.user_id);
+        if(!byUser[p.user_id])byUser[p.user_id]=0;
+        byUser[p.user_id]+=scorePred(p,offMap[p.match_id],p.match_id);
+      });
+      var uids=Object.keys(byUser);
+      var avg=uids.length>0?Math.round(uids.reduce(function(s,uid){return s+byUser[uid];},0)/uids.length):0;
+      setTotals({users:total,withGroups:usersWithGroups.size,withKO:usersWithKO.size,avgPts:avg});
+      var gRank=groups.map(function(g){
+        var members=g.group_members||[];
+        var sum=members.reduce(function(s,m){return s+(byUser[m.user_id]||0);},0);
+        return{name:g.name,members:members.length,avg:members.length>0?Math.round(sum/members.length):0};
+      }).sort(function(a,b){return b.avg-a.avg;});
+      setGroupRanking(gRank);
+      setLoading(false);
+    });
+  },[]);
+  return <div style={{padding:"12px 14px 40px"}}>
+    {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Cargando...</p>}
+    {!loading&&<>
+      <SectionLabel>Usuarios</SectionLabel>
+      <div style={Object.assign({},card,{marginBottom:16})}>
+        <StatRow label="Registrados" value={totals.users}/>
+        <StatRow label="Con predicciones de grupos" value={totals.withGroups} sub={totals.users?Math.round(totals.withGroups/totals.users*100)+"%":"-"}/>
+        <StatRow label="Con predicciones de cruces" value={totals.withKO} sub={totals.users?Math.round(totals.withKO/totals.users*100)+"%":"-"}/>
+        <StatRow label="Promedio de puntos" value={totals.avgPts+" pts"} last/>
+      </div>
+      <SectionLabel>Ranking de grupos (promedio)</SectionLabel>
+      <div style={Object.assign({},card,{marginBottom:16})}>
+        {groupRanking.map(function(g,i){
+          return <div key={g.name} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<groupRanking.length-1?10:0}}>
+            <span style={{width:20,fontSize:11,color:C.sub2,textAlign:"right"}}>{i+1}.</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,color:C.text,fontWeight:600}}>{g.name}</div>
+              <div style={{fontSize:11,color:C.sub,marginTop:1}}>{g.members} participantes</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:mono}}>{g.avg}</div>
+              <div style={{fontSize:10,color:C.sub}}>prom. pts</div>
+            </div>
+          </div>;
+        })}
+      </div>
+    </>}
+  </div>;
+}
+
+function StatsView({ctx}){
+  var setView=ctx.setView;
+  const [loading,setLoading]=useState(true);
+  const [campeonStats,setCampeonStats]=useState([]);
+  const [levStats,setLevStats]=useState([]);
+  const [roundStats,setRoundStats]=useState({});
+  const [matchAccuracy,setMatchAccuracy]=useState({best:null,worst:null});
+  useEffect(function(){
+    Promise.all([
+      supabase.from("prediction_extras").select("user_id,campeon"),
+      supabase.from("predictions").select("user_id,match_id,home,away,home_team,away_team"),
+      supabase.from("official_results").select("*"),
+    ]).then(function(results){
+      var extras=results[0].data||[];
+      var preds=results[1].data||[];
+      var offMap={};(results[2].data||[]).forEach(function(o){offMap[o.match_id]=o;});
+      var champCount={};
+      extras.forEach(function(e){if(e.campeon)champCount[e.campeon]=(champCount[e.campeon]||0)+1;});
+      var total=Object.values(champCount).reduce(function(s,x){return s+x;},0)||1;
+      setCampeonStats(Object.keys(champCount).map(function(t){return{team:t,count:champCount[t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10).map(function(t){return Object.assign(t,{pct:Math.round(t.count/total*100)});}));
+      var matchVotes={};
+      preds.forEach(function(p){
+        var m=GROUP_MATCHES.find(function(m){return m.id===p.match_id;});
+        if(!m)return;
+        if(!matchVotes[p.match_id])matchVotes[p.match_id]={match:m,L:0,E:0,V:0,total:0};
+        var ph=+(p.home!=null?p.home:-1),pa=+(p.away!=null?p.away:-1);
+        if(ph<0||pa<0)return;
+        if(ph>pa)matchVotes[p.match_id].L++;else if(ph<pa)matchVotes[p.match_id].V++;else matchVotes[p.match_id].E++;
+        matchVotes[p.match_id].total++;
+      });
+      setLevStats(Object.values(matchVotes).filter(function(v){return v.total>0;}).sort(function(a,b){return b.total-a.total;}));
+      var accuracy=[];
+      Object.keys(matchVotes).forEach(function(mid){
+        var off=offMap[mid];
+        if(!off||off.home==null||off.away==null)return;
+        var oh=+off.home,oa=+off.away;
+        var offO=oh>oa?"L":oh<oa?"V":"E";
+        var v=matchVotes[mid];
+        var correct=offO==="L"?v.L:offO==="V"?v.V:v.E;
+        if(v.total>0)accuracy.push({match:v.match,pct:Math.round(correct/v.total*100),total:v.total});
+      });
+      accuracy.sort(function(a,b){return b.pct-a.pct;});
+      setMatchAccuracy({best:accuracy[0]||null,worst:accuracy[accuracy.length-1]||null});
+      var byRound={};
+      preds.forEach(function(p){
+        var slot=KO_SLOTS.find(function(s){return s.id===p.match_id;});
+        if(!slot)return;
+        if(!byRound[slot.phase])byRound[slot.phase]={};
+        [p.home_team,p.away_team].forEach(function(t){if(t)byRound[slot.phase][t]=(byRound[slot.phase][t]||0)+1;});
+      });
+      var rs={};
+      Object.keys(byRound).forEach(function(phase){rs[phase]=Object.keys(byRound[phase]).map(function(t){return{team:t,count:byRound[phase][t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,5);});
+      setRoundStats(rs);
+      setLoading(false);
+    });
+  },[]);
+  var phaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var phaseOrder=["r32","r16","qf","sf","3rd","f"];
+  return <div style={{minHeight:"100vh"}}>
+    <Bar title="Estadísticas del torneo" onBack={function(){setView("groups_list");}}/>
+    {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:40}}>Cargando...</p>}
+    {!loading&&<div style={{padding:"16px 14px 80px"}}>
+      <SectionLabel>Campeón más elegido</SectionLabel>
+      <div style={Object.assign({},card,{marginBottom:16})}>
+        {campeonStats.length===0&&<p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p>}
+        {campeonStats.map(function(t,i){
+          return <div key={t.team} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<campeonStats.length-1?10:0}}>
+            <span style={{width:20,fontSize:11,color:C.sub2,textAlign:"right"}}>{i+1}.</span>
+            <div style={{flex:1}}>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                <span style={{fontSize:13,color:C.text}}>{t.team}</span>
+                <span style={{fontSize:12,color:C.sub,fontFamily:mono}}>{t.count} ({t.pct}%)</span>
+              </div>
+              <div style={{height:4,background:C.surface2,borderRadius:2}}><div style={{height:4,width:t.pct+"%",background:"#c084fc",borderRadius:2}}/></div>
+            </div>
+          </div>;
+        })}
+      </div>
+      {(matchAccuracy.best||matchAccuracy.worst)&&<>
+        <SectionLabel>Precisión en partidos</SectionLabel>
+        <div style={Object.assign({},card,{marginBottom:16})}>
+          {matchAccuracy.best&&<div style={{marginBottom:matchAccuracy.worst?12:0}}>
+            <div style={{fontSize:11,color:C.green,fontWeight:600,marginBottom:4}}>✓ MÁS ACERTADO</div>
+            <div style={{fontSize:13,color:C.text}}>{matchAccuracy.best.match.home} vs {matchAccuracy.best.match.away}</div>
+            <div style={{fontSize:11,color:C.sub,marginTop:2}}>{matchAccuracy.best.pct}% acertó — {matchAccuracy.best.total} predicciones</div>
+          </div>}
+          {matchAccuracy.worst&&<div style={{borderTop:matchAccuracy.best?b(C.border):"none",paddingTop:matchAccuracy.best?12:0}}>
+            <div style={{fontSize:11,color:C.red,fontWeight:600,marginBottom:4}}>✗ MENOS ACERTADO</div>
+            <div style={{fontSize:13,color:C.text}}>{matchAccuracy.worst.match.home} vs {matchAccuracy.worst.match.away}</div>
+            <div style={{fontSize:11,color:C.sub,marginTop:2}}>{matchAccuracy.worst.pct}% acertó — {matchAccuracy.worst.total} predicciones</div>
+          </div>}
+        </div>
+      </>}
+      <SectionLabel>Pronósticos por partido (Grupos)</SectionLabel>
+      <div style={Object.assign({},card,{marginBottom:16})}>
+        {levStats.length===0&&<p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p>}
+        {levStats.slice(0,12).map(function(v,i){
+          var lP=v.total?Math.round(v.L/v.total*100):0,eP=v.total?Math.round(v.E/v.total*100):0,vP=v.total?Math.round(v.V/v.total*100):0;
+          return <div key={v.match.id} style={{marginBottom:i<Math.min(levStats.length,12)-1?14:0}}>
+            <div style={{fontSize:11,color:C.sub,marginBottom:4}}>{v.match.home} vs {v.match.away}</div>
+            <div style={{display:"flex",gap:3,height:22}}>
+              <div style={{flex:lP||1,background:"rgba(76,223,154,0.2)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.green}}>L {lP}%</div>
+              <div style={{flex:eP||1,background:"rgba(255,208,96,0.15)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.gold}}>E {eP}%</div>
+              <div style={{flex:vP||1,background:"rgba(0,200,224,0.12)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accentS}}>V {vP}%</div>
+            </div>
+          </div>;
+        })}
+      </div>
+      <SectionLabel>Equipos más elegidos por ronda</SectionLabel>
+      {phaseOrder.filter(function(p){return roundStats[p]&&roundStats[p].length>0;}).map(function(phase){
+        return <div key={phase} style={Object.assign({},card,{marginBottom:10})}>
+          <div style={{fontSize:11,color:"#c084fc",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>{phaseLabels[phase]}</div>
+          {roundStats[phase].map(function(t,i){
+            return <div key={t.team} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<roundStats[phase].length-1?6:0}}>
+              <span style={{fontSize:11,color:C.sub2,width:16,textAlign:"right"}}>{i+1}.</span>
+              <span style={{flex:1,fontSize:13,color:C.text}}>{t.team}</span>
+              <span style={{fontSize:12,color:C.sub,fontFamily:mono}}>{t.count}</span>
+            </div>;
+          })}
+        </div>;
+      })}
+      {phaseOrder.every(function(p){return !roundStats[p]||roundStats[p].length===0;})&&<div style={Object.assign({},card,{marginBottom:16})}><p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos de cruces aún</p></div>}
     </div>}
   </div>;
 }
