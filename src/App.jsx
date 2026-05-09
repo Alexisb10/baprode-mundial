@@ -1209,6 +1209,13 @@ function PredictionsView({ctx}){
 function PredMatchCard({match,pred,off,onUpd,locked}){
   var hasOff=off&&off.home!=null&&off.home!==""&&off.away!=null&&off.away!=="";
   var sc=hasOff?scoreGroup(pred,off):null;
+  var oR=null,pR=null;
+  if(hasOff){
+    var oh2=+off.home,oa2=+off.away;
+    var ph2=+(pred&&pred.home!=null?pred.home:-1),pa2=+(pred&&pred.away!=null?pred.away:-1);
+    if(!isNaN(oh2)&&!isNaN(oa2))oR=oh2>oa2?"H":oh2<oa2?"A":"D";
+    if(ph2>=0&&pa2>=0)pR=ph2>pa2?"H":ph2<pa2?"A":"D";
+  }
   return <div style={Object.assign({},card,{marginBottom:10,opacity:locked?0.85:1})}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <span style={{fontSize:10,color:C.sub2,letterSpacing:0.5}}>{fmtDate(match.date)} - {match.time} hs - {match.venue}</span>
@@ -1223,7 +1230,19 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
       </div>
       <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
     </div>
-    {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border)}}><span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}-{off.away}</span></div>}
+    {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}-{off.away}</span>
+      {oR&&pR&&<div style={{display:"flex",gap:4}}>
+        {[["L","H"],["E","D"],["V","A"]].map(function(pair){
+          var lbl=pair[0],code=pair[1];
+          var isOff=oR===code,isPred=pR===code;
+          var borderCol=isOff&&isPred?C.green:isOff?C.green:isPred?C.red:"rgba(255,255,255,0.1)";
+          var bgCol=isOff&&isPred?"rgba(76,223,154,0.15)":isOff?"rgba(76,223,154,0.08)":isPred?"rgba(224,92,106,0.15)":"transparent";
+          var txtCol=isOff?C.green:isPred?C.red:C.sub2;
+          return <div key={lbl} style={{width:24,height:24,borderRadius:5,border:"1.5px solid "+borderCol,background:bgCol,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,fontFamily:mono,color:txtCol}}>{lbl}</div>;
+        })}
+      </div>}
+    </div>}
   </div>;
 }
 
