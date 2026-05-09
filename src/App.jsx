@@ -1031,7 +1031,7 @@ function GlobalRankingView({ctx}){
   useEffect(function(){
     Promise.all([
       supabase.from("official_results").select("*"),
-      supabase.from("predictions").select("user_id,match_id,home,away,pen_home,pen_away,winner,home_team,away_team"),
+      supabase.from("predictions").select("user_id,group_id,match_id,home,away,pen_home,pen_away,winner,home_team,away_team"),
       supabase.from("prediction_extras").select("*"),
       supabase.from("official_extras").select("*").single(),
     ]).then(function(results){
@@ -1040,17 +1040,26 @@ function GlobalRankingView({ctx}){
       var extrasMap={};(results[2].data||[]).forEach(function(e){extrasMap[e.user_id]=e;});
       var offExtras=results[3].data;
       if(!allPreds.length){setLoading(false);return;}
-      var byUser={};
-      allPreds.forEach(function(p){if(!byUser[p.user_id])byUser[p.user_id]=[];byUser[p.user_id].push(p);});
-      var uids=Object.keys(byUser);
+      var byUserGroup={};
+      allPreds.forEach(function(p){
+        if(!byUserGroup[p.user_id])byUserGroup[p.user_id]={};
+        var gid=p.group_id||"default";
+        if(!byUserGroup[p.user_id][gid])byUserGroup[p.user_id][gid]=[];
+        byUserGroup[p.user_id][gid].push(p);
+      });
+      var uids=Object.keys(byUserGroup);
       supabase.from("profiles").select("id,nick,nombre").in("id",uids).then(function(r2){
         var profMap={};(r2.data||[]).forEach(function(p){profMap[p.id]=p;});
         var res=uids.map(function(uid){
-          var pts=0;
-          byUser[uid].forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id);});
-          pts+=scoreExtras(extrasMap[uid],offExtras);
+          var extraPts=scoreExtras(extrasMap[uid],offExtras);
+          var bestGroupPts=0;
+          Object.keys(byUserGroup[uid]).forEach(function(gid){
+            var gpts=0;
+            byUserGroup[uid][gid].forEach(function(p){gpts+=scorePred(p,offMap[p.match_id],p.match_id);});
+            if(gpts>bestGroupPts)bestGroupPts=gpts;
+          });
           var prof=profMap[uid];
-          return{uid:uid,pts:pts,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
+          return{uid:uid,pts:bestGroupPts+extraPts,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
         });
         setRanking(res.sort(function(a,b){return b.pts-a.pts;}));
         setLoading(false);
