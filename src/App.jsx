@@ -1923,11 +1923,13 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked}){
     </div>
 
     {isDraw&&<div style={{padding:"10px",background:C.surface2,borderRadius:8,border:b("rgba(255,208,96,0.3)"),marginTop:6}}>
-      <div style={{fontSize:10,color:C.gold,marginBottom:6,fontWeight:700,letterSpacing:0.5}}>&#9917; PENALES</div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+      <div style={{fontSize:10,color:C.gold,marginBottom:6,fontWeight:700,letterSpacing:0.5,textAlign:"center"}}>&#9917; PENALES</div>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <div style={{flex:1}}/>
         <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_home||""} onChange={function(e){onUpd(slot.id,"pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
         <span style={{color:C.sub2}}>-</span>
         <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){onUpd(slot.id,"pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <div style={{flex:1}}/>
       </div>
       <div style={{marginTop:8}}>
         <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador (pasa de fase)</div>
