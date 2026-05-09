@@ -194,7 +194,7 @@ function scoreGroup(pred, off) {
 }
 
 function scoreKO(pred, off, phase) {
-  if (!off||!off.home_team||!off.away_team) return null;
+  if (!off) return null;
   let p=0;
   const pts=KO_PTS[phase];
   if (!pts) return null;
@@ -270,6 +270,19 @@ export default function App() {
   const [toast,setToast]=useState(null);
   const [loading,setLoading]=useState(true);
   const [hasNewResults,setHasNewResults]=useState(false);
+  const [installPrompt,setInstallPrompt]=useState(null);
+
+  useEffect(function(){
+    function handler(e){e.preventDefault();setInstallPrompt(e);}
+    window.addEventListener("beforeinstallprompt",handler);
+    return function(){window.removeEventListener("beforeinstallprompt",handler);};
+  },[]);
+
+  function doInstall(){
+    if(!installPrompt) return;
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function(){setInstallPrompt(null);});
+  }
 
   const showToast=(msg,type)=>{setToast({msg,type:type||"ok"});setTimeout(()=>setToast(null),2500);};
 
@@ -310,7 +323,7 @@ export default function App() {
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}><div style={{fontSize:56}}>⚽</div></div>;
 
-  var ctx={session,profile,setProfile,activeGroup,setActiveGroup,setView,toast$:showToast,signOut,hasNewResults,markResultsSeen};
+  var ctx={session,profile,setProfile,activeGroup,setActiveGroup,setView,toast$:showToast,signOut,hasNewResults,markResultsSeen,installPrompt,doInstall};
 
   return (
     <Page>
@@ -428,6 +441,7 @@ function SplashView({ctx}){
     <div style={{padding:"0 20px 48px",display:"flex",flexDirection:"column",gap:10}}>
       <GradBtn onClick={function(){setView("login");}}>Iniciar sesion</GradBtn>
       <Btn2 onClick={function(){setView("register");}}>Crear cuenta</Btn2>
+      {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
       <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>Problemas para ingresar? Contactar administrador</button>
     </div>
   </div>;
@@ -486,6 +500,7 @@ function LoginView({ctx}){
         <button onClick={function(){setView("register");}} style={{background:"none",border:"none",color:C.accentS,fontSize:13,cursor:"pointer",fontFamily:font,fontWeight:600}}>Registrate</button>
       </div>
       <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>Problemas? Contactar administrador</button>
+      {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
     </div>
   </div>;
 }
@@ -1302,7 +1317,11 @@ function RankingView({ctx}){
 function ViewUserPredModal({user,group,onClose}){
   const [preds,setPreds]=useState({});
   const [official,setOfficial]=useState({});
+  const [mainTab,setMainTab]=useState("grupos");
   const [ag,setAg]=useState("A");
+  const [koPhase,setKoPhase]=useState("r32");
+  var koPhaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var koPhaseList=["r32","r16","qf","sf","3rd","f"];
   useEffect(function(){
     Promise.all([
       supabase.from("predictions").select("*").eq("user_id",user.user_id).eq("group_id",group.id),
@@ -1316,12 +1335,27 @@ function ViewUserPredModal({user,group,onClose}){
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,overflowY:"auto"}}>
     <div style={{background:C.bg,minHeight:"100%",maxWidth:480,margin:"0 auto"}}>
       <Bar title={"Planilla de "+name} onBack={onClose}/>
-      <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
-      <div style={{padding:"10px 14px 40px"}}>
-        {GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).map(function(m){
-          return <PredMatchCard key={m.id} match={m} pred={preds[m.id]||{}} off={official[m.id]||{}} onUpd={function(){}} locked={true}/>;
-        })}
-      </div>
+      <Tabs items={[{id:"grupos",label:"Grupos"},{id:"cruces",label:"Cruces"}]} active={mainTab} onSelect={setMainTab}/>
+      {mainTab==="grupos"&&<>
+        <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
+        <div style={{padding:"10px 14px 40px"}}>
+          {GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).map(function(m){
+            return <PredMatchCard key={m.id} match={m} pred={preds[m.id]||{}} off={official[m.id]||{}} onUpd={function(){}} locked={true}/>;
+          })}
+        </div>
+      </>}
+      {mainTab==="cruces"&&<>
+        <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
+          {koPhaseList.map(function(p){
+            return <button key={p} onClick={function(){setKoPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:koPhase===p?b(C.accentS):b(C.border),background:koPhase===p?"rgba(0,200,224,0.1)":C.surface,color:koPhase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{koPhaseLabels[p]}</button>;
+          })}
+        </div>
+        <div style={{padding:"12px 14px 40px"}}>
+          {KO_SLOTS.filter(function(s){return s.phase===koPhase;}).map(function(slot){
+            return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={function(){}} preds={preds} setPreds={setPreds} locked={true}/>;
+          })}
+        </div>
+      </>}
     </div>
   </div>;
 }
