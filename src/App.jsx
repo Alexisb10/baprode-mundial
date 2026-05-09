@@ -699,6 +699,7 @@ function GroupsListView({ctx}){
     </div>
     <div style={{padding:"8px 16px 0"}}>
       <button onClick={function(){setView("stats");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:"#c084fc",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Estadísticas del torneo</button>
+    </div>
     {isLocked()&&<div style={{margin:"12px 16px 0",background:"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(C.red),display:"flex",alignItems:"center",gap:8}}>
       <span>&#128274;</span>
       <div style={{fontSize:12,color:C.red}}>Las planillas estan cerradas. El torneo ya comenzo.</div>
