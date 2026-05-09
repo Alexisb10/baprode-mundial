@@ -1301,10 +1301,15 @@ function RankingView({ctx}){
 
 function ViewUserPredModal({user,group,onClose}){
   const [preds,setPreds]=useState({});
+  const [official,setOfficial]=useState({});
   const [ag,setAg]=useState("A");
   useEffect(function(){
-    supabase.from("predictions").select("*").eq("user_id",user.user_id).eq("group_id",group.id).then(function(r){
-      var map={};(r.data||[]).forEach(function(x){map[x.match_id]=x;});setPreds(map);
+    Promise.all([
+      supabase.from("predictions").select("*").eq("user_id",user.user_id).eq("group_id",group.id),
+      supabase.from("official_results").select("*"),
+    ]).then(function(results){
+      var predMap={};(results[0].data||[]).forEach(function(x){predMap[x.match_id]=x;});setPreds(predMap);
+      var offMap={};(results[1].data||[]).forEach(function(r){offMap[r.match_id]=r;});setOfficial(offMap);
     });
   },[]);
   var name=user.profiles&&(user.profiles.nick||user.profiles.nombre)||"?";
@@ -1314,14 +1319,7 @@ function ViewUserPredModal({user,group,onClose}){
       <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
       <div style={{padding:"10px 14px 40px"}}>
         {GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).map(function(m){
-          return <div key={m.id} style={Object.assign({},card,{marginBottom:8})}>
-            <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{fmtDate(m.date)} - {m.time} hs</div>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
-              <span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text,minWidth:60,textAlign:"center"}}>{preds[m.id]&&preds[m.id].home!=null?preds[m.id].home:"-"} - {preds[m.id]&&preds[m.id].away!=null?preds[m.id].away:"-"}</span>
-              <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
-            </div>
-          </div>;
+          return <PredMatchCard key={m.id} match={m} pred={preds[m.id]||{}} off={official[m.id]||{}} onUpd={function(){}} locked={true}/>;
         })}
       </div>
     </div>
