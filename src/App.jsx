@@ -1526,12 +1526,14 @@ function AdminUsersTab({toast$}){
   const [loading,setLoading]=useState(true);
   const [selected,setSelected]=useState(null);
   const [showReset,setShowReset]=useState(false);
+  const [viewPlanilla,setViewPlanilla]=useState(null);
+  const [query,setQuery]=useState("");
   const [realizado,setRealizado]=useState(function(){
     try{return JSON.parse(localStorage.getItem("pw_realizado")||"[]");}catch(e){return[];}
   });
 
   useEffect(function(){
-    supabase.from("profiles").select("id,nick,nombre,email,is_admin,created_at").order("created_at",{ascending:false}).then(function(r){
+    supabase.from("profiles").select("id,nick,nombre,email,is_admin,created_at,group_members(group_id,groups(id,name))").order("nick",{ascending:true}).then(function(r){
       setUsers(r.data||[]);
       setLoading(false);
     });
@@ -1545,27 +1547,40 @@ function AdminUsersTab({toast$}){
     });
   }
 
+  var filtered=users.filter(function(u){
+    if(u.nick==="superadmin") return false;
+    if(!query) return true;
+    var q=query.toLowerCase();
+    return (u.nick&&u.nick.toLowerCase().includes(q))||(u.nombre&&u.nombre.toLowerCase().includes(q));
+  });
+
   return <div style={{padding:"12px 14px 40px"}}>
+    <input style={Object.assign({},inp,{marginBottom:12})} placeholder="Buscar por nick o nombre..." value={query} onChange={function(e){setQuery(e.target.value);}}/>
+    <div style={{fontSize:11,color:C.sub2,marginBottom:10}}>{filtered.length} usuario{filtered.length!==1?"s":""}</div>
     {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Cargando...</p>}
-    {users.map(function(u){
-      if(u.nick==="superadmin") return null;
+    {filtered.map(function(u){
       var done=realizado.includes(u.id);
+      var grupo=u.group_members&&u.group_members[0]&&u.group_members[0].groups;
       return <div key={u.id} style={Object.assign({},card,{marginBottom:8})}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:done?8:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
           <Ava name={u.nick||u.nombre} size={34}/>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:600,color:done?C.sub:C.text}}>{u.nick||u.nombre}</div>
             {u.nombre&&u.nick&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>{u.nombre}</div>}
-            <div style={{fontSize:10,color:C.sub,marginTop:1}}>{u.created_at?new Date(u.created_at).toLocaleDateString("es-AR"):""}</div>
+            {grupo&&<div style={{fontSize:10,color:C.accentS,marginTop:1}}>Grupo: {grupo.name}</div>}
           </div>
           <button onClick={function(){setSelected(u);setShowReset(true);}} style={{background:"none",border:b(C.border2),color:C.accentS,borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Reset pw</button>
         </div>
-        <button onClick={function(){toggleRealizado(u.id);}} style={{width:"100%",padding:"7px",borderRadius:8,border:done?b(C.green):b(C.border),background:done?"rgba(76,223,154,0.08)":"transparent",color:done?C.green:C.sub,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font,marginTop:6}}>
-          {done?"✓ Realizado":"Marcar como realizado"}
-        </button>
+        <div style={{display:"flex",gap:6}}>
+          {grupo&&<button onClick={function(){setViewPlanilla({user_id:u.id,profiles:{nick:u.nick,nombre:u.nombre}});}} style={{flex:1,padding:"7px",borderRadius:8,border:b(C.border),background:"none",color:C.sub2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver planilla</button>}
+          <button onClick={function(){toggleRealizado(u.id);}} style={{flex:1,padding:"7px",borderRadius:8,border:done?b(C.green):b(C.border),background:done?"rgba(76,223,154,0.08)":"transparent",color:done?C.green:C.sub,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>
+            {done?"✓ Realizado":"Marcar realizado"}
+          </button>
+        </div>
       </div>;
     })}
     {showReset&&selected&&<ResetPasswordModal user={selected} onClose={function(){setShowReset(false);setSelected(null);}} toast$={toast$}/>}
+    {viewPlanilla&&<ViewUserPredModal user={viewPlanilla} group={users.find(function(u){return u.id===viewPlanilla.user_id;})&&users.find(function(u){return u.id===viewPlanilla.user_id;}).group_members&&users.find(function(u){return u.id===viewPlanilla.user_id;}).group_members[0]&&users.find(function(u){return u.id===viewPlanilla.user_id;}).group_members[0].groups} onClose={function(){setViewPlanilla(null);}}/>}
   </div>;
 }
 
