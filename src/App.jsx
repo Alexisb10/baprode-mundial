@@ -2268,10 +2268,32 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
     });
   }
 
-  // Penales (no propaga winner directamente; el winner se elige aparte)
+  // Penales: ahora auto-derivan el ganador. Si ambos penales tienen valor y son distintos,
+  // el ganador es quien tiene mas goles y se cascadea via applyWinnerChange.
   function setPen(field,val){
     if(locked)return;
-    onUpd(slot.id,field,val);
+    setPreds(function(p){
+      var n=Object.assign({},p);
+      n[slot.id]=Object.assign({},n[slot.id]||{match_id:slot.id});
+      n[slot.id][field]=val;
+      var nph=field==="pen_home"?val:n[slot.id].pen_home;
+      var npa=field==="pen_away"?val:n[slot.id].pen_away;
+      var ht=n[slot.id].home_team,at=n[slot.id].away_team;
+      if(nph!=null&&nph!==""&&npa!=null&&npa!==""&&ht&&at){
+        var nphn=+nph,npan=+npa;
+        if(!isNaN(nphn)&&!isNaN(npan)&&nphn!==npan){
+          var w=nphn>npan?ht:at;
+          n=applyWinnerChange(n,slot.id,w,ht,at);
+        } else {
+          // empate o invalidos -> sin ganador
+          n[slot.id].winner=null;
+        }
+      } else {
+        // alguno vacio -> sin ganador definido todavia
+        n[slot.id].winner=null;
+      }
+      return n;
+    });
   }
 
   return <div style={Object.assign({},card,{marginBottom:12,opacity:locked?0.85:1,borderLeft:hasOff?b3(C.accentS):b3(C.border)})}>
@@ -2299,10 +2321,9 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
         <div style={{flex:1}}/>
       </div>
       <div style={{marginTop:8}}>
-        <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador (pasa de fase)</div>
-        <div style={{display:"flex",gap:6}}>
-          {pred.home_team&&<button onClick={function(){pickWinner(pred.home_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.home_team?b(C.accentS):b(C.border),background:pred.winner===pred.home_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.home_team}</button>}
-          {pred.away_team&&<button onClick={function(){pickWinner(pred.away_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.away_team?b(C.accentS):b(C.border),background:pred.winner===pred.away_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.away_team}</button>}
+        <div style={{fontSize:10,color:C.sub,marginBottom:4,textAlign:"center"}}>Pasa de fase</div>
+        <div style={{padding:"10px",borderRadius:6,border:b(pred.winner?C.accentS:C.border),background:pred.winner?"rgba(0,200,224,0.08)":C.surface,color:pred.winner?C.accentS:C.sub2,fontSize:13,fontWeight:700,textAlign:"center",fontFamily:font,fontStyle:pred.winner?"normal":"italic"}}>
+          {pred.winner||"Definir penales"}
         </div>
       </div>
     </div>}
