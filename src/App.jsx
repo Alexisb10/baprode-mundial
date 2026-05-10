@@ -5,8 +5,11 @@ const SUPABASE_URL = "https://iffjdqfwdawqfxwowdqp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmZmpkcWZ3ZGF3cWZ4d293ZHFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTgyNjIsImV4cCI6MjA5MzU5NDI2Mn0.J3oSgvOBNbO7Kg26HeKiDagkBbrMNsgm5tkClA_0QXI";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const TOURNAMENT_START = new Date("2026-06-11T00:00:00-03:00");
-const isLocked = () => new Date() >= TOURNAMENT_START;
+// Primer partido: México vs Sudáfrica, 11/06 16:00 hora local México (UTC-6) = 19:00 ART
+const TOURNAMENT_START = new Date("2026-06-11T19:00:00-03:00");
+// Las predicciones de usuarios se bloquean 1h antes del primer partido
+const PREDICTIONS_LOCK = new Date(TOURNAMENT_START.getTime() - 60*60*1000);
+const isLocked = () => new Date() >= PREDICTIONS_LOCK;
 
 const C = {
   bg:"#050a10",surface:"#091520",surface2:"#0d1e2e",
@@ -178,7 +181,136 @@ const KO_NEXT = {
   r16_6:{next:"qf_3",pos:"home"},r16_7:{next:"qf_3",pos:"away"},
   qf_0:{next:"sf_0",pos:"home"},qf_1:{next:"sf_0",pos:"away"},
   qf_2:{next:"sf_1",pos:"home"},qf_3:{next:"sf_1",pos:"away"},
+  sf_0:{next:"f_0",pos:"home"},sf_1:{next:"f_0",pos:"away"},
 };
+
+// El perdedor de cada semifinal va al partido por el 3° puesto
+const KO_LOSER_NEXT = {
+  sf_0:{next:"3rd_0",pos:"home"},
+  sf_1:{next:"3rd_0",pos:"away"},
+};
+
+// ========== METADATA ESTRUCTURADA DE SLOTS ==========
+// Parsea los labels de KO_SLOTS para generar metadata utilizable.
+// Para r32: extrae posición/grupo o lista de grupos posibles para terceros.
+// Para r16+: deriva de KO_NEXT (winner del slot anterior alimenta este slot).
+function parseSlotSide(s){
+  var m1=s.match(/^(\d)°([A-L])$/);
+  if(m1) return {type:"pos",pos:+m1[1],group:m1[2]};
+  var m2=s.match(/Mejor 3°\s*\(([A-L/]+)\)/);
+  if(m2) return {type:"third",groups:m2[1].split("/")};
+  return {type:"unknown",raw:s};
+}
+function buildSlotMeta(){
+  var meta={};
+  // r32: parsing directo del label
+  KO_SLOTS.filter(function(s){return s.phase==="r32";}).forEach(function(s){
+    var after=s.label.split(":").slice(1).join(":").trim();
+    var parts=after.split(" vs ").map(function(x){return x.trim();});
+    meta[s.id]={home:parseSlotSide(parts[0]||""),away:parseSlotSide(parts[1]||"")};
+  });
+  // r16+, final: derivado de KO_NEXT inverso (ganadores)
+  var inv={};
+  Object.keys(KO_NEXT).forEach(function(from){
+    var to=KO_NEXT[from];
+    if(!inv[to.next])inv[to.next]={};
+    inv[to.next][to.pos]={type:"winner_of",from:from};
+  });
+  // 3°/4° puesto: derivado de KO_LOSER_NEXT (perdedores de semis)
+  Object.keys(KO_LOSER_NEXT).forEach(function(from){
+    var to=KO_LOSER_NEXT[from];
+    if(!inv[to.next])inv[to.next]={};
+    inv[to.next][to.pos]={type:"loser_of",from:from};
+  });
+  KO_SLOTS.filter(function(s){return s.phase!=="r32";}).forEach(function(s){
+    meta[s.id]={home:(inv[s.id]&&inv[s.id].home)||{type:"unknown"},away:(inv[s.id]&&inv[s.id].away)||{type:"unknown"}};
+  });
+  return meta;
+}
+const KO_SLOT_META=buildSlotMeta();
+
+// Texto legible para el header del picker (ej "1° del Grupo A", "Mejor 3° de A/B/C/D/F")
+function slotPosLabel(side){
+  if(!side) return "";
+  if(side.type==="pos") return side.pos+"° del Grupo "+side.group;
+  if(side.type==="third") return "Mejor 3° de "+side.groups.join("/");
+  if(side.type==="winner_of") return "Ganador de "+side.from;
+  if(side.type==="loser_of") return "Perdedor de "+side.from;
+  return "";
+}
+
+// ========== CÁLCULO DE TABLA DE GRUPOS ==========
+// Calcula la tabla de un grupo a partir de los marcadores cargados.
+// scores: {match_id: {home, away}} (puede ser preds del usuario o results oficiales).
+// Devuelve array de 4 equipos ordenados por pts → DG → GF → alfabético.
+// Cada item: {team, pts, w, d, l, gf, ga, gd, played, hasAll}
+function calcGroupStandings(group,scores){
+  var teams=GROUPS[group]||[];
+  var matches=GROUP_MATCHES.filter(function(m){return m.group===group;});
+  var stats={};
+  teams.forEach(function(t){stats[t]={team:t,pts:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,played:0};});
+  var allPlayed=true;
+  matches.forEach(function(m){
+    var s=scores&&scores[m.id];
+    var h=s&&s.home,a=s&&s.away;
+    if(h==null||h===""||a==null||a===""){allPlayed=false;return;}
+    h=+h;a=+a;
+    if(isNaN(h)||isNaN(a)){allPlayed=false;return;}
+    stats[m.home].played++;stats[m.away].played++;
+    stats[m.home].gf+=h;stats[m.home].ga+=a;
+    stats[m.away].gf+=a;stats[m.away].ga+=h;
+    if(h>a){stats[m.home].w++;stats[m.home].pts+=3;stats[m.away].l++;}
+    else if(h<a){stats[m.away].w++;stats[m.away].pts+=3;stats[m.home].l++;}
+    else{stats[m.home].d++;stats[m.away].d++;stats[m.home].pts+=1;stats[m.away].pts+=1;}
+  });
+  Object.keys(stats).forEach(function(t){stats[t].gd=stats[t].gf-stats[t].ga;stats[t].hasAll=allPlayed;});
+  var arr=teams.map(function(t){return stats[t];});
+  arr.sort(function(a,b){
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    if(b.gd!==a.gd)return b.gd-a.gd;
+    if(b.gf!==a.gf)return b.gf-a.gf;
+    return a.team.localeCompare(b.team);
+  });
+  return arr;
+}
+
+// Ranking global de los 12 terceros (mismos criterios FIFA calculables)
+function calcThirdsRanking(scores){
+  var thirds=[];
+  Object.keys(GROUPS).forEach(function(g){
+    var s=calcGroupStandings(g,scores);
+    if(s[2]&&s[2].played>0)thirds.push(Object.assign({},s[2],{group:g}));
+  });
+  thirds.sort(function(a,b){
+    if(b.pts!==a.pts)return b.pts-a.pts;
+    if(b.gd!==a.gd)return b.gd-a.gd;
+    if(b.gf!==a.gf)return b.gf-a.gf;
+    return a.team.localeCompare(b.team);
+  });
+  return thirds;
+}
+
+// Devuelve los equipos elegibles para un lado de un slot, ordenados según marcadores.
+// Para "pos": los 4 equipos del grupo, con el de la posición indicada arriba.
+// Para "third": los grupos posibles, cada uno con sus 4 equipos.
+// Para "winner_of": no aplica (auto-fill).
+function eligibleTeamsForSide(side,scores){
+  if(!side)return null;
+  if(side.type==="pos"){
+    var standings=calcGroupStandings(side.group,scores);
+    var hasAll=standings[0]&&standings[0].hasAll;
+    return {kind:"single",group:side.group,expectedPos:side.pos,teams:standings,complete:hasAll};
+  }
+  if(side.type==="third"){
+    var byGroup={};
+    side.groups.forEach(function(g){
+      var s=calcGroupStandings(g,scores);
+      byGroup[g]={teams:s,complete:s[0]&&s[0].hasAll};
+    });
+    return {kind:"third",groups:side.groups,byGroup:byGroup};
+  }
+  return null;
+}
 
 function scoreGroup(pred, off) {
   if (!off||off.home==null||off.home===""||off.away==null||off.away==="") return null;
@@ -211,17 +343,24 @@ function scoreKO(pred, off, phase) {
       if(t&&offTeams.indexOf(t)>=0) p+=pts.team;
     });
   }
+  // Goles: solo otorga puntos si el equipo en esa posición coincide con el oficial.
+  // Sin esta validación, predecir 0-1 con Qatar como visitante daría puntos cuando
+  // el visitante real es Suiza y también marcó 1.
   const oh=+(off.home!=null?off.home:-1),oa=+(off.away!=null?off.away:-1);
   const ph=+(pred&&pred.home!=null?pred.home:-1),pa=+(pred&&pred.away!=null?pred.away:-1);
-  if (oh>=0&&ph>=0&&ph===oh) p+=pts.goal;
-  if (oa>=0&&pa>=0&&pa===oa) p+=pts.goal;
+  const homeMatches=pred&&pred.home_team&&off.home_team&&pred.home_team===off.home_team;
+  const awayMatches=pred&&pred.away_team&&off.away_team&&pred.away_team===off.away_team;
+  if (oh>=0&&ph>=0&&ph===oh&&homeMatches) p+=pts.goal;
+  if (oa>=0&&pa>=0&&pa===oa&&awayMatches) p+=pts.goal;
+  // Penales: solo se evalúan si la predicción fue empate Y el partido oficial fue a penales.
+  // Además, el goleo de penales solo cuenta si el equipo en esa posición coincide.
   const predDraw=ph>=0&&pa>=0&&ph===pa;
   const offHasPen=off.pen_home!=null&&off.pen_home!==""&&off.pen_away!=null&&off.pen_away!=="";
   if (predDraw&&offHasPen) {
     const oph=+off.pen_home,opa=+off.pen_away;
     const pph=+(pred&&pred.pen_home!=null?pred.pen_home:-1),ppa=+(pred&&pred.pen_away!=null?pred.pen_away:-1);
-    if (pph===oph) p+=pts.pen;
-    if (ppa===opa) p+=pts.pen;
+    if (pph===oph&&homeMatches) p+=pts.pen;
+    if (ppa===opa&&awayMatches) p+=pts.pen;
   }
   return p;
 }
@@ -1461,33 +1600,18 @@ function AdminView({ctx}){
         </div>
         <div style={{padding:"10px 14px 100px"}}>
           {koSlots.map(function(slot){
-            var off=official[slot.id]||{};
-            var isDraw=off.home!=null&&off.away!=null&&off.home!==""&&off.away!==""&&+off.home===+off.away;
-            return <div key={slot.id} style={Object.assign({},card,{marginBottom:10})}>
-              <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{slot.label} · {fmtDate(slot.date)} · {slot.time} hs</div>
-              <div style={{fontSize:10,color:C.sub,marginBottom:8}}>📍 {slot.venue}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                <input style={Object.assign({},inp,{flex:1,padding:"7px 10px",fontSize:12})} placeholder="Equipo 1" value={off.home_team||""} onChange={function(e){upd(slot.id,"home_team",e.target.value);}}/>
-                <ScoreBox value={off.home!=null?off.home:""} onChange={function(v){upd(slot.id,"home",v);}}/>
-                <span style={{color:C.border2,fontFamily:mono}}>-</span>
-                <ScoreBox value={off.away!=null?off.away:""} onChange={function(v){upd(slot.id,"away",v);}}/>
-                <input style={Object.assign({},inp,{flex:1,padding:"7px 10px",fontSize:12,textAlign:"right"})} placeholder="Equipo 2" value={off.away_team||""} onChange={function(e){upd(slot.id,"away_team",e.target.value);}}/>
-              </div>
-              {isDraw&&<div style={{background:C.surface2,borderRadius:8,padding:"10px",border:b("rgba(255,208,96,0.3)"),marginBottom:8}}>
-                <div style={{fontSize:10,color:C.gold,fontWeight:700,marginBottom:6}}>⚽ PENALES</div>
-                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                  <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"6px"})} placeholder="0" value={off.pen_home||""} onChange={function(e){upd(slot.id,"pen_home",e.target.value);}}/>
-                  <span style={{color:C.sub2}}>-</span>
-                  <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"6px"})} placeholder="0" value={off.pen_away||""} onChange={function(e){upd(slot.id,"pen_away",e.target.value);}}/>
-                </div>
-                <div style={{fontSize:10,color:C.sub,marginBottom:6}}>Ganador (pasa de fase)</div>
-                <div style={{display:"flex",gap:6}}>
-                  {off.home_team&&<button onClick={function(){upd(slot.id,"winner",off.home_team);}} style={{flex:1,padding:"7px",borderRadius:6,border:off.winner===off.home_team?b(C.accentS):b(C.border),background:off.winner===off.home_team?"rgba(0,200,224,0.1)":C.surface,color:off.winner===off.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>{off.home_team}</button>}
-                  {off.away_team&&<button onClick={function(){upd(slot.id,"winner",off.away_team);}} style={{flex:1,padding:"7px",borderRadius:6,border:off.winner===off.away_team?b(C.accentS):b(C.border),background:off.winner===off.away_team?"rgba(0,200,224,0.1)":C.surface,color:off.winner===off.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>{off.away_team}</button>}
-                </div>
-              </div>}
-              {off.winner&&!isDraw&&<div style={{fontSize:11,color:C.green}}>✓ Pasa: <b>{off.winner}</b></div>}
-            </div>;
+            return <KOMatchCard
+              key={slot.id}
+              slot={slot}
+              pred={official[slot.id]||{}}
+              off={{}}
+              onUpd={upd}
+              preds={official}
+              setPreds={setOfficial}
+              locked={false}
+              scoresForCalc={official}
+              isAdmin={true}
+            />;
           })}
         </div>
       </>}
@@ -1932,37 +2056,222 @@ function KOBracket({preds,official,onUpd,setPreds,locked}){
   </>;
 }
 
-function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked}){
+// ========== CASCADA DE CAMBIOS EN BRACKET ==========
+// Cuando un equipo cambia en un slot, limpia recursivamente los descendientes:
+// el equipo derivado del ganador (KO_NEXT) y del perdedor (KO_LOSER_NEXT) se invalidan.
+function cascadeClearDescendants(state,slotId){
+  var n=Object.assign({},state);
+  function clearChain(sId){
+    [KO_NEXT[sId],KO_LOSER_NEXT[sId]].forEach(function(link){
+      if(!link)return;
+      var d=link.next;
+      n[d]=Object.assign({},n[d]||{match_id:d});
+      n[d][link.pos+"_team"]=null;
+      n[d].home=null;n[d].away=null;
+      n[d].pen_home=null;n[d].pen_away=null;
+      n[d].winner=null;
+      clearChain(d);
+    });
+  }
+  clearChain(slotId);
+  return n;
+}
+
+// Aplica cambio de equipo en el picker: actualiza el equipo, limpia marcadores
+// del slot (matchup cambió) y propaga a todos los descendientes.
+function applyTeamChange(state,slotId,pos,newTeam){
+  var n=Object.assign({},state);
+  n[slotId]=Object.assign({},n[slotId]||{match_id:slotId});
+  n[slotId][pos+"_team"]=newTeam;
+  n[slotId].home=null;n[slotId].away=null;
+  n[slotId].pen_home=null;n[slotId].pen_away=null;
+  n[slotId].winner=null;
+  return cascadeClearDescendants(n,slotId);
+}
+
+// Cuando cambia el ganador de un slot (por marcador o por penales): propaga
+// el ganador al siguiente slot vía KO_NEXT, el perdedor a 3°/4° vía KO_LOSER_NEXT,
+// y limpia descendientes si cualquier equipo derivado cambió.
+function applyWinnerChange(state,slotId,newWinner,homeTeam,awayTeam){
+  var n=Object.assign({},state);
+  n[slotId]=Object.assign({},n[slotId]||{match_id:slotId});
+  n[slotId].winner=newWinner||null;
+  // Propagar ganador
+  if(newWinner&&KO_NEXT[slotId]){
+    var nx=KO_NEXT[slotId];
+    n[nx.next]=Object.assign({},n[nx.next]||{match_id:nx.next});
+    var oldT=n[nx.next][nx.pos+"_team"];
+    if(oldT!==newWinner){
+      n[nx.next][nx.pos+"_team"]=newWinner;
+      n[nx.next].home=null;n[nx.next].away=null;
+      n[nx.next].pen_home=null;n[nx.next].pen_away=null;
+      n[nx.next].winner=null;
+      n=cascadeClearDescendants(n,nx.next);
+    }
+  }
+  // Propagar perdedor a 3°/4°
+  if(newWinner&&KO_LOSER_NEXT[slotId]){
+    var loser=newWinner===homeTeam?awayTeam:(newWinner===awayTeam?homeTeam:null);
+    if(loser){
+      var ln=KO_LOSER_NEXT[slotId];
+      n[ln.next]=Object.assign({},n[ln.next]||{match_id:ln.next});
+      var oldL=n[ln.next][ln.pos+"_team"];
+      if(oldL!==loser){
+        n[ln.next][ln.pos+"_team"]=loser;
+        n[ln.next].home=null;n[ln.next].away=null;
+        n[ln.next].pen_home=null;n[ln.next].pen_away=null;
+        n[ln.next].winner=null;
+        n=cascadeClearDescendants(n,ln.next);
+      }
+    }
+  }
+  return n;
+}
+
+// ========== TEAM SLOT PICKER ==========
+// Selector de equipo para slots de fase eliminatoria.
+// - Para r32: abre modal con dropdown ordenado según los marcadores del usuario/admin.
+// - Para r16+: solo lectura, muestra el equipo derivado del ganador del feeder.
+// - Para 3°/4°: solo lectura, muestra el perdedor de la semi correspondiente.
+function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
+  const [open,setOpen]=useState(false);
+  const [thirdGroupOpen,setThirdGroupOpen]=useState(null);
+  var meta=KO_SLOT_META[slotId];
+  if(!meta) return <input style={Object.assign({},inp,{padding:"8px 10px",fontSize:13})} value={value||""} readOnly placeholder="?"/>;
+  var side=meta[pos];
+  if(!side) return null;
+
+  // Auto-fill: octavos en adelante (incluye final y 3°/4°)
+  var isAutoFill=side.type==="winner_of"||side.type==="loser_of";
+  var posDesc=slotPosLabel(side);
+
+  if(isAutoFill){
+    return <div style={{flex:1}}>
+      <div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>
+      <div style={Object.assign({},inp,{padding:"8px 10px",fontSize:13,opacity:value?1:0.5,color:value?C.text:C.sub2,fontStyle:value?"normal":"italic"})}>{value||"Por definir"}</div>
+    </div>;
+  }
+
+  // r32: clickeable
+  function pick(team){
+    onChange(team);
+    setOpen(false);
+    setThirdGroupOpen(null);
+  }
+
+  function renderTable(group,teams){
+    var allFilled=teams[0]&&teams[0].hasAll;
+    return <div>
+      <div style={{fontSize:11,color:allFilled?C.sub:C.gold,marginBottom:8,padding:"8px 10px",background:allFilled?"rgba(0,200,224,0.06)":"rgba(255,208,96,0.08)",borderRadius:8,border:b(allFilled?C.border:"rgba(255,208,96,0.3)")}}>
+        {allFilled
+          ? (isAdmin?"Según los marcadores oficiales así quedó el grupo. Pero podés elegir libremente.":"Según tu pronóstico así quedó el grupo. Pero podés elegir libremente.")
+          : "Completá los pronósticos del grupo para ver el orden estimado. Mientras tanto, lista en orden original."}
+      </div>
+      {teams.map(function(t,i){
+        var isSel=value===t.team;
+        return <button key={t.team} onClick={function(){pick(t.team);}} style={{display:"flex",alignItems:"center",width:"100%",padding:"12px 14px",marginBottom:6,borderRadius:10,border:isSel?b(C.accentS):b(C.border),background:isSel?"rgba(0,200,224,0.1)":C.surface2,color:C.text,fontSize:14,fontWeight:isSel?700:500,cursor:"pointer",fontFamily:font,textAlign:"left",gap:10}}>
+          <span style={{width:22,fontSize:12,color:isSel?C.accentS:C.sub2,fontWeight:700,fontFamily:mono}}>{i+1}°</span>
+          <span style={{flex:1}}>{t.team}</span>
+          {allFilled&&<span style={{fontSize:10,color:C.sub,fontFamily:mono}}>{t.pts}pts {t.gd>=0?"+":""}{t.gd}</span>}
+        </button>;
+      })}
+    </div>;
+  }
+
+  function renderPicker(){
+    if(side.type==="pos"){
+      var standings=calcGroupStandings(side.group,scores);
+      return renderTable(side.group,standings);
+    }
+    if(side.type==="third"){
+      if(thirdGroupOpen){
+        var standings2=calcGroupStandings(thirdGroupOpen,scores);
+        return <div>
+          <button onClick={function(){setThirdGroupOpen(null);}} style={{background:"none",border:"none",color:C.sub2,fontSize:13,cursor:"pointer",marginBottom:10,padding:"4px 0"}}>&larr; Volver a elegir grupo</button>
+          <div style={{fontSize:12,color:C.sub,marginBottom:8}}>Grupo {thirdGroupOpen}</div>
+          {renderTable(thirdGroupOpen,standings2)}
+        </div>;
+      }
+      return <div>
+        <div style={{fontSize:11,color:C.sub,marginBottom:10,padding:"8px 10px",background:"rgba(0,200,224,0.06)",borderRadius:8,border:b(C.border)}}>
+          Elegí el grupo cuyo 3° clasifica a este slot. Después elegís el equipo.
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(80px,1fr))",gap:8}}>
+          {side.groups.map(function(g){
+            var s=calcGroupStandings(g,scores);
+            var third=s[2];
+            return <button key={g} onClick={function(){setThirdGroupOpen(g);}} style={{padding:"14px 10px",borderRadius:10,border:b(C.border),background:C.surface2,color:C.text,cursor:"pointer",fontFamily:font,textAlign:"center"}}>
+              <div style={{fontSize:18,fontWeight:700,color:C.accentS,marginBottom:4}}>Grupo {g}</div>
+              {third&&third.hasAll&&<div style={{fontSize:11,color:C.sub}}>3°: {third.team}</div>}
+              {third&&!third.hasAll&&<div style={{fontSize:10,color:C.sub2,fontStyle:"italic"}}>incompleto</div>}
+            </button>;
+          })}
+        </div>
+      </div>;
+    }
+    return null;
+  }
+
+  return <>
+    <div style={{flex:1}}>
+      <div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>
+      <button onClick={function(){if(!locked)setOpen(true);}} disabled={locked} style={Object.assign({},inp,{padding:"8px 10px",fontSize:13,textAlign:"left",cursor:locked?"default":"pointer",color:value?C.text:C.sub2,fontFamily:font})}>{value||"Elegir equipo"}</button>
+    </div>
+    {open&&<Modal title={posDesc} onClose={function(){setOpen(false);setThirdGroupOpen(null);}}>
+      {renderPicker()}
+    </Modal>}
+  </>;
+}
+
+
+function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,isAdmin}){
   var phase=slot.phase;
-  var pts=KO_PTS[phase];
   var ph=pred.home,pa=pred.away;
   var isDraw=ph!=null&&pa!=null&&ph!==""&&pa!==""&&+ph===+pa;
   var hasOff=off&&off.home!=null&&off.home!=="";
   var sc=hasOff?scoreKO(pred,off,phase):null;
 
-  function setField(field,val){
-    onUpd(slot.id,field,val);
-    if(field==="winner"&&val&&KO_NEXT[slot.id]){
-      var next=KO_NEXT[slot.id];
-      setPreds(function(p){
-        var n=Object.assign({},p);
-        n[next.next]=Object.assign({},n[next.next]||{});
-        n[next.next][next.pos+"_team"]=val;
-        return n;
-      });
-    }
+  // Cambio de equipo desde el picker (solo r32; auto-fill no llama a esto)
+  function changeTeam(pos,newTeam){
+    if(locked)return;
+    setPreds(function(p){return applyTeamChange(p,slot.id,pos,newTeam);});
   }
 
+  // Cambio de marcador: si hay ganador claro, propaga; en empate, espera penales
   function setScore(field,val){
-    onUpd(slot.id,field,val);
-    var nh=field==="home"?val:ph,na=field==="away"?val:pa;
-    if(nh!==""&&na!==""&&nh!=null&&na!=null){
-      var nhn=+nh,nan=+na;
-      if(!isNaN(nhn)&&!isNaN(nan)&&nhn!==nan){
-        var winner=nhn>nan?pred.home_team:pred.away_team;
-        if(winner) setField("winner",winner);
+    if(locked)return;
+    setPreds(function(p){
+      var n=Object.assign({},p);
+      n[slot.id]=Object.assign({},n[slot.id]||{match_id:slot.id});
+      n[slot.id][field]=val;
+      var nh=field==="home"?val:n[slot.id].home;
+      var na=field==="away"?val:n[slot.id].away;
+      if(nh!==""&&na!==""&&nh!=null&&na!=null){
+        var nhn=+nh,nan=+na;
+        if(!isNaN(nhn)&&!isNaN(nan)&&nhn!==nan){
+          var winner=nhn>nan?n[slot.id].home_team:n[slot.id].away_team;
+          if(winner) n=applyWinnerChange(n,slot.id,winner,n[slot.id].home_team,n[slot.id].away_team);
+        } else if(!isNaN(nhn)&&!isNaN(nan)&&nhn===nan){
+          n[slot.id].winner=null;
+        }
       }
-    }
+      return n;
+    });
+  }
+
+  // Selección manual de ganador (caso penales en empate)
+  function pickWinner(team){
+    if(locked)return;
+    setPreds(function(p){
+      var cur=p[slot.id]||{};
+      return applyWinnerChange(p,slot.id,team,cur.home_team,cur.away_team);
+    });
+  }
+
+  // Penales (no propaga winner directamente; el winner se elige aparte)
+  function setPen(field,val){
+    if(locked)return;
+    onUpd(slot.id,field,val);
   }
 
   return <div style={Object.assign({},card,{marginBottom:12,opacity:locked?0.85:1,borderLeft:hasOff?b3(C.accentS):b3(C.border)})}>
@@ -1973,33 +2282,27 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked}){
     <div style={{fontSize:10,color:C.sub,marginBottom:10}}>&#128205; {slot.venue}</div>
 
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-      <div style={{flex:1}}>
-        <div style={{fontSize:9,color:C.sub,marginBottom:3}}>EQUIPO 1</div>
-        <input style={Object.assign({},inp,{padding:"8px 10px",fontSize:13})} placeholder="Pais" value={pred.home_team||""} onChange={function(e){onUpd(slot.id,"home_team",e.target.value);}} readOnly={locked}/>
-      </div>
+      <TeamSlotPicker slotId={slot.id} pos="home" value={pred.home_team} onChange={function(t){changeTeam("home",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked}/>
       <ScoreBox value={ph!=null?ph:""} onChange={function(v){setScore("home",v);}} readOnly={locked}/>
       <span style={{color:C.border2}}>-</span>
       <ScoreBox value={pa!=null?pa:""} onChange={function(v){setScore("away",v);}} readOnly={locked}/>
-      <div style={{flex:1}}>
-        <div style={{fontSize:9,color:C.sub,marginBottom:3}}>EQUIPO 2</div>
-        <input style={Object.assign({},inp,{padding:"8px 10px",fontSize:13})} placeholder="Pais" value={pred.away_team||""} onChange={function(e){onUpd(slot.id,"away_team",e.target.value);}} readOnly={locked}/>
-      </div>
+      <TeamSlotPicker slotId={slot.id} pos="away" value={pred.away_team} onChange={function(t){changeTeam("away",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked}/>
     </div>
 
     {isDraw&&<div style={{padding:"10px",background:C.surface2,borderRadius:8,border:b("rgba(255,208,96,0.3)"),marginTop:6}}>
       <div style={{fontSize:10,color:C.gold,marginBottom:6,fontWeight:700,letterSpacing:0.5,textAlign:"center"}}>&#9917; PENALES</div>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
         <div style={{flex:1}}/>
-        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_home||""} onChange={function(e){onUpd(slot.id,"pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_home||""} onChange={function(e){setPen("pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
         <span style={{color:C.sub2}}>-</span>
-        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){onUpd(slot.id,"pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){setPen("pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
         <div style={{flex:1}}/>
       </div>
       <div style={{marginTop:8}}>
         <div style={{fontSize:10,color:C.sub,marginBottom:4}}>Ganador (pasa de fase)</div>
         <div style={{display:"flex",gap:6}}>
-          {pred.home_team&&<button onClick={function(){if(!locked)setField("winner",pred.home_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.home_team?b(C.accentS):b(C.border),background:pred.winner===pred.home_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.home_team}</button>}
-          {pred.away_team&&<button onClick={function(){if(!locked)setField("winner",pred.away_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.away_team?b(C.accentS):b(C.border),background:pred.winner===pred.away_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.away_team}</button>}
+          {pred.home_team&&<button onClick={function(){pickWinner(pred.home_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.home_team?b(C.accentS):b(C.border),background:pred.winner===pred.home_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.home_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.home_team}</button>}
+          {pred.away_team&&<button onClick={function(){pickWinner(pred.away_team);}} style={{flex:1,padding:"8px",borderRadius:6,border:pred.winner===pred.away_team?b(C.accentS):b(C.border),background:pred.winner===pred.away_team?"rgba(0,200,224,0.1)":C.surface,color:pred.winner===pred.away_team?C.accentS:C.text,fontSize:12,fontWeight:600,cursor:locked?"default":"pointer",fontFamily:font}}>{pred.away_team}</button>}
         </div>
       </div>
     </div>}
