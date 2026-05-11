@@ -2320,15 +2320,9 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
         <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){setPen("pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
         <div style={{flex:1}}/>
       </div>
-      <div style={{marginTop:8}}>
-        <div style={{fontSize:10,color:C.sub,marginBottom:4,textAlign:"center"}}>Pasa de fase</div>
-        <div style={{padding:"10px",borderRadius:6,border:b(pred.winner?C.accentS:C.border),background:pred.winner?"rgba(0,200,224,0.08)":C.surface,color:pred.winner?C.accentS:C.sub2,fontSize:13,fontWeight:700,textAlign:"center",fontFamily:font,fontStyle:pred.winner?"normal":"italic"}}>
-          {pred.winner||"Definir penales"}
-        </div>
-      </div>
     </div>}
 
-    {pred.winner&&!isDraw&&<div style={{marginTop:6,fontSize:11,color:C.green}}>&#10003; Pasa: <b>{pred.winner}</b></div>}
+    {pred.winner&&<div style={{marginTop:6,fontSize:11,color:C.green}}>&#10003; Pasa: <b>{pred.winner}</b></div>}
 
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),fontSize:11,color:C.sub}}>
       Oficial: <b style={{color:C.text}}>{off.home_team||"?"} {off.home}-{off.away} {off.away_team||"?"}</b>
