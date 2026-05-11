@@ -2159,6 +2159,26 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
     setThirdGroupOpen(null);
   }
 
+  // Equipos ya tomados en otros slots de r32 (no incluye el equipo actual de este slot/pos)
+  function getTakenTeams(){
+    var taken={};
+    var src=scores||{};
+    Object.keys(src).forEach(function(sid){
+      if(sid.indexOf("r32_")!==0)return;
+      var p=src[sid]||{};
+      if(sid===slotId){
+        // del slot actual, solo cuenta el equipo del OTRO lado
+        var otherField=pos==="home"?"away_team":"home_team";
+        if(p[otherField])taken[p[otherField]]=true;
+      } else {
+        if(p.home_team)taken[p.home_team]=true;
+        if(p.away_team)taken[p.away_team]=true;
+      }
+    });
+    return taken;
+  }
+  var takenTeams=getTakenTeams();
+
   function renderTable(group,teams){
     var allFilled=teams[0]&&teams[0].hasAll;
     return <div>
@@ -2169,10 +2189,12 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
       </div>
       {teams.map(function(t,i){
         var isSel=value===t.team;
-        return <button key={t.team} onClick={function(){pick(t.team);}} style={{display:"flex",alignItems:"center",width:"100%",padding:"12px 14px",marginBottom:6,borderRadius:10,border:isSel?b(C.accentS):b(C.border),background:isSel?"rgba(0,200,224,0.1)":C.surface2,color:C.text,fontSize:14,fontWeight:isSel?700:500,cursor:"pointer",fontFamily:font,textAlign:"left",gap:10}}>
+        var isTaken=takenTeams[t.team]&&!isSel;
+        return <button key={t.team} onClick={function(){if(!isTaken)pick(t.team);}} disabled={isTaken} style={{display:"flex",alignItems:"center",width:"100%",padding:"12px 14px",marginBottom:6,borderRadius:10,border:isSel?b(C.accentS):b(C.border),background:isSel?"rgba(0,200,224,0.1)":C.surface2,color:isTaken?C.sub2:C.text,fontSize:14,fontWeight:isSel?700:500,cursor:isTaken?"not-allowed":"pointer",fontFamily:font,textAlign:"left",gap:10,opacity:isTaken?0.35:1}}>
           <span style={{width:22,fontSize:12,color:isSel?C.accentS:C.sub2,fontWeight:700,fontFamily:mono}}>{i+1}°</span>
           <span style={{flex:1}}>{t.team}</span>
-          {allFilled&&<span style={{fontSize:10,color:C.sub,fontFamily:mono}}>{t.pts}pts {t.gd>=0?"+":""}{t.gd}</span>}
+          {isTaken&&<span style={{fontSize:9,color:C.sub2,fontStyle:"italic"}}>ya elegido</span>}
+          {!isTaken&&allFilled&&<span style={{fontSize:10,color:C.sub,fontFamily:mono}}>{t.pts}pts {t.gd>=0?"+":""}{t.gd}</span>}
         </button>;
       })}
     </div>;
