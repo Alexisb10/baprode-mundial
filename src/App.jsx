@@ -158,10 +158,18 @@ const KO_SLOTS = [
   {id:"f_0",phase:"f",label:"Final",date:"2026-07-19",time:"16:00",venue:"East Rutherford"},
 ];
 
+// Sistema Opción B (doc 5):
+// - presence: puntos por país que CLASIFICÓ a esta fase (aparece en algún slot oficial)
+// - slot: bonus adicional SOLO en r32 si el país está en el slot exacto predicho
+// - goal: puntos por número exacto de goles por equipo (solo si matchup detectado)
+//         penales se evalúan con la misma regla y el mismo valor que goles
 const KO_PTS = {
-  r32:{team:5,goal:5,pen:7},r16:{team:5,goal:5,pen:7},
-  qf:{team:10,goal:5,pen:7},sf:{team:15,goal:5,pen:7},
-  f:{team:20,goal:7,pen:10},"3rd":{team:20,goal:7,pen:10},
+  r32: {presence:4,  slot:10, goal:6},
+  r16: {presence:12,          goal:6},
+  qf:  {presence:18,          goal:6},
+  sf:  {presence:24,          goal:6},
+  "3rd":{presence:30,         goal:6},
+  f:   {presence:36,          goal:6},
 };
 
 // Define which match feeds into which next match (and as home/away)
@@ -325,60 +333,135 @@ function scoreGroup(pred, off) {
   return p;
 }
 
-function scoreKO(pred, off, phase) {
-  if (!off) return null;
-  let p=0;
-  const pts=KO_PTS[phase];
+// ========== SCORING KO (sistema Opción B doc 5) ==========
+// - pred: row de predictions con {match_id, home_team, away_team, home, away, pen_home, pen_away}
+// - off:  row oficial del slot predicho (se mantiene para compatibilidad, NO se usa para matchup global)
+// - phase: r32 | r16 | qf | sf | 3rd | f
+// - allOfficial: mapa completo {match_id -> off row}. REQUERIDO para evaluar presencia y matchup.
+//   Si no se pasa, la función retorna 0 (no puede evaluar).
+function scoreKO(pred, off, phase, allOfficial) {
+  if (!pred) return null;
+  var pts=KO_PTS[phase];
   if (!pts) return null;
-  const offTeams=[off.home_team,off.away_team].filter(Boolean);
-  const predTeams=[pred&&pred.home_team,pred&&pred.away_team].filter(Boolean);
-  if (phase==="r32") {
-    predTeams.forEach(function(t,i){
-      if (!t) return;
-      if (offTeams[i]===t) p+=5;
-      else if (offTeams.indexOf(t)>=0) p+=2;
-    });
-  } else {
-    predTeams.forEach(function(t){
-      if(t&&offTeams.indexOf(t)>=0) p+=pts.team;
-    });
+  if (!allOfficial) return 0;
+
+  var predHome=pred.home_team||null;
+  var predAway=pred.away_team||null;
+  if (!predHome && !predAway) return 0;
+
+  var p=0;
+
+  // ===== PRESENCIA: ¿el país aparece en algún slot oficial de esa fase? =====
+  function countryInPhase(country){
+    if (!country) return false;
+    for (var i=0;i<KO_SLOTS.length;i++){
+      var s=KO_SLOTS[i];
+      if (s.phase!==phase) continue;
+      var o=allOfficial[s.id];
+      if (o && (o.home_team===country || o.away_team===country)) return true;
+    }
+    return false;
   }
-  // Goles: solo otorga puntos si el equipo en esa posición coincide con el oficial.
-  // Sin esta validación, predecir 0-1 con Qatar como visitante daría puntos cuando
-  // el visitante real es Suiza y también marcó 1.
-  const oh=+(off.home!=null?off.home:-1),oa=+(off.away!=null?off.away:-1);
-  const ph=+(pred&&pred.home!=null?pred.home:-1),pa=+(pred&&pred.away!=null?pred.away:-1);
-  const homeMatches=pred&&pred.home_team&&off.home_team&&pred.home_team===off.home_team;
-  const awayMatches=pred&&pred.away_team&&off.away_team&&pred.away_team===off.away_team;
-  if (oh>=0&&ph>=0&&ph===oh&&homeMatches) p+=pts.goal;
-  if (oa>=0&&pa>=0&&pa===oa&&awayMatches) p+=pts.goal;
-  // Penales: solo se evalúan si la predicción fue empate Y el partido oficial fue a penales.
-  // Además, el goleo de penales solo cuenta si el equipo en esa posición coincide.
-  const predDraw=ph>=0&&pa>=0&&ph===pa;
-  const offHasPen=off.pen_home!=null&&off.pen_home!==""&&off.pen_away!=null&&off.pen_away!=="";
-  if (predDraw&&offHasPen) {
-    const oph=+off.pen_home,opa=+off.pen_away;
-    const pph=+(pred&&pred.pen_home!=null?pred.pen_home:-1),ppa=+(pred&&pred.pen_away!=null?pred.pen_away:-1);
-    if (pph===oph&&homeMatches) p+=pts.pen;
-    if (ppa===opa&&awayMatches) p+=pts.pen;
+  if (predHome && countryInPhase(predHome)) p+=pts.presence;
+  if (predAway && countryInPhase(predAway)) p+=pts.presence;
+
+  // ===== SLOT EXACTO (solo r32, bonus aditivo) =====
+  // Para type "pos" (1°A, 2°B...): el país oficial DEL MISMO slot/posición coincide
+  // Para type "third" (Mejor 3°): regla relajada — el país clasificó como mejor 3° en
+  //   CUALQUIER slot r32 oficial cuyo lado correspondiente sea type "third".
+  if (phase==="r32" && pts.slot){
+    var slotId=pred.match_id;
+    var meta=KO_SLOT_META[slotId];
+    if (meta){
+      function slotExact(country, side, pos){
+        if (!country || !side) return false;
+        if (side.type==="pos"){
+          var o=allOfficial[slotId];
+          if (!o) return false;
+          return (pos==="home"?o.home_team:o.away_team)===country;
+        }
+        if (side.type==="third"){
+          for (var i=0;i<KO_SLOTS.length;i++){
+            var s=KO_SLOTS[i];
+            if (s.phase!=="r32") continue;
+            var m=KO_SLOT_META[s.id];
+            var o=allOfficial[s.id];
+            if (!o||!m) continue;
+            if (m.home.type==="third" && o.home_team===country) return true;
+            if (m.away.type==="third" && o.away_team===country) return true;
+          }
+        }
+        return false;
+      }
+      if (slotExact(predHome, meta.home, "home")) p+=pts.slot;
+      if (slotExact(predAway, meta.away, "away")) p+=pts.slot;
+    }
   }
+
+  // ===== MATCHUP DETECTADO (mismo conjunto de equipos en ALGÚN slot de la misma fase) =====
+  // Habilita evaluación de goles y penales por equipo (independiente del orden home/away).
+  var matchedOff=null;
+  if (predHome && predAway){
+    var pSet=[predHome,predAway].sort().join("|");
+    for (var i=0;i<KO_SLOTS.length;i++){
+      var s=KO_SLOTS[i];
+      if (s.phase!==phase) continue;
+      var o=allOfficial[s.id];
+      if (!o || !o.home_team || !o.away_team) continue;
+      var oSet=[o.home_team,o.away_team].sort().join("|");
+      if (oSet===pSet){ matchedOff=o; break; }
+    }
+  }
+
+  // ===== GOLES (solo si matchup detectado) =====
+  if (matchedOff){
+    var ph=+(pred.home!=null && pred.home!==""?pred.home:-1);
+    var pa=+(pred.away!=null && pred.away!==""?pred.away:-1);
+    var oh=+(matchedOff.home!=null && matchedOff.home!==""?matchedOff.home:-1);
+    var oa=+(matchedOff.away!=null && matchedOff.away!==""?matchedOff.away:-1);
+    if (ph>=0 && pa>=0 && oh>=0 && oa>=0){
+      // ¿El equipo en pos home del predicho está como home u away en el oficial?
+      var swapped = matchedOff.home_team !== predHome;
+      var offGoalsForPredHome = swapped ? oa : oh;
+      var offGoalsForPredAway = swapped ? oh : oa;
+      if (ph===offGoalsForPredHome) p+=pts.goal;
+      if (pa===offGoalsForPredAway) p+=pts.goal;
+
+      // ===== PENALES (solo si predicción fue empate Y oficial fue a penales) =====
+      var predDraw = ph===pa;
+      var offHasPen = matchedOff.pen_home!=null && matchedOff.pen_home!=="" &&
+                      matchedOff.pen_away!=null && matchedOff.pen_away!=="";
+      if (predDraw && offHasPen){
+        var pph=+(pred.pen_home!=null && pred.pen_home!==""?pred.pen_home:-1);
+        var ppa=+(pred.pen_away!=null && pred.pen_away!==""?pred.pen_away:-1);
+        if (pph>=0 && ppa>=0){
+          var oph=+matchedOff.pen_home, opa=+matchedOff.pen_away;
+          var offPenForPredHome = swapped ? opa : oph;
+          var offPenForPredAway = swapped ? oph : opa;
+          if (pph===offPenForPredHome) p+=pts.goal;
+          if (ppa===offPenForPredAway) p+=pts.goal;
+        }
+      }
+    }
+  }
+
   return p;
 }
 
-function scorePred(pred, off, matchId) {
+function scorePred(pred, off, matchId, allOfficial) {
   var slot=null;
   for (var i=0;i<KO_SLOTS.length;i++){if(KO_SLOTS[i].id===matchId){slot=KO_SLOTS[i];break;}}
-  if (slot) return scoreKO(pred,off,slot.phase)||0;
+  if (slot) return scoreKO(pred,off,slot.phase,allOfficial)||0;
   return scoreGroup(pred,off)||0;
 }
 
 function scoreExtras(extras, official) {
   var p=0;
   if (!official) return p;
-  if (extras&&extras.champion&&official.champion&&extras.champion===official.champion) p+=50;
-  if (extras&&extras.runner_up&&official.runner_up&&extras.runner_up===official.runner_up) p+=30;
-  if (extras&&extras.third&&official.third&&extras.third===official.third) p+=20;
-  if (extras&&extras.fourth&&official.fourth&&extras.fourth===official.fourth) p+=20;
+  if (extras&&extras.champion&&official.champion&&extras.champion===official.champion) p+=55;
+  if (extras&&extras.runner_up&&official.runner_up&&extras.runner_up===official.runner_up) p+=35;
+  if (extras&&extras.third&&official.third&&extras.third===official.third) p+=35;
+  if (extras&&extras.fourth&&official.fourth&&extras.fourth===official.fourth) p+=35;
   return p;
 }
 
@@ -775,12 +858,55 @@ function ReglamentoView({ctx}){
     <Bar title="Reglamento" onBack={back}/>
     <div style={{padding:"16px 16px 40px",display:"flex",flexDirection:"column",gap:4}}>
       {section(C.accentS,"Fase de Grupos",<span><b style={{color:C.gold}}>4 pts</b> resultado (L/E/V)<br/><b style={{color:C.gold}}>2 pts</b> goles equipo local exactos<br/><b style={{color:C.gold}}>2 pts</b> goles equipo visitante exactos<br/><b style={{color:C.gold}}>2 pts</b> extra si marcador exacto<br/><span style={{color:C.sub,fontSize:11}}>Max 10 pts por partido</span></span>)}
-      {section(C.gold,"16avos y Octavos",<span><b style={{color:C.gold}}>5 pts</b> pais en posicion exacta<br/><b style={{color:C.gold}}>2 pts</b> pais clasifico pero en otra posicion<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo (si predijiste empate)</span>)}
-      {section(C.gold,"Cuartos",<span><b style={{color:C.gold}}>10 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo</span>)}
-      {section(C.gold,"Semifinales",<span><b style={{color:C.gold}}>15 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>5 pts</b> goles por equipo<br/><b style={{color:C.gold}}>7 pts</b> penales por equipo</span>)}
-      {section(C.gold,"Final y 3/4 puesto",<span><b style={{color:C.gold}}>20 pts</b> pais en esa instancia<br/><b style={{color:C.gold}}>7 pts</b> goles por equipo<br/><b style={{color:C.gold}}>10 pts</b> penales por equipo</span>)}
-      {section(C.green,"Puntos Extras",<span><b style={{color:C.green}}>50 pts</b> Campeon<br/><b style={{color:C.green}}>30 pts</b> Subcampeon<br/><b style={{color:C.green}}>20 pts</b> 3 puesto<br/><b style={{color:C.green}}>20 pts</b> 4 puesto</span>)}
-      {section(C.sub2,"Desempate",<span>1. Acerto el campeon<br/>2. Mas partidos con marcador exacto<br/>3. Total de goles mas cercano al real</span>)}
+
+      {section(C.gold,"Fase Eliminatoria — cómo se puntúa",<span style={{fontSize:12}}>
+        Cada país predicho en un slot suma <b>presencia</b> si clasificó a esa ronda (aparece en el bracket oficial, sin importar el slot).<br/>
+        En <b>16avos</b> hay además un bonus por <b>slot exacto</b> (acertaste posición).<br/>
+        De <b>8vos en adelante</b> solo cuenta presencia (las llaves cascadean desde 16avos).<br/>
+        <span style={{color:C.sub,fontSize:11}}>Excepción: para "Mejor 3°" en 16avos, el slot se considera correcto si el país clasificó entre los 8 mejores 3os, sin exigir grupo específico.</span>
+      </span>)}
+
+      {section(C.gold,"Puntos por presencia",<span>
+        <b style={{color:C.gold}}>16avos</b>: 4 pts por país + <b>10 pts</b> bonus si slot exacto<br/>
+        <b style={{color:C.gold}}>8vos</b>: 12 pts por país<br/>
+        <b style={{color:C.gold}}>Cuartos</b>: 18 pts por país<br/>
+        <b style={{color:C.gold}}>Semis</b>: 24 pts por país<br/>
+        <b style={{color:C.gold}}>3°/4° puesto</b>: 30 pts por país<br/>
+        <b style={{color:C.gold}}>Final</b>: 36 pts por país<br/>
+        <span style={{color:C.sub,fontSize:11}}>En 3°/4° y Final, slot y matchup colapsan (un único partido por fase).</span>
+      </span>)}
+
+      {section(C.green,"Goles y penales (matchup detectado)",<span>
+        Si los dos países que predijiste para un partido coinciden con un partido <b>real de la misma ronda</b> (sin importar orden ni slot), se activa el <b>marco verde</b> exterior.<br/>
+        Con marco verde se evalúan los goles <b>por equipo de manera independiente</b>:<br/>
+        <b style={{color:C.green}}>6 pts</b> por cada equipo cuyo número de goles coincide.<br/>
+        Si predijiste empate y el partido fue a penales, los penales se evalúan con la misma regla:<br/>
+        <b style={{color:C.green}}>6 pts</b> por cada equipo cuyo número de penales coincide.<br/>
+        <span style={{color:C.sub,fontSize:11}}>Sin marco verde, los goles no suman puntos aunque coincidan.</span>
+      </span>)}
+
+      {section(C.accentS,"Cómo leer los colores",<span style={{fontSize:12}}>
+        <b style={{color:C.green}}>Marco verde exterior</b>: matchup detectado (los dos países jugaron entre sí en esa ronda).<br/><br/>
+        <b>En 16avos</b> (3 estados por país):<br/>
+        🟢 verde: slot exacto<br/>
+        🟡 amarillo: clasificó, pero a otro slot<br/>
+        🔴 rojo: no clasificó<br/><br/>
+        <b>De 8vos en adelante</b> (2 estados):<br/>
+        🔵 azul: clasificó<br/>
+        🔴 rojo: no clasificó<br/>
+        <span style={{color:C.sub,fontSize:11}}>El azul reemplaza al verde para no confundirse con "slot exacto" — desde 8vos no hay slots a elegir.</span>
+      </span>)}
+
+      {section(C.green,"Puntos Extras",<span><b style={{color:C.green}}>55 pts</b> Campeón<br/><b style={{color:C.green}}>35 pts</b> Subcampeón<br/><b style={{color:C.green}}>35 pts</b> 3° puesto<br/><b style={{color:C.green}}>35 pts</b> 4° puesto</span>)}
+
+      {section(C.sub2,"Desempate",<span style={{fontSize:12}}>
+        En caso de empate de puntos, se aplican estos criterios en orden:<br/>
+        1. Mayor cantidad de <b>marcadores exactos</b> en todo el torneo (grupos + KO)<br/>
+        2. Mayor cantidad de <b>slots exactos en 16avos</b><br/>
+        3. <b>Menor diferencia</b> entre el total de goles predichos y el total real (incluye penales)<br/>
+        <span style={{color:C.sub,fontSize:11}}>Si persiste empate después de los 3 criterios: premio compartido.</span>
+      </span>)}
+
       {section(C.red,"Cierre de planillas",<span>Las predicciones se bloquean el <b>11 de junio de 2026</b>. No se aceptan modificaciones una vez iniciado el Mundial.</span>)}
     </div>
   </div>;
@@ -1198,7 +1324,7 @@ function GlobalRankingView({ctx}){
           var bestGroupPts=0;
           Object.keys(byUserGroup[uid]).forEach(function(gid){
             var gpts=0;
-            byUserGroup[uid][gid].forEach(function(p){gpts+=scorePred(p,offMap[p.match_id],p.match_id);});
+            byUserGroup[uid][gid].forEach(function(p){gpts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
             if(gpts>bestGroupPts)bestGroupPts=gpts;
           });
           var prof=profMap[uid];
@@ -1432,7 +1558,7 @@ function RankingView({ctx}){
       Promise.all(members.map(function(m){
         return supabase.from("predictions").select("*").eq("user_id",m.user_id).eq("group_id",activeGroup.id).then(function(r){
           var pts=0;
-          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id);});
+          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
           pts+=scoreExtras(extrasMap[m.user_id],offExtras);
           return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:pts,uid:m.user_id};
         });
@@ -1504,7 +1630,7 @@ function ViewUserPredModal({user,group,onClose}){
         </div>
         <div style={{padding:"12px 14px 40px"}}>
           {KO_SLOTS.filter(function(s){return s.phase===koPhase;}).map(function(slot){
-            return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={function(){}} preds={preds} setPreds={setPreds} locked={true}/>;
+            return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={function(){}} preds={preds} setPreds={setPreds} locked={true} allOfficial={official}/>;
           })}
         </div>
       </>}
@@ -1611,6 +1737,7 @@ function AdminView({ctx}){
               locked={false}
               scoresForCalc={official}
               isAdmin={true}
+              allOfficial={official}
             />;
           })}
         </div>
@@ -1839,7 +1966,7 @@ function AdminGroupDetailModal({group,onClose}){
       Promise.all(members.map(function(m){
         return supabase.from("predictions").select("*").eq("user_id",m.user_id).eq("group_id",group.id).then(function(r){
           var pts=0;
-          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id);});
+          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
           pts+=scoreExtras(extrasMap[m.user_id],offExtras);
           var hasPlanilla=(r.data||[]).length>0;
           return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:pts,uid:m.user_id,role:m.role,hasPlanilla:hasPlanilla,profiles:m.profiles};
@@ -1910,7 +2037,7 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
         played++;
         var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
         if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
-        var sc=scorePred(p,off,p.match_id);
+        var sc=scorePred(p,off,p.match_id,offMap);
         totalPts+=sc;
         if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
         else{
@@ -2011,7 +2138,7 @@ function StatsModal({profile,group,onClose}){
         played++;
         var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
         if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
-        var sc=scorePred(p,off,p.match_id);
+        var sc=scorePred(p,off,p.match_id,offMap);
         totalPts+=sc;
         if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
         else{
@@ -2050,7 +2177,7 @@ function KOBracket({preds,official,onUpd,setPreds,locked}){
     </div>
     <div style={{padding:"12px 14px 100px"}}>
       {slots.map(function(slot){
-        return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={onUpd} preds={preds} setPreds={setPreds} locked={locked}/>;
+        return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={onUpd} preds={preds} setPreds={setPreds} locked={locked} allOfficial={official}/>;
       })}
     </div>
   </>;
@@ -2246,12 +2373,14 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
 }
 
 
-function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,isAdmin}){
+function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,isAdmin,allOfficial}){
   var phase=slot.phase;
   var ph=pred.home,pa=pred.away;
   var isDraw=ph!=null&&pa!=null&&ph!==""&&pa!==""&&+ph===+pa;
   var hasOff=off&&off.home!=null&&off.home!=="";
-  var sc=hasOff?scoreKO(pred,off,phase):null;
+  // pred puede venir sin match_id si es objeto recién creado; lo inyectamos para que scoreKO lea KO_SLOT_META
+  var predWithId=pred.match_id?pred:Object.assign({},pred,{match_id:slot.id});
+  var sc=hasOff?scoreKO(predWithId,off,phase,allOfficial):null;
 
   // Cambio de equipo desde el picker (solo r32; auto-fill no llama a esto)
   function changeTeam(pos,newTeam){
@@ -2383,7 +2512,7 @@ function AdminStatsTab(){
         if(GROUP_MATCHES.find(function(m){return m.id===p.match_id;}))usersWithGroups.add(p.user_id);
         if(KO_SLOTS.find(function(s){return s.id===p.match_id;}))usersWithKO.add(p.user_id);
         if(!byUser[p.user_id])byUser[p.user_id]=0;
-        byUser[p.user_id]+=scorePred(p,offMap[p.match_id],p.match_id);
+        byUser[p.user_id]+=scorePred(p,offMap[p.match_id],p.match_id,offMap);
       });
       var uids=Object.keys(byUser);
       var avg=uids.length>0?Math.round(uids.reduce(function(s,uid){return s+byUser[uid];},0)/uids.length):0;
