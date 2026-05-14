@@ -1563,6 +1563,32 @@ function PredictionsView({ctx}){
 
   function save(){
     if(locked) return toast$("Las planillas estan cerradas","err");
+
+    // Paso 4 — Validación cruzada R32: ningún país puede aparecer en dos slots distintos.
+    // El frontend ya bloquea en el picker, pero acá hay una segunda defensa antes de guardar.
+    var r32SlotIds={};
+    for (var i=0;i<KO_SLOTS.length;i++){
+      if (KO_SLOTS[i].phase==="r32") r32SlotIds[KO_SLOTS[i].id]=true;
+    }
+    var seenTeams={}; // team -> primer slotId donde apareció
+    var duplicate=null;
+    Object.keys(preds).forEach(function(matchId){
+      if (!r32SlotIds[matchId]) return;
+      var p=preds[matchId];
+      ["home_team","away_team"].forEach(function(field){
+        var t=p&&p[field];
+        if (!t || duplicate) return;
+        if (seenTeams[t]){
+          duplicate={team:t,first:seenTeams[t],second:matchId};
+        } else {
+          seenTeams[t]=matchId;
+        }
+      });
+    });
+    if (duplicate){
+      return toast$(duplicate.team+" aparece en dos cruces de 16avos ("+duplicate.first+" y "+duplicate.second+"). Corregilo antes de guardar.","err");
+    }
+
     setSaving(true);
     var rows=Object.keys(preds).map(function(match_id){
       var p=preds[match_id];
