@@ -1193,8 +1193,9 @@ function GroupsListView({ctx}){
   if(profile&&profile.is_admin) return <AdminView ctx={ctx}/>;
 
   function shareApp(){
+    var msg="Unite al prode del Mundial 2026! https://baprode-mundial.vercel.app";
     if(navigator.share){
-      navigator.share({title:"Baprode Mundial 2026",text:"Unite al prode del Mundial 2026!",url:"https://baprode-mundial.vercel.app"});
+      navigator.share({title:"Baprode Mundial 2026",text:msg});
     } else {
       navigator.clipboard.writeText("https://baprode-mundial.vercel.app");
       toast$("Link copiado!");
@@ -1252,7 +1253,7 @@ function GroupsListView({ctx}){
         var url="https://baprode-mundial.vercel.app";
         var msg="Sumate a Baprode Mundial 2026, la app de pronósticos del Mundial. Entrá acá: "+url;
         if (navigator.share){
-          navigator.share({title:"Baprode Mundial 2026",text:msg,url:url}).catch(function(){});
+          navigator.share({title:"Baprode Mundial 2026",text:msg}).catch(function(){});
         } else if (navigator.clipboard && navigator.clipboard.writeText){
           navigator.clipboard.writeText(msg).then(function(){toast$("Mensaje copiado, pegalo donde quieras");}).catch(function(){toast$("No se pudo copiar","err");});
         } else {
@@ -1450,7 +1451,7 @@ function GroupView({ctx}){
     var text=seq
       ? "Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026. Abrí este link: "+link
       : "Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026! Ingresa, busca el grupo y pedime la clave.";
-    if(navigator.share) navigator.share({title:"Baprode",text:text,url:link});
+    if(navigator.share) navigator.share({title:"Baprode",text:text});
     else{navigator.clipboard.writeText(text);toast$("Texto copiado");}
   }
 
@@ -1634,14 +1635,14 @@ function OfficialResultsView({ctx}){
         {sortedMatches.map(function(m){
           var off=official[m.id];
           var played=off&&off.home!=null&&off.home!=="";
-          return <div key={m.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
-            <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+          return <div key={m.id} style={Object.assign({},card,{padding:"10px 12px",marginBottom:6,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:9,color:C.sub2,marginBottom:4}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
-              <div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?b(C.border):"none"}}>
-                {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}
+              <span style={{flex:1,fontSize:13,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
+              <div style={{minWidth:60,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:6,padding:played?"3px 10px":"2px 10px",border:played?b(C.border):"none"}}>
+                {played?<span style={{fontFamily:mono,fontSize:17,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:12}}>vs</span>}
               </div>
-              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
+              <span style={{flex:1,fontSize:13,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
             </div>
           </div>;
         })}
@@ -2645,14 +2646,14 @@ function FixtureView({ctx}){
         {sortedMatches.map(function(m){
           var off=official[m.id];
           var played=off&&off.home!=null&&off.home!=="";
-          return <div key={m.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
-            <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+          return <div key={m.id} style={Object.assign({},card,{padding:"10px 12px",marginBottom:6,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:9,color:C.sub2,marginBottom:4}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
-              <div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?b(C.border):"none"}}>
-                {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}
+              <span style={{flex:1,fontSize:13,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
+              <div style={{minWidth:60,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:6,padding:played?"3px 10px":"2px 10px",border:played?b(C.border):"none"}}>
+                {played?<span style={{fontFamily:mono,fontSize:17,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:12}}>vs</span>}
               </div>
-              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
+              <span style={{flex:1,fontSize:13,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
             </div>
           </div>;
         })}
