@@ -619,6 +619,30 @@ export default function App() {
   const [loading,setLoading]=useState(true);
   const [hasNewResults,setHasNewResults]=useState(false);
   const [installPrompt,setInstallPrompt]=useState(null);
+  const [showIOSInstall,setShowIOSInstall]=useState(false);
+
+  // Detección iOS y modo standalone (PWA ya instalada)
+  var isIOS = (typeof navigator!=="undefined") && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var isStandalone = (typeof window!=="undefined") && (
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    (window.navigator && window.navigator.standalone===true)
+  );
+
+  // Inyectar meta tags iOS al montar (si no existen ya en index.html)
+  useEffect(function(){
+    function ensureMeta(name,content,isLink){
+      var sel=isLink?'link[rel="'+name+'"]':'meta[name="'+name+'"]';
+      if (document.head.querySelector(sel)) return;
+      var el=document.createElement(isLink?"link":"meta");
+      if (isLink){el.rel=name;el.href=content;}
+      else{el.name=name;el.content=content;}
+      document.head.appendChild(el);
+    }
+    ensureMeta("apple-mobile-web-app-capable","yes");
+    ensureMeta("apple-mobile-web-app-status-bar-style","black-translucent");
+    ensureMeta("apple-mobile-web-app-title","Baprode");
+    ensureMeta("apple-touch-icon","/icons/icon-192.png",true);
+  },[]);
 
   useEffect(function(){
     function handler(e){e.preventDefault();setInstallPrompt(e);}
@@ -671,7 +695,7 @@ export default function App() {
 
   if(loading) return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:C.bg}}><div style={{fontSize:56}}>⚽</div></div>;
 
-  var ctx={session,profile,setProfile,activeGroup,setActiveGroup,setView,toast$:showToast,signOut,hasNewResults,markResultsSeen,installPrompt,doInstall};
+  var ctx={session,profile,setProfile,activeGroup,setActiveGroup,setView,toast$:showToast,signOut,hasNewResults,markResultsSeen,installPrompt,doInstall,isIOS:isIOS,isStandalone:isStandalone,openIOSInstall:function(){setShowIOSInstall(true);}};
 
   return (
     <Page>
@@ -690,6 +714,27 @@ export default function App() {
       {view==="fixture"&&<FixtureView ctx={ctx}/>}
       {view==="admin"&&<AdminView ctx={ctx}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type}/>}
+      {showIOSInstall&&<Modal title="Instalar en iPhone" onClose={function(){setShowIOSInstall(false);}}>
+        <div style={{display:"flex",flexDirection:"column",gap:14,fontSize:14,color:C.text,lineHeight:1.6}}>
+          <p style={{margin:0,color:C.sub}}>Apple no permite instalar la app con un solo toque. Es manual pero rápido:</p>
+          <div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px",background:C.surface2,borderRadius:10,border:b(C.border)}}>
+            <span style={{fontSize:20,minWidth:24,textAlign:"center"}}>1</span>
+            <span>Tocá el ícono de <b>Compartir</b> <span style={{fontSize:18,verticalAlign:"middle"}}>⬆️</span> en la barra de Safari (abajo en iPhone, arriba en iPad).</span>
+          </div>
+          <div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px",background:C.surface2,borderRadius:10,border:b(C.border)}}>
+            <span style={{fontSize:20,minWidth:24,textAlign:"center"}}>2</span>
+            <span>Desplazate y tocá <b>"Agregar a pantalla de inicio"</b>.</span>
+          </div>
+          <div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px",background:C.surface2,borderRadius:10,border:b(C.border)}}>
+            <span style={{fontSize:20,minWidth:24,textAlign:"center"}}>3</span>
+            <span>Tocá <b>"Agregar"</b> arriba a la derecha. Listo, el ícono queda en tu pantalla de inicio.</span>
+          </div>
+          <div style={{fontSize:11,color:C.sub2,marginTop:4,lineHeight:1.5}}>
+            Importante: tiene que estar abierto en <b>Safari</b>. Si estás en Chrome o Instagram Browser, no va a funcionar — abrí el link directo en Safari.
+          </div>
+          <GradBtn onClick={function(){setShowIOSInstall(false);}}>Entendido</GradBtn>
+        </div>
+      </Modal>}
     </Page>
   );
 }
@@ -791,6 +836,7 @@ function SplashView({ctx}){
       <GradBtn onClick={function(){setView("login");}}>Iniciar sesion</GradBtn>
       <Btn2 onClick={function(){setView("register");}}>Crear cuenta</Btn2>
       {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
+      {!ctx.installPrompt&&ctx.isIOS&&!ctx.isStandalone&&<button onClick={ctx.openIOSInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>📱 Instalar en iPhone</button>}
       <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>Problemas para ingresar? Contactar administrador</button>
     </div>
   </div>;
@@ -850,6 +896,7 @@ function LoginView({ctx}){
       </div>
       <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>Problemas? Contactar administrador</button>
       {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
+      {!ctx.installPrompt&&ctx.isIOS&&!ctx.isStandalone&&<button onClick={ctx.openIOSInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>📱 Instalar en iPhone</button>}
     </div>
   </div>;
 }
