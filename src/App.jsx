@@ -940,14 +940,15 @@ function RegisterView({ctx}){
 
 function ContactoView({ctx}){
   var setView=ctx.setView,toast$=ctx.toast$;
-  const [f,setF]=useState({nombre:"",nick:"",motivo:""});
+  const [f,setF]=useState({nombre:"",nick:"",motivo:"",telefono:"+54 "});
   const [loading,setLoading]=useState(false);
   function upd(k){return function(v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n;});};}
 
   function enviar(){
     if(!f.nombre||!f.motivo) return toast$("Completa nombre y motivo","err");
+    if(!f.telefono||f.telefono.replace(/\D/g,"").length<6) return toast$("Ingresa un teléfono válido (el superadmin te contactará por ahí)","err");
     setLoading(true);
-    supabase.from("contact_requests").insert({nombre:f.nombre,nick:f.nick,motivo:f.motivo,created_at:new Date().toISOString()}).then(function(){
+    supabase.from("contact_requests").insert({nombre:f.nombre,nick:f.nick,motivo:f.motivo,telefono:f.telefono,created_at:new Date().toISOString()}).then(function(){
       toast$("Solicitud enviada. El administrador te contactara pronto");
       setLoading(false);
       setTimeout(function(){setView("splash");},2000);
@@ -958,10 +959,11 @@ function ContactoView({ctx}){
     <Bar title="Contactar Administrador" onBack={function(){setView("splash");}}/>
     <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:14}}>
       <div style={Object.assign({},card,{padding:"12px 14px",background:"rgba(0,200,224,0.05)",border:b(C.accentS)})}>
-        <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Si tenes problemas para acceder, completa el formulario.</p>
+        <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Si tenes problemas para acceder, completa el formulario. El superadmin te va a responder por el teléfono que dejes.</p>
       </div>
       <Field label="Nombre completo *" value={f.nombre} onChange={upd("nombre")}/>
       <Field label="Nick o email de la cuenta" value={f.nick} onChange={upd("nick")}/>
+      <Field label="Teléfono * (incluí prefijo país)" value={f.telefono} onChange={upd("telefono")}/>
       <div>
         <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Motivo *</div>
         <textarea style={Object.assign({},inp,{height:100,resize:"none"})} placeholder="Describe tu problema..." value={f.motivo} onChange={function(e){upd("motivo")(e.target.value);}}/>
@@ -983,6 +985,16 @@ function ReglamentoView({ctx}){
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Reglamento" onBack={back}/>
     <div style={{padding:"16px 16px 40px",display:"flex",flexDirection:"column",gap:4}}>
+      {section(C.accentS,"Cómo participar",<span style={{fontSize:13}}>
+        Una vez registrado, para obtener tu planilla y cargar predicciones, deberás <b>unirte a un grupo</b> o <b>crear un grupo</b> nuevo. Una vez dentro, vas a poder completar toda la competencia.<br/><br/>
+        El <b style={{color:C.red}}>11 de junio de 2026</b> la planilla se bloquea por completo: a partir de esa fecha no se puede modificar nada.
+      </span>)}
+
+      {section(C.accentS,"Código del grupo",<span style={{fontSize:13}}>
+        Cada grupo tiene un <b>código de 5 dígitos</b> visible para todos sus miembros. Para entrar a un grupo ya creado, vas a tener que ingresar ese código, que te lo facilita cualquier miembro.<br/><br/>
+        <span style={{color:C.sub,fontSize:11}}>De esta forma garantizamos que nadie ajeno o desconocido entre al grupo.</span>
+      </span>)}
+
       {section(C.accentS,"Fase de Grupos",<span><b style={{color:C.gold}}>4 pts</b> resultado (L/E/V)<br/><b style={{color:C.gold}}>2 pts</b> goles equipo local exactos<br/><b style={{color:C.gold}}>2 pts</b> goles equipo visitante exactos<br/><b style={{color:C.gold}}>2 pts</b> extra si marcador exacto<br/><span style={{color:C.sub,fontSize:11}}>Max 10 pts por partido</span></span>)}
 
       {section(C.gold,"Fase Eliminatoria — cómo se puntúa",<span style={{fontSize:12}}>
@@ -1112,6 +1124,7 @@ function GroupsListView({ctx}){
         </div>;
       })}
       <div style={{marginTop:16}}><Btn2 onClick={function(){setShowJoin(true);}}>Unirse a un grupo</Btn2></div>
+      <div style={{marginTop:10}}><Btn2 onClick={function(){setShowCreate(true);}}>Crear grupo</Btn2></div>
     </div>
     {showCreate&&<CreateGroupModal profile={profile} onClose={function(){setShowCreate(false);}} onCreated={function(newGroup){setShowCreate(false);fetchGroups();setActiveGroup(newGroup);setView("group");}} toast$={toast$}/>}
     {showJoin&&<JoinGroupModal profile={profile} onClose={function(){setShowJoin(false);}} onJoined={function(){fetchGroups();setShowJoin(false);}} toast$={toast$}/>}
@@ -1323,7 +1336,7 @@ function GroupView({ctx}){
     </div>}
     <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
       <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
-      <Btn2 onClick={function(){setView("ranking");}}>Ranking del grupo</Btn2>
+      <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
         <button onClick={function(){setView("fixture");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.accentS}}>Fixture</button>
@@ -1332,7 +1345,7 @@ function GroupView({ctx}){
         <button onClick={function(){setView("reglamento");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Reglamento</button>
         <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Invitar</button>
       </div>
-      {isGroupAdmin&&<button onClick={function(){setShowManage(true);}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Administrar grupo</button>}
+      {isGroupAdmin&&<Btn2 onClick={function(){setShowManage(true);}}>Administrar grupo</Btn2>}
     </div>
     <div style={{padding:"0 16px 16px"}}>
       <SectionLabel>Miembros ({members.length}/{activeGroup&&activeGroup.max_members})</SectionLabel>
@@ -1379,9 +1392,45 @@ function ManageGroupModal({group,onClose,onUpdated,toast$}){
   </Modal>;
 }
 
+function StandingsTable({group,scores}){
+  var arr=calcGroupStandings(group,scores);
+  var th={padding:"6px 6px",fontSize:10,color:C.sub2,textAlign:"center",fontWeight:600,letterSpacing:0.3,textTransform:"uppercase"};
+  var td={padding:"7px 6px",fontSize:12,color:C.text,textAlign:"center",fontFamily:mono};
+  var ptsTd=Object.assign({},td,{fontSize:14,fontWeight:800,color:C.gold});
+  var ptsTh=Object.assign({},th,{color:C.gold});
+  return <div style={Object.assign({},card,{padding:"10px 8px",marginTop:14,overflowX:"auto"})}>
+    <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:6,padding:"0 6px",fontWeight:700}}>Tabla de posiciones</div>
+    <table style={{width:"100%",borderCollapse:"collapse"}}>
+      <thead><tr>
+        <th style={Object.assign({},th,{textAlign:"left",paddingLeft:8})}>Equipo</th>
+        <th style={th}>PJ</th><th style={th}>G</th><th style={th}>E</th><th style={th}>P</th>
+        <th style={th}>GF</th><th style={th}>GC</th><th style={th}>DG</th>
+        <th style={ptsTh}>Pts</th>
+      </tr></thead>
+      <tbody>
+        {arr.map(function(r,i){
+          return <tr key={r.team} style={{borderTop:i>0?b(C.border):"none"}}>
+            <td style={Object.assign({},td,{textAlign:"left",paddingLeft:8,fontFamily:font,fontWeight:i<2?600:400,color:i<2?C.text:C.sub})}>{i+1}. {r.team}</td>
+            <td style={td}>{r.played}</td>
+            <td style={td}>{r.w}</td>
+            <td style={td}>{r.d}</td>
+            <td style={td}>{r.l}</td>
+            <td style={td}>{r.gf}</td>
+            <td style={td}>{r.ga}</td>
+            <td style={Object.assign({},td,{color:r.gd>0?C.green:r.gd<0?C.red:C.text})}>{r.gd>0?"+"+r.gd:r.gd}</td>
+            <td style={ptsTd}>{r.pts}</td>
+          </tr>;
+        })}
+      </tbody>
+    </table>
+  </div>;
+}
+
 function OfficialResultsView({ctx}){
   var setView=ctx.setView;
+  const [tab,setTab]=useState("groups");
   const [ag,setAg]=useState("A");
+  const [koPhase,setKoPhase]=useState("r32");
   const [official,setOfficial]=useState({});
   const [loading,setLoading]=useState(true);
 
@@ -1392,29 +1441,66 @@ function OfficialResultsView({ctx}){
   },[]);
 
   var sortedMatches=GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
-  var hasAnyResult=Object.values(official).some(function(r){return r.home!=null&&r.home!=="";});
+  var hasAnyResult=Object.values(official).some(function(r){return r.home!=null&&r.home!==""; });
+
+  var koSlots=KO_SLOTS.filter(function(s){return s.phase===koPhase;});
+  var koPhaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var koPhaseList=["r32","r16","qf","sf","3rd","f"];
 
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Resultados Oficiales" onBack={function(){setView("groups_list");}}/>
-    <Tabs items={Object.keys(GROUPS).map(function(g){return {id:g,label:g};})} active={ag} onSelect={setAg} small/>
+    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Eliminatoria"}]} active={tab} onSelect={setTab}/>
+
     {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
     {!loading&&!hasAnyResult&&<div style={{textAlign:"center",marginTop:48,padding:"0 24px"}}><div style={{fontSize:40,marginBottom:12}}>&#9203;</div><div style={{color:C.sub,fontSize:14}}>El torneo aun no comenzo</div></div>}
-    {!loading&&<div style={{padding:"10px 14px 40px"}}>
-      {sortedMatches.map(function(m){
-        var off=official[m.id];
-        var played=off&&off.home!=null&&off.home!=="";
-        return <div key={m.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
-          <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
-            <div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?b(C.border):"none"}}>
-              {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}
+
+    {!loading&&tab==="groups"&&<>
+      <Tabs items={Object.keys(GROUPS).map(function(g){return {id:g,label:g};})} active={ag} onSelect={setAg} small/>
+      <div style={{padding:"10px 14px 40px"}}>
+        {sortedMatches.map(function(m){
+          var off=official[m.id];
+          var played=off&&off.home!=null&&off.home!=="";
+          return <div key={m.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
+              <div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?b(C.border):"none"}}>
+                {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}
+              </div>
+              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
             </div>
-            <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
-          </div>
-        </div>;
-      })}
-    </div>}
+          </div>;
+        })}
+        <StandingsTable group={ag} scores={official}/>
+      </div>
+    </>}
+
+    {!loading&&tab==="ko"&&<>
+      <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
+        {koPhaseList.map(function(p){
+          return <button key={p} onClick={function(){setKoPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:koPhase===p?b(C.accentS):b(C.border),background:koPhase===p?"rgba(0,200,224,0.1)":C.surface,color:koPhase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{koPhaseLabels[p]}</button>;
+        })}
+      </div>
+      <div style={{padding:"12px 14px 40px"}}>
+        {koSlots.map(function(s){
+          var off=official[s.id];
+          var played=off&&off.home!=null&&off.home!=="";
+          return <div key={s.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
+            {played?<>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+                <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
+                <div style={{minWidth:70,textAlign:"center",background:C.surface2,borderRadius:8,padding:"6px 12px",border:b(C.border)}}>
+                  <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>
+                </div>
+                <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
+              </div>
+              {off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
+            </>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
+          </div>;
+        })}
+      </div>
+    </>}
   </div>;
 }
 
@@ -1594,9 +1680,24 @@ function PredictionsView({ctx}){
       var p=preds[match_id];
       return {user_id:profile.id,group_id:activeGroup.id,match_id:match_id,home:p.home!=null?p.home:null,away:p.away!=null?p.away:null,winner:p.winner||null,pen_home:p.pen_home||null,pen_away:p.pen_away||null,home_team:p.home_team||null,away_team:p.away_team||null};
     });
+    // Extras se derivan de los partidos Final y 3°/4°
+    var finalPred=preds["f_0"]||{};
+    var thirdPred=preds["3rd_0"]||{};
+    function _loser(pred){
+      if (!pred||!pred.winner||!pred.home_team||!pred.away_team) return null;
+      if (pred.winner===pred.home_team) return pred.away_team;
+      if (pred.winner===pred.away_team) return pred.home_team;
+      return null;
+    }
+    var derivedExtras={
+      champion: finalPred.winner||null,
+      runner_up: _loser(finalPred),
+      third: thirdPred.winner||null,
+      fourth: _loser(thirdPred),
+    };
     Promise.all([
       supabase.from("predictions").upsert(rows,{onConflict:"user_id,group_id,match_id"}),
-      supabase.from("prediction_extras").upsert({user_id:profile.id,group_id:activeGroup.id,champion:extras.champion||null,runner_up:extras.runner_up||null,third:extras.third||null,fourth:extras.fourth||null},{onConflict:"user_id,group_id"}),
+      supabase.from("prediction_extras").upsert({user_id:profile.id,group_id:activeGroup.id,champion:derivedExtras.champion,runner_up:derivedExtras.runner_up,third:derivedExtras.third,fourth:derivedExtras.fourth},{onConflict:"user_id,group_id"}),
     ]).then(function(){setSaving(false);toast$("Guardado");});
   }
 
@@ -1621,22 +1722,42 @@ function PredictionsView({ctx}){
 
     {tab==="extras"&&<div style={{padding:"10px 14px 100px"}}>
       <div style={Object.assign({},card,{marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}>
-        <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Predicciones especiales con puntos extra.</p>
+        <p style={{color:C.sub,fontSize:13,margin:0,lineHeight:1.6}}>Estas predicciones se derivan automáticamente de tus partidos de <b>Final</b> y <b>3°/4°</b>. Para cambiarlas, andá a Cruces y modificá esos partidos.</p>
       </div>
-      {[{key:"champion",label:"Campeon",pts:50},{key:"runner_up",label:"Subcampeon",pts:30},{key:"third",label:"3 puesto",pts:20},{key:"fourth",label:"4 puesto",pts:20}].map(function(item){
-        var offVal=officialExtras&&officialExtras[item.key];
-        var predVal=extras[item.key];
-        var correct=offVal&&predVal&&offVal===predVal;
-        var incorrect=offVal&&predVal&&offVal!==predVal;
-        return <div key={item.key} style={Object.assign({},card,{marginBottom:10,borderLeft:correct?b3(C.green):incorrect?b3(C.red):b3(C.border)})}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:14,fontWeight:600,color:C.text}}>{item.label}</span>
-            <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{item.pts} pts</span>
-          </div>
-          {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:correct?C.green:C.accentS}}>{offVal}</b></div>}
-          <TeamSelector value={extras[item.key]} onChange={function(v){if(!locked)setExtras(function(p){var n=Object.assign({},p);n[item.key]=v;return n;});}} locked={locked}/>
-        </div>;
-      })}
+      {(function(){
+        // Cascada: Campeón/Subcampeón = winner/loser del Final. 3°/4° = winner/loser del 3°-4°.
+        var finalPred=preds["f_0"]||{};
+        var thirdPred=preds["3rd_0"]||{};
+        function loser(pred){
+          if (!pred||!pred.winner||!pred.home_team||!pred.away_team) return null;
+          if (pred.winner===pred.home_team) return pred.away_team;
+          if (pred.winner===pred.away_team) return pred.home_team;
+          return null;
+        }
+        var derived={
+          champion: finalPred.winner||null,
+          runner_up: loser(finalPred),
+          third: thirdPred.winner||null,
+          fourth: loser(thirdPred),
+        };
+        return [{key:"champion",label:"Campeon",pts:55,source:"Final"},{key:"runner_up",label:"Subcampeon",pts:35,source:"Final"},{key:"third",label:"3 puesto",pts:35,source:"3°/4°"},{key:"fourth",label:"4 puesto",pts:35,source:"3°/4°"}].map(function(item){
+          var offVal=officialExtras&&officialExtras[item.key];
+          var predVal=derived[item.key];
+          var correct=offVal&&predVal&&offVal===predVal;
+          var incorrect=offVal&&predVal&&offVal!==predVal;
+          return <div key={item.key} style={Object.assign({},card,{marginBottom:10,borderLeft:correct?b3(C.green):incorrect?b3(C.red):b3(C.border)})}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:14,fontWeight:600,color:C.text}}>{item.label}</span>
+              <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{item.pts} pts</span>
+            </div>
+            {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:correct?C.green:C.accentS}}>{offVal}</b></div>}
+            <div style={Object.assign({},inp,{padding:"10px 12px",fontSize:14,color:predVal?C.text:C.sub2,fontStyle:predVal?"normal":"italic",cursor:"default"})}>
+              {predVal||"Pendiente"}
+            </div>
+            <div style={{fontSize:10,color:C.sub2,marginTop:6,letterSpacing:0.3}}>Derivado de {item.source}</div>
+          </div>;
+        });
+      })()}
     </div>}
 
     <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:C.bg,borderTop:b(C.border),padding:"12px 16px",zIndex:20}}>
@@ -1931,6 +2052,7 @@ function AdminView({ctx}){
         return <div key={c.id} style={Object.assign({},card,{marginBottom:10})}>
           <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{c.nombre}</div>
           {c.nick&&<div style={{fontSize:12,color:C.sub2,marginBottom:4}}>Nick/email: {c.nick}</div>}
+          {c.telefono&&<div style={{fontSize:12,color:C.accentS,marginBottom:6}}>📞 <a href={"tel:"+(c.telefono||"").replace(/\s/g,"")} style={{color:C.accentS,textDecoration:"none",fontWeight:600}}>{c.telefono}</a></div>}
           <div style={{fontSize:13,color:C.sub,lineHeight:1.5}}>{c.motivo}</div>
           <div style={{fontSize:10,color:C.sub,marginTop:6,marginBottom:10}}>{new Date(c.created_at).toLocaleString("es-AR",{timeZone:"America/Argentina/Buenos_Aires"})}</div>
           <button onClick={resolve} style={{width:"100%",padding:"8px",borderRadius:8,border:b(C.green),background:"rgba(76,223,154,0.05)",color:C.green,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>&#10003; Marcar como resuelto</button>
