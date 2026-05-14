@@ -620,6 +620,38 @@ export default function App() {
   const [hasNewResults,setHasNewResults]=useState(false);
   const [installPrompt,setInstallPrompt]=useState(null);
   const [showIOSInstall,setShowIOSInstall]=useState(false);
+  const [pendingInvite,setPendingInvite]=useState(null); // {seq, group: {id, name, ...}}
+
+  // ===== Detección de invite link al cargar la app =====
+  // Si la URL tiene ?invite=001 (o sessionStorage tiene un invite pendiente del registro),
+  // cargar el grupo y dejarlo en pendingInvite. El procesamiento (modal de confirmación + join)
+  // ocurre cuando profile esté listo, en otro useEffect.
+  useEffect(function(){
+    var seq=null;
+    try {
+      var params=new URLSearchParams(window.location.search);
+      seq=params.get("invite");
+    } catch(e){}
+    if (!seq) {
+      try { seq=sessionStorage.getItem("baprode_pending_invite"); } catch(e){}
+    }
+    if (!seq) return;
+    var seqNum=parseInt(seq,10);
+    if (isNaN(seqNum)) return;
+    // Limpiar URL para que el query no se quede pegado al historial
+    try {
+      sessionStorage.setItem("baprode_pending_invite",String(seqNum));
+      var clean=window.location.pathname+window.location.hash;
+      window.history.replaceState({},"",clean);
+    } catch(e){}
+    supabase.from("groups").select("id,name,max_members,invite_seq,join_code").eq("invite_seq",seqNum).maybeSingle().then(function(r){
+      if (r.data) setPendingInvite({seq:seqNum,group:r.data});
+      else {
+        // Grupo no existe — limpiar
+        try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+      }
+    });
+  },[]);
 
   // Detección iOS y modo standalone (PWA ya instalada)
   var isIOS = (typeof navigator!=="undefined") && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -733,6 +765,50 @@ export default function App() {
             Importante: tiene que estar abierto en <b>Safari</b>. Si estás en Chrome o Instagram Browser, no va a funcionar — abrí el link directo en Safari.
           </div>
           <GradBtn onClick={function(){setShowIOSInstall(false);}}>Entendido</GradBtn>
+        </div>
+      </Modal>}
+      {pendingInvite&&profile&&<Modal title="Te invitaron a un grupo" onClose={function(){
+        setPendingInvite(null);
+        try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+      }}>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <p style={{margin:0,color:C.text,fontSize:14,lineHeight:1.6,textAlign:"center"}}>¿Querés unirte al grupo</p>
+          <p style={{margin:0,color:C.accentS,fontSize:20,fontWeight:700,textAlign:"center"}}>{pendingInvite.group.name}?</p>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:10}}>
+            <GradBtn onClick={function(){
+              var g=pendingInvite.group;
+              supabase.from("group_members").select("user_id").eq("group_id",g.id).then(function(r){
+                var members=r.data||[];
+                var already=members.find(function(m){return m.user_id===profile.id;});
+                if (already){
+                  showToast("Ya sos miembro de este grupo");
+                  setPendingInvite(null);
+                  try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+                  setActiveGroup(g);
+                  setView("group");
+                  return;
+                }
+                if (members.length>=g.max_members){
+                  showToast("El grupo está lleno","err");
+                  setPendingInvite(null);
+                  try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+                  return;
+                }
+                supabase.from("group_members").insert({group_id:g.id,user_id:profile.id,role:"member"}).then(function(res){
+                  if (res.error){ showToast("Error: "+res.error.message,"err"); return; }
+                  showToast("Te uniste al grupo!");
+                  setPendingInvite(null);
+                  try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+                  setActiveGroup(g);
+                  setView("group");
+                });
+              });
+            }}>Sí, unirme</GradBtn>
+            <Btn2 onClick={function(){
+              setPendingInvite(null);
+              try { sessionStorage.removeItem("baprode_pending_invite"); } catch(e){}
+            }}>No, gracias</Btn2>
+          </div>
         </div>
       </Modal>}
     </Page>
@@ -1108,7 +1184,7 @@ function GroupsListView({ctx}){
 
   function fetchGroups(){
     setLoading(true);
-    supabase.from("group_members").select("group_id, groups(id,name,max_members,created_by,updated_at,join_code)").eq("user_id",profile.id).then(function(r){
+    supabase.from("group_members").select("group_id, groups(id,name,max_members,created_by,updated_at,join_code,invite_seq)").eq("user_id",profile.id).then(function(r){
       setMyGroups((r.data||[]).map(function(d){return d.groups;}).filter(Boolean));
       setLoading(false);
     });
@@ -1172,6 +1248,17 @@ function GroupsListView({ctx}){
       })}
       <div style={{marginTop:16}}><Btn2 onClick={function(){setShowJoin(true);}}>Unirse a un grupo</Btn2></div>
       <div style={{marginTop:10}}><Btn2 onClick={function(){setShowCreate(true);}}>Crear grupo</Btn2></div>
+      <div style={{marginTop:10}}><Btn2 onClick={function(){
+        var url="https://baprode-mundial.vercel.app";
+        var msg="Sumate a Baprode Mundial 2026, la app de pronósticos del Mundial. Entrá acá: "+url;
+        if (navigator.share){
+          navigator.share({title:"Baprode Mundial 2026",text:msg,url:url}).catch(function(){});
+        } else if (navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(msg).then(function(){toast$("Mensaje copiado, pegalo donde quieras");}).catch(function(){toast$("No se pudo copiar","err");});
+        } else {
+          toast$("Compartí este link: "+url);
+        }
+      }}>Invitar amigo</Btn2></div>
     </div>
     {showCreate&&<CreateGroupModal profile={profile} onClose={function(){setShowCreate(false);}} onCreated={function(newGroup){setShowCreate(false);fetchGroups();setActiveGroup(newGroup);setView("group");}} toast$={toast$}/>}
     {showJoin&&<JoinGroupModal profile={profile} onClose={function(){setShowJoin(false);}} onJoined={function(){fetchGroups();setShowJoin(false);}} toast$={toast$}/>}
@@ -1248,21 +1335,26 @@ function PinInput({value,onChange,length,error,disabled}){
 
 function JoinGroupModal({profile,onClose,onJoined,toast$}){
   const [q,setQ]=useState("");
-  const [results,setResults]=useState([]);
-  const [searching,setSearching]=useState(false);
+  const [allGroups,setAllGroups]=useState([]);
+  const [loadingList,setLoadingList]=useState(true);
   const [loading,setLoading]=useState(false);
   const [pendingGroup,setPendingGroup]=useState(null);
   const [code,setCode]=useState("");
   const [codeError,setCodeError]=useState(false);
 
-  function search(){
-    if(!q) return;
-    setSearching(true);
-    supabase.from("groups").select("*").ilike("name","%"+q+"%").limit(10).then(function(r){
-      setResults(r.data||[]);
-      setSearching(false);
+  // Cargar TODOS los grupos al abrir, ordenados alfabéticamente
+  useEffect(function(){
+    supabase.from("groups").select("*").order("name",{ascending:true}).then(function(r){
+      setAllGroups(r.data||[]);
+      setLoadingList(false);
     });
-  }
+  },[]);
+
+  // Filtro en vivo
+  var filtered=allGroups.filter(function(g){
+    if (!q) return true;
+    return (g.name||"").toLowerCase().indexOf(q.toLowerCase())>=0;
+  });
 
   function startJoin(g){
     setPendingGroup(g);
@@ -1308,17 +1400,14 @@ function JoinGroupModal({profile,onClose,onJoined,toast$}){
   }
 
   return <Modal title="Unirse a grupo" onClose={onClose}>
-    <div style={{display:"flex",gap:8}}>
-      <input style={Object.assign({},inp,{flex:1})} placeholder="Buscar grupo..." value={q} onChange={function(e){setQ(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")search();}}/>
-      <button onClick={search} style={Object.assign({},gradBtnS,{padding:"0 14px",fontSize:13})}>Buscar</button>
-    </div>
-    <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:8}}>
-      {searching&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:12}}>Buscando...</div>}
-      {!searching&&q&&results.length===0&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:12}}>No se encontraron grupos</div>}
-      {results.map(function(g){
-        return <div key={g.id} style={Object.assign({},card,{display:"flex",alignItems:"center",gap:10})}>
-          <span style={{flex:1,fontSize:14,color:C.text}}>{g.name}</span>
-          <span style={{fontSize:11,color:C.sub}}>Max {g.max_members}</span>
+    <input style={Object.assign({},inp)} placeholder="Buscar grupo por nombre..." value={q} onChange={function(e){setQ(e.target.value);}}/>
+    <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:8,maxHeight:380,overflowY:"auto"}}>
+      {loadingList&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:20}}>Cargando grupos...</div>}
+      {!loadingList&&filtered.length===0&&<div style={{textAlign:"center",color:C.sub,fontSize:12,padding:20}}>{q?"Ningún grupo coincide":"No hay grupos creados"}</div>}
+      {filtered.map(function(g){
+        return <div key={g.id} style={Object.assign({},card,{display:"flex",alignItems:"center",gap:10,padding:"10px 12px"})}>
+          <span style={{flex:1,fontSize:13,color:C.text}}>{g.name}</span>
+          <span style={{fontSize:10,color:C.sub2}}>max {g.max_members}</span>
           <button onClick={function(){startJoin(g);}} style={Object.assign({},gradBtnS,{padding:"6px 12px",fontSize:12})} disabled={loading}>Unirse</button>
         </div>;
       })}
@@ -1333,6 +1422,8 @@ function GroupView({ctx}){
   const [selectedUser,setSelectedUser]=useState(null);
   const [showManage,setShowManage]=useState(false);
   const [showStats,setShowStats]=useState(false);
+  const [leaveStep,setLeaveStep]=useState(0); // 0=none, 1=first confirm, 2=second confirm
+  const [leaving,setLeaving]=useState(false);
   const [myRole,setMyRole]=useState(null);
 
   useEffect(function(){fetchMembers();},[]);
@@ -1354,9 +1445,13 @@ function GroupView({ctx}){
 
   function shareGroup(){
     var url="https://baprode-mundial.vercel.app";
-    var text="Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026! Ingresa, busca el grupo y pedime la clave.";
-    if(navigator.share) navigator.share({title:"Baprode",text:text,url:url});
-    else{navigator.clipboard.writeText(text+" "+url);toast$("Texto copiado");}
+    var seq=activeGroup&&activeGroup.invite_seq;
+    var link=seq?(url+"?invite="+String(seq).padStart(3,"0")):url;
+    var text=seq
+      ? "Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026. Abrí este link: "+link
+      : "Unite a mi grupo \""+activeGroup.name+"\" en Baprode Mundial 2026! Ingresa, busca el grupo y pedime la clave.";
+    if(navigator.share) navigator.share({title:"Baprode",text:text,url:link});
+    else{navigator.clipboard.writeText(text);toast$("Texto copiado");}
   }
 
   function copyJoinCode(){
@@ -1393,6 +1488,7 @@ function GroupView({ctx}){
         <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Invitar</button>
       </div>
       {isGroupAdmin&&<Btn2 onClick={function(){setShowManage(true);}}>Administrar grupo</Btn2>}
+      {activeGroup&&activeGroup.created_by!==profile.id&&<button onClick={function(){setLeaveStep(1);}} style={{width:"100%",padding:"12px",borderRadius:12,border:b("rgba(224,92,106,0.4)"),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:"transparent",color:C.red,marginTop:8}}>Salir del grupo</button>}
     </div>
     <div style={{padding:"0 16px 16px"}}>
       <SectionLabel>Miembros ({members.length}/{activeGroup&&activeGroup.max_members})</SectionLabel>
@@ -1415,6 +1511,37 @@ function GroupView({ctx}){
     {selectedUser&&<ViewUserPredModal user={selectedUser} group={activeGroup} onClose={function(){setSelectedUser(null);}}/>}
     {showManage&&<ManageGroupModal group={activeGroup} onClose={function(){setShowManage(false);}} onUpdated={function(updated){setActiveGroup(updated);setShowManage(false);}} toast$={toast$}/>}
     {showStats&&<StatsModal profile={profile} group={activeGroup} onClose={function(){setShowStats(false);}}/>}
+    {leaveStep===1&&<Modal title="Salir del grupo" onClose={function(){if(!leaving)setLeaveStep(0);}}>
+      <p style={{color:C.text,fontSize:14,lineHeight:1.6,marginBottom:16,textAlign:"center"}}>¿Seguro que querés salir del grupo <b>{activeGroup&&activeGroup.name}</b>?</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <button onClick={function(){setLeaveStep(2);}} disabled={leaving} style={{width:"100%",padding:"12px",borderRadius:12,border:b(C.red),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:"rgba(224,92,106,0.08)",color:C.red}}>Sí, quiero salir</button>
+        <Btn2 onClick={function(){setLeaveStep(0);}}>Cancelar</Btn2>
+      </div>
+    </Modal>}
+    {leaveStep===2&&<Modal title="Última confirmación" onClose={function(){if(!leaving)setLeaveStep(0);}}>
+      <p style={{color:C.text,fontSize:14,lineHeight:1.6,marginBottom:8,textAlign:"center"}}>Esto va a <b style={{color:C.red}}>borrar todas tus predicciones y extras</b> de este grupo. La acción no se puede deshacer.</p>
+      <p style={{color:C.sub,fontSize:12,lineHeight:1.5,marginBottom:16,textAlign:"center"}}>¿Confirmás?</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <button disabled={leaving} onClick={function(){
+          setLeaving(true);
+          var gid=activeGroup.id;
+          Promise.all([
+            supabase.from("predictions").delete().eq("user_id",profile.id).eq("group_id",gid),
+            supabase.from("prediction_extras").delete().eq("user_id",profile.id).eq("group_id",gid),
+            supabase.from("group_members").delete().eq("user_id",profile.id).eq("group_id",gid),
+          ]).then(function(results){
+            var err=results.find(function(r){return r.error;});
+            if (err){ toast$("Error al salir: "+err.error.message,"err"); setLeaving(false); return; }
+            toast$("Saliste del grupo");
+            setLeaveStep(0);
+            setLeaving(false);
+            setActiveGroup(null);
+            setView("groups_list");
+          });
+        }} style={{width:"100%",padding:"12px",borderRadius:12,border:b(C.red),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.red,color:"#fff",opacity:leaving?0.6:1}}>{leaving?"Saliendo...":"Sí, borrar todo y salir"}</button>
+        <Btn2 onClick={function(){setLeaveStep(0);}}>Cancelar</Btn2>
+      </div>
+    </Modal>}
   </div>;
 }
 
@@ -1553,7 +1680,9 @@ function OfficialResultsView({ctx}){
 
 function GlobalRankingView({ctx}){
   var profile=ctx.profile,setView=ctx.setView;
+  const [tab,setTab]=useState("individual");
   const [ranking,setRanking]=useState([]);
+  const [groupsRanking,setGroupsRanking]=useState([]);
   const [loading,setLoading]=useState(true);
 
   useEffect(function(){
@@ -1562,12 +1691,17 @@ function GlobalRankingView({ctx}){
       supabase.from("predictions").select("user_id,group_id,match_id,home,away,pen_home,pen_away,winner,home_team,away_team"),
       supabase.from("prediction_extras").select("*"),
       supabase.from("official_extras").select("*").single(),
+      supabase.from("groups").select("id,name,invite_seq"),
+      supabase.from("group_members").select("group_id,user_id"),
     ]).then(function(results){
       var offMap={};(results[0].data||[]).forEach(function(r){offMap[r.match_id]=r;});
       var allPreds=results[1].data||[];
       var extrasMap={};(results[2].data||[]).forEach(function(e){extrasMap[e.user_id]=e;});
       var offExtras=results[3].data;
-      if(!allPreds.length){setLoading(false);return;}
+      var groups=results[4].data||[];
+      var allMembers=results[5].data||[];
+
+      // Agrupar preds por user+group
       var byUserGroup={};
       allPreds.forEach(function(p){
         if(!byUserGroup[p.user_id])byUserGroup[p.user_id]={};
@@ -1575,12 +1709,19 @@ function GlobalRankingView({ctx}){
         if(!byUserGroup[p.user_id][gid])byUserGroup[p.user_id][gid]=[];
         byUserGroup[p.user_id][gid].push(p);
       });
+      // Agrupar miembros por grupo
+      var membersByGroup={};
+      allMembers.forEach(function(m){
+        if(!membersByGroup[m.group_id])membersByGroup[m.group_id]=[];
+        membersByGroup[m.group_id].push(m.user_id);
+      });
+
       var uids=Object.keys(byUserGroup);
-      supabase.from("profiles").select("id,nick,nombre").in("id",uids).then(function(r2){
+      supabase.from("profiles").select("id,nick,nombre").in("id",uids.length?uids:["00000000-0000-0000-0000-000000000000"]).then(function(r2){
         var profMap={};(r2.data||[]).forEach(function(p){profMap[p.id]=p;});
-        var res=uids.map(function(uid){
-          // Por cada grupo del usuario, calcular stats completas. Quedarse con la "mejor planilla"
-          // según la cascada de desempate (no solo mayor pts).
+
+        // ===== Ranking INDIVIDUAL: mejor planilla por usuario =====
+        var resInd=uids.map(function(uid){
           var bestStats=null;
           Object.keys(byUserGroup[uid]).forEach(function(gid){
             var stats=calcUserStats(byUserGroup[uid][gid],offMap,extrasMap[uid],offExtras);
@@ -1590,8 +1731,34 @@ function GlobalRankingView({ctx}){
           var prof=profMap[uid];
           return{uid:uid,pts:bestStats.pts,exactMatches:bestStats.exactMatches,exactSlotsR32:bestStats.exactSlotsR32,goalsDiff:bestStats.goalsDiff,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
         });
-        var sorted=res.sort(tiebreakCompare);
-        setRanking(markTies(sorted));
+        setRanking(markTies(resInd.sort(tiebreakCompare)));
+
+        // ===== Ranking POR GRUPOS =====
+        // Para cada grupo: tomar miembros, calcular pts de cada uno EN ESE GRUPO, aplicar regla:
+        //   - menos de 6 miembros → no aparece
+        //   - 6-10 → promedio de todos
+        //   - 11+ → promedio de los 5 mejores + 5 peores
+        var resGroups=groups.map(function(g){
+          var memberIds=membersByGroup[g.id]||[];
+          if (memberIds.length<6) return null;
+          var memberPts=memberIds.map(function(uid){
+            var preds=(byUserGroup[uid]&&byUserGroup[uid][g.id])||[];
+            var stats=calcUserStats(preds,offMap,extrasMap[uid],offExtras);
+            return stats.pts;
+          });
+          memberPts.sort(function(a,b){return b-a;}); // descendente
+          var sample;
+          if (memberPts.length<=10){
+            sample=memberPts;
+          } else {
+            // top 5 + bottom 5
+            sample=memberPts.slice(0,5).concat(memberPts.slice(-5));
+          }
+          var avg=sample.length? sample.reduce(function(a,b){return a+b;},0)/sample.length : 0;
+          return {gid:g.id,name:g.name,seq:g.invite_seq,members:memberIds.length,avg:Math.round(avg*100)/100};
+        }).filter(function(x){return x;});
+        resGroups.sort(function(a,b){return b.avg-a.avg;});
+        setGroupsRanking(resGroups);
         setLoading(false);
       });
     });
@@ -1601,23 +1768,43 @@ function GlobalRankingView({ctx}){
   var medalEmoji=["&#127941;","&#129352;","&#129353;"];
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Ranking Global" onBack={function(){setView("groups_list");}}/>
+    <Tabs items={[{id:"individual",label:"Individual"},{id:"groups",label:"Por grupos"}]} active={tab} onSelect={setTab}/>
     <div style={{padding:"16px 14px 80px"}}>
-      <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma, sin importar el grupo.</p></div>
-      {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
-      {ranking.map(function(r,i){
-        var isMine=r.uid===profile.id;
-        return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
-          <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
-          <Ava name={r.nick} size={32}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
-            {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
-          </div>
-          <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
-          <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
-        </div>;
-      })}
-      {!loading&&ranking.every(function(r){return r.pts===0;})&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aun</p>}
+      {tab==="individual"&&<>
+        <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma. Para usuarios con varias planillas se toma la mejor.</p></div>
+        {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
+        {ranking.map(function(r,i){
+          var isMine=r.uid===profile.id;
+          return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
+            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
+            <Ava name={r.nick} size={32}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
+              {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
+            </div>
+            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
+            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
+          </div>;
+        })}
+        {!loading&&ranking.every(function(r){return r.pts===0;})&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aun</p>}
+      </>}
+
+      {tab==="groups"&&<>
+        <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Promedio de puntos por grupo. Mínimo 6 miembros para aparecer. Grupos de 6 a 10 promedian todos; de 11+ promedian los 5 mejores y los 5 peores.</p></div>
+        {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
+        {!loading&&groupsRanking.length===0&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin grupos con suficientes miembros (mínimo 6).</p>}
+        {groupsRanking.map(function(g,i){
+          return <div key={g.gid} style={Object.assign({},rankRow,{background:C.surface,borderLeft:i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
+            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:500,color:C.text}}>{g.name}</div>
+              <div style={{fontSize:11,color:C.sub,marginTop:1}}>{g.members} miembros</div>
+            </div>
+            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{g.avg}</span>
+            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>prom</span>
+          </div>;
+        })}
+      </>}
     </div>
   </div>;
 }
@@ -2273,6 +2460,26 @@ function AdminGroupDetailModal({group,onClose}){
   const [loading,setLoading]=useState(true);
   const [selectedUser,setSelectedUser]=useState(null);
   const [showStats,setShowStats]=useState(null);
+  const [confirmRemove,setConfirmRemove]=useState(null); // {uid, nick}
+  const [removing,setRemoving]=useState(false);
+
+  function removeMember(uid){
+    setRemoving(true);
+    Promise.all([
+      supabase.from("predictions").delete().eq("user_id",uid).eq("group_id",group.id),
+      supabase.from("prediction_extras").delete().eq("user_id",uid).eq("group_id",group.id),
+      supabase.from("group_members").delete().eq("user_id",uid).eq("group_id",group.id),
+    ]).then(function(results){
+      var err=results.find(function(r){return r.error;});
+      setRemoving(false);
+      if (err){
+        alert("No se pudo sacar al miembro: "+err.error.message+"\n\nSi el error menciona RLS o permisos, hace falta crear una función RPC en Supabase. Avisame.");
+        return;
+      }
+      setRanking(function(prev){return prev.filter(function(r){return r.uid!==uid;});});
+      setConfirmRemove(null);
+    });
+  }
 
   useEffect(function(){
     Promise.all([
@@ -2330,6 +2537,7 @@ function AdminGroupDetailModal({group,onClose}){
             <div style={{display:"flex",gap:8}}>
               <button onClick={function(){setSelectedUser({user_id:r.uid,profiles:r.profiles});}} style={{flex:1,padding:"7px",borderRadius:8,border:b(C.border),background:"none",color:C.sub2,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver planilla</button>
               <button onClick={function(){setShowStats({uid:r.uid,nick:r.nick});}} style={{flex:1,padding:"7px",borderRadius:8,border:b(C.border),background:"none",color:C.green,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Ver stats</button>
+              <button onClick={function(){setConfirmRemove({uid:r.uid,nick:r.nick});}} style={{flex:1,padding:"7px",borderRadius:8,border:b("rgba(224,92,106,0.4)"),background:"none",color:C.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:font}}>Sacar</button>
             </div>
           </div>;
         })}
@@ -2337,6 +2545,14 @@ function AdminGroupDetailModal({group,onClose}){
     </div>
     {selectedUser&&<ViewUserPredModal user={selectedUser} group={group} onClose={function(){setSelectedUser(null);}}/>}
     {showStats&&<AdminUserStatsModal uid={showStats.uid} nick={showStats.nick} group={group} onClose={function(){setShowStats(null);}}/>}
+    {confirmRemove&&<Modal title="Sacar del grupo" onClose={function(){if(!removing)setConfirmRemove(null);}}>
+      <p style={{color:C.text,fontSize:14,lineHeight:1.6,marginBottom:12,textAlign:"center"}}>¿Sacar a <b>{confirmRemove.nick}</b> del grupo?</p>
+      <p style={{color:C.sub,fontSize:12,lineHeight:1.5,marginBottom:16,textAlign:"center"}}>Esto borra todas sus predicciones, extras y membresía de este grupo. No se puede deshacer.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <button disabled={removing} onClick={function(){removeMember(confirmRemove.uid);}} style={{width:"100%",padding:"12px",borderRadius:12,border:b(C.red),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.red,color:"#fff",opacity:removing?0.6:1}}>{removing?"Sacando...":"Sí, sacar"}</button>
+        <Btn2 onClick={function(){if(!removing)setConfirmRemove(null);}}>Cancelar</Btn2>
+      </div>
+    </Modal>}
   </div>;
 }
 
@@ -2397,59 +2613,79 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
 
 function FixtureView({ctx}){
   var setView=ctx.setView,activeGroup=ctx.activeGroup;
-  const [ag,setAg]=useState("A");
   const [tab,setTab]=useState("groups");
+  const [ag,setAg]=useState("A");
+  const [koPhase,setKoPhase]=useState("r32");
   const [official,setOfficial]=useState({});
+  const [loading,setLoading]=useState(true);
+
   useEffect(function(){
     supabase.from("official_results").select("*").then(function(r){
-      var map={};(r.data||[]).forEach(function(x){map[x.match_id]=x;});setOfficial(map);
+      var map={};(r.data||[]).forEach(function(x){map[x.match_id]=x;});setOfficial(map);setLoading(false);
     });
   },[]);
+
   function back(){if(activeGroup) setView("group"); else setView("groups_list");}
+
+  var sortedMatches=GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
+
+  var koSlots=KO_SLOTS.filter(function(s){return s.phase===koPhase;});
+  var koPhaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
+  var koPhaseList=["r32","r16","qf","sf","3rd","f"];
+
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Fixture completo" onBack={back}/>
-    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Cruces"}]} active={tab} onSelect={setTab}/>
-    {tab==="groups"&&<>
-      <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
+    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Eliminatoria"}]} active={tab} onSelect={setTab}/>
+
+    {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
+
+    {!loading&&tab==="groups"&&<>
+      <Tabs items={Object.keys(GROUPS).map(function(g){return {id:g,label:g};})} active={ag} onSelect={setAg} small/>
       <div style={{padding:"10px 14px 40px"}}>
-        {GROUP_MATCHES.filter(function(m){return m.group===ag;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);}).map(function(m){
+        {sortedMatches.map(function(m){
           var off=official[m.id];
           var played=off&&off.home!=null&&off.home!=="";
-          return <div key={m.id} style={Object.assign({},card,{marginBottom:8,borderLeft:played?b3(C.accentS):b3(C.border)})}>
-            <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
+          return <div key={m.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{flex:1,fontSize:13,color:C.text}}>{m.home}</span>
-              <div style={{minWidth:60,textAlign:"center"}}>
-                {played?<span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:12}}>vs</span>}
+              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400}}>{m.home}</span>
+              <div style={{minWidth:70,textAlign:"center",background:played?C.surface2:"transparent",borderRadius:8,padding:played?"6px 12px":"4px 12px",border:played?b(C.border):"none"}}>
+                {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home} - {off.away}</span>:<span style={{color:C.sub,fontSize:13}}>vs</span>}
               </div>
-              <span style={{flex:1,fontSize:13,color:C.text,textAlign:"right"}}>{m.away}</span>
+              <span style={{flex:1,fontSize:14,color:C.text,fontWeight:played?600:400,textAlign:"right"}}>{m.away}</span>
             </div>
+          </div>;
+        })}
+        <StandingsTable group={ag} scores={official}/>
+      </div>
+    </>}
+
+    {!loading&&tab==="ko"&&<>
+      <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
+        {koPhaseList.map(function(p){
+          return <button key={p} onClick={function(){setKoPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:koPhase===p?b(C.accentS):b(C.border),background:koPhase===p?"rgba(0,200,224,0.1)":C.surface,color:koPhase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{koPhaseLabels[p]}</button>;
+        })}
+      </div>
+      <div style={{padding:"12px 14px 40px"}}>
+        {koSlots.map(function(s){
+          var off=official[s.id];
+          var played=off&&off.home!=null&&off.home!=="";
+          return <div key={s.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
+            <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
+            {played?<>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+                <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
+                <div style={{minWidth:70,textAlign:"center",background:C.surface2,borderRadius:8,padding:"6px 12px",border:b(C.border)}}>
+                  <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>
+                </div>
+                <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
+              </div>
+              {off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
+            </>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
           </div>;
         })}
       </div>
     </>}
-    {tab==="ko"&&<div style={{padding:"10px 14px 40px"}}>
-      {["r32","r16","qf","sf","3rd","f"].map(function(phase){
-        var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
-        var phaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semifinales","3rd":"3 y 4 puesto",f:"Final"};
-        return <div key={phase}>
-          <div style={{fontSize:11,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:14}}>{phaseLabels[phase]}</div>
-          {slots.map(function(s){
-            var off=official[s.id];
-            var played=off&&off.home!=null&&off.home!=="";
-            return <div key={s.id} style={Object.assign({},card,{marginBottom:8,borderLeft:played?b3(C.accentS):b3(C.border)})}>
-              <div style={{fontSize:10,color:C.sub2,marginBottom:4}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
-              {played?<div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
-                <span style={{flex:1,fontSize:13,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
-                <span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text}}>{off.home}-{off.away}</span>
-                <span style={{flex:1,fontSize:13,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
-              </div>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
-              {played&&off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:4}}>Penales: {off.pen_home}-{off.pen_away}</div>}
-            </div>;
-          })}
-        </div>;
-      })}
-    </div>}
   </div>;
 }
 
