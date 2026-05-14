@@ -493,6 +493,104 @@ function scoreExtras(extras, official) {
   return p;
 }
 
+// ========== STATS DE USUARIO + DESEMPATE (doc 5 sección 4) ==========
+// Calcula puntos totales y criterios de desempate para una planilla.
+// - pts: puntos totales (grupos + KO + extras opcional)
+// - exactMatches: cuenta de marcadores exactos en grupos + KO (KO solo cuenta si hay marco verde / partido exacto)
+// - exactSlotsR32: cuenta de ubicaciones R32 exactas (por país, 0..32)
+// - goalsDiff: |total goles predichos - total goles oficiales|, incluye penales cuando aplica
+function calcUserStats(preds, offMap, extras, officialExtras){
+  var pts=0;
+  var exactMatches=0;
+  var exactSlotsR32=0;
+  var predGoalsTotal=0;
+  var offGoalsTotal=0;
+
+  (preds||[]).forEach(function(p){
+    var off=offMap[p.match_id];
+    if (!off) return;
+    pts+=scorePred(p,off,p.match_id,offMap);
+
+    var ph=+(p.home!=null && p.home!==""?p.home:NaN);
+    var pa=+(p.away!=null && p.away!==""?p.away:NaN);
+    var oh=+(off.home!=null && off.home!==""?off.home:NaN);
+    var oa=+(off.away!=null && off.away!==""?off.away:NaN);
+
+    var koSlot=null;
+    for (var i=0;i<KO_SLOTS.length;i++){
+      if (KO_SLOTS[i].id===p.match_id){koSlot=KO_SLOTS[i];break;}
+    }
+    var isKO=!!koSlot;
+
+    // Diferencia de goles: sumar oficiales (siempre) y predichos (si están)
+    if (!isNaN(oh) && !isNaN(oa)){
+      offGoalsTotal += oh+oa;
+      var oph=+(off.pen_home!=null && off.pen_home!==""?off.pen_home:NaN);
+      var opa=+(off.pen_away!=null && off.pen_away!==""?off.pen_away:NaN);
+      if (!isNaN(oph) && !isNaN(opa)) offGoalsTotal += oph+opa;
+    }
+    if (!isNaN(ph) && !isNaN(pa)){
+      predGoalsTotal += ph+pa;
+      // Penales predichos solo si la pred fue empate
+      if (ph===pa){
+        var pph=+(p.pen_home!=null && p.pen_home!==""?p.pen_home:NaN);
+        var ppa=+(p.pen_away!=null && p.pen_away!==""?p.pen_away:NaN);
+        if (!isNaN(pph) && !isNaN(ppa)) predGoalsTotal += pph+ppa;
+      }
+    }
+
+    // Marcadores exactos
+    if (!isNaN(ph) && !isNaN(pa) && !isNaN(oh) && !isNaN(oa)){
+      if (isKO){
+        var ev=koEvalState(p,koSlot.phase,offMap);
+        if (ev.hasMatchup && ev.matchedOff){
+          var mh=+ev.matchedOff.home, ma=+ev.matchedOff.away;
+          if (!isNaN(mh) && !isNaN(ma)){
+            var offForPredH = ev.swapped ? ma : mh;
+            var offForPredA = ev.swapped ? mh : ma;
+            if (ph===offForPredH && pa===offForPredA) exactMatches++;
+          }
+        }
+        if (koSlot.phase==="r32"){
+          if (ev.homeState==="exact") exactSlotsR32++;
+          if (ev.awayState==="exact") exactSlotsR32++;
+        }
+      } else {
+        if (ph===oh && pa===oa) exactMatches++;
+      }
+    }
+  });
+
+  if (extras || officialExtras){
+    pts += scoreExtras(extras,officialExtras);
+  }
+
+  return {
+    pts: pts,
+    exactMatches: exactMatches,
+    exactSlotsR32: exactSlotsR32,
+    goalsDiff: Math.abs(predGoalsTotal-offGoalsTotal)
+  };
+}
+
+// Comparador con cascada de 3 criterios. Para usar con Array.sort().
+// Si después de los 3 criterios sigue empatado, retorna 0 (premio compartido).
+function tiebreakCompare(a, b){
+  if (b.pts !== a.pts) return b.pts - a.pts;
+  if (b.exactMatches !== a.exactMatches) return b.exactMatches - a.exactMatches;
+  if (b.exactSlotsR32 !== a.exactSlotsR32) return b.exactSlotsR32 - a.exactSlotsR32;
+  return a.goalsDiff - b.goalsDiff; // menor diferencia gana
+}
+
+// Marca filas de un ranking ya ordenado con `tied: true` cuando hay empate de pts con vecinos
+function markTies(rankingArr){
+  return rankingArr.map(function(r,i){
+    var tieUp = i>0 && rankingArr[i-1].pts===r.pts;
+    var tieDown = i<rankingArr.length-1 && rankingArr[i+1].pts===r.pts;
+    return Object.assign({},r,{tied: tieUp||tieDown});
+  });
+}
+
 function fmtDate(d) {
   if (!d) return "";
   var parts=d.split("-");
@@ -1348,17 +1446,19 @@ function GlobalRankingView({ctx}){
       supabase.from("profiles").select("id,nick,nombre").in("id",uids).then(function(r2){
         var profMap={};(r2.data||[]).forEach(function(p){profMap[p.id]=p;});
         var res=uids.map(function(uid){
-          var extraPts=scoreExtras(extrasMap[uid],offExtras);
-          var bestGroupPts=0;
+          // Por cada grupo del usuario, calcular stats completas. Quedarse con la "mejor planilla"
+          // según la cascada de desempate (no solo mayor pts).
+          var bestStats=null;
           Object.keys(byUserGroup[uid]).forEach(function(gid){
-            var gpts=0;
-            byUserGroup[uid][gid].forEach(function(p){gpts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
-            if(gpts>bestGroupPts)bestGroupPts=gpts;
+            var stats=calcUserStats(byUserGroup[uid][gid],offMap,extrasMap[uid],offExtras);
+            if (!bestStats || tiebreakCompare(stats,bestStats)<0) bestStats=stats;
           });
+          if (!bestStats) bestStats={pts:0,exactMatches:0,exactSlotsR32:0,goalsDiff:0};
           var prof=profMap[uid];
-          return{uid:uid,pts:bestGroupPts+extraPts,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
+          return{uid:uid,pts:bestStats.pts,exactMatches:bestStats.exactMatches,exactSlotsR32:bestStats.exactSlotsR32,goalsDiff:bestStats.goalsDiff,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
         });
-        setRanking(res.sort(function(a,b){return b.pts-a.pts;}));
+        var sorted=res.sort(tiebreakCompare);
+        setRanking(markTies(sorted));
         setLoading(false);
       });
     });
@@ -1377,7 +1477,7 @@ function GlobalRankingView({ctx}){
           <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
           <Ava name={r.nick} size={32}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}</div>
+            <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
             {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
           </div>
           <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
@@ -1585,13 +1685,12 @@ function RankingView({ctx}){
       var offExtras=results[3].data;
       Promise.all(members.map(function(m){
         return supabase.from("predictions").select("*").eq("user_id",m.user_id).eq("group_id",activeGroup.id).then(function(r){
-          var pts=0;
-          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
-          pts+=scoreExtras(extrasMap[m.user_id],offExtras);
-          return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:pts,uid:m.user_id};
+          var stats=calcUserStats(r.data||[],offMap,extrasMap[m.user_id],offExtras);
+          return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:stats.pts,exactMatches:stats.exactMatches,exactSlotsR32:stats.exactSlotsR32,goalsDiff:stats.goalsDiff,uid:m.user_id};
         });
       })).then(function(res){
-        setRanking(res.sort(function(a,b){return b.pts-a.pts;}));
+        var sorted=res.sort(tiebreakCompare);
+        setRanking(markTies(sorted));
         setLoading(false);
       });
     });
@@ -1608,7 +1707,7 @@ function RankingView({ctx}){
           <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medals[i]:(i+1)+"."}}/>
           <Ava name={r.nick} size={32}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:isMine?600:400,color:isMine?C.accentS:C.text}}>{r.nick}</div>
+            <div style={{fontSize:14,fontWeight:isMine?600:400,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
             {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
           </div>
           <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
@@ -1993,14 +2092,12 @@ function AdminGroupDetailModal({group,onClose}){
       var offExtras=results[3].data;
       Promise.all(members.map(function(m){
         return supabase.from("predictions").select("*").eq("user_id",m.user_id).eq("group_id",group.id).then(function(r){
-          var pts=0;
-          (r.data||[]).forEach(function(p){pts+=scorePred(p,offMap[p.match_id],p.match_id,offMap);});
-          pts+=scoreExtras(extrasMap[m.user_id],offExtras);
+          var stats=calcUserStats(r.data||[],offMap,extrasMap[m.user_id],offExtras);
           var hasPlanilla=(r.data||[]).length>0;
-          return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:pts,uid:m.user_id,role:m.role,hasPlanilla:hasPlanilla,profiles:m.profiles};
+          return{nick:m.profiles&&(m.profiles.nick||"?")||"?",nombre:m.profiles&&m.profiles.nombre||"",pts:stats.pts,exactMatches:stats.exactMatches,exactSlotsR32:stats.exactSlotsR32,goalsDiff:stats.goalsDiff,uid:m.user_id,role:m.role,hasPlanilla:hasPlanilla,profiles:m.profiles};
         });
       })).then(function(res){
-        setRanking(res.sort(function(a,b){return b.pts-a.pts;}));
+        setRanking(markTies(res.sort(tiebreakCompare)));
         setLoading(false);
       });
     });
@@ -2054,10 +2151,19 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
     Promise.all([
       supabase.from("predictions").select("*").eq("user_id",uid).eq("group_id",group.id),
       supabase.from("official_results").select("*"),
+      supabase.from("prediction_extras").select("*").eq("user_id",uid).eq("group_id",group.id).maybeSingle(),
+      supabase.from("official_extras").select("*").single(),
     ]).then(function(r){
       var preds=r[0].data||[];
       var offMap={};(r[1].data||[]).forEach(function(x){offMap[x.match_id]=x;});
-      var total=preds.length,exact=0,result=0,played=0,totalPts=0,bestStreak=0,curStreak=0;
+      var extras=r[2]&&r[2].data;
+      var offExtras=r[3]&&r[3].data;
+
+      // Stats con desempate (Paso 3)
+      var ds=calcUserStats(preds,offMap,extras,offExtras);
+
+      // Stats legacy (racha y % de acierto): se mantiene la lógica vieja por compatibilidad visual
+      var total=preds.length,exact=0,result=0,played=0,bestStreak=0,curStreak=0;
       preds.sort(function(a,b){return (a.match_id||"").localeCompare(b.match_id||"");});
       preds.forEach(function(p){
         var off=offMap[p.match_id];
@@ -2065,8 +2171,6 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
         played++;
         var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
         if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
-        var sc=scorePred(p,off,p.match_id,offMap);
-        totalPts+=sc;
         if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
         else{
           var oR=oh>oa?"H":oh<oa?"A":"D",pR=ph>pa?"H":ph<pa?"A":"D";
@@ -2074,7 +2178,7 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
           else curStreak=0;
         }
       });
-      setStats({total:total,played:played,exact:exact,result:result,totalPts:totalPts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0});
+      setStats({total:total,played:played,exactMatches:ds.exactMatches,result:result,totalPts:ds.pts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0,exactSlotsR32:ds.exactSlotsR32,goalsDiff:ds.goalsDiff});
     });
   },[]);
   return <Modal title={"Stats: "+nick} onClose={onClose}>
@@ -2082,11 +2186,16 @@ function AdminUserStatsModal({uid,nick,group,onClose}){
     {stats&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Predicciones cargadas</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.total}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Partidos jugados</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.played}</span></div>
-      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exact}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exactMatches}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.accentS)})}><span style={{color:C.sub,fontSize:13}}>Resultado correcto</span><span style={{color:C.accentS,fontWeight:700,fontFamily:mono}}>{stats.result}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold)})}><span style={{color:C.sub,fontSize:13}}>Total puntos</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.totalPts}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Mejor racha</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.bestStreak}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>% acierto</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.pct}%</span></div>
+      <div style={{borderTop:b(C.border),paddingTop:8,marginTop:4}}>
+        <div style={{fontSize:10,color:C.sub2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6,padding:"0 4px"}}>Desempate</div>
+        <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold),marginBottom:8})}><span style={{color:C.sub,fontSize:13}}>Ubicaciones R32 exactas</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.exactSlotsR32}</span></div>
+        <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.sub2)})}><span style={{color:C.sub,fontSize:13}}>Diferencia goles vs oficial</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.goalsDiff}</span></div>
+      </div>
     </div>}
   </Modal>;
 }
@@ -2155,10 +2264,19 @@ function StatsModal({profile,group,onClose}){
     Promise.all([
       supabase.from("predictions").select("*").eq("user_id",profile.id).eq("group_id",group.id),
       supabase.from("official_results").select("*"),
+      supabase.from("prediction_extras").select("*").eq("user_id",profile.id).eq("group_id",group.id).maybeSingle(),
+      supabase.from("official_extras").select("*").single(),
     ]).then(function(r){
       var preds=r[0].data||[];
       var offMap={};(r[1].data||[]).forEach(function(x){offMap[x.match_id]=x;});
-      var total=preds.length,exact=0,result=0,played=0,totalPts=0,bestStreak=0,curStreak=0;
+      var extras=r[2]&&r[2].data;
+      var offExtras=r[3]&&r[3].data;
+
+      // Stats con desempate
+      var ds=calcUserStats(preds,offMap,extras,offExtras);
+
+      // Stats legacy para racha y % de acierto
+      var total=preds.length,exact=0,result=0,played=0,bestStreak=0,curStreak=0;
       preds.sort(function(a,b){return (a.match_id||"").localeCompare(b.match_id||"");});
       preds.forEach(function(p){
         var off=offMap[p.match_id];
@@ -2166,8 +2284,6 @@ function StatsModal({profile,group,onClose}){
         played++;
         var oh=+off.home,oa=+off.away,ph=+p.home,pa=+p.away;
         if(isNaN(oh)||isNaN(oa)||isNaN(ph)||isNaN(pa)) return;
-        var sc=scorePred(p,off,p.match_id,offMap);
-        totalPts+=sc;
         if(ph===oh&&pa===oa){exact++;curStreak++;if(curStreak>bestStreak)bestStreak=curStreak;}
         else{
           var oR=oh>oa?"H":oh<oa?"A":"D",pR=ph>pa?"H":ph<pa?"A":"D";
@@ -2175,7 +2291,7 @@ function StatsModal({profile,group,onClose}){
           else curStreak=0;
         }
       });
-      setStats({total:total,played:played,exact:exact,result:result,totalPts:totalPts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0});
+      setStats({total:total,played:played,exactMatches:ds.exactMatches,result:result,totalPts:ds.pts,bestStreak:bestStreak,pct:played?Math.round(((exact+result)/played)*100):0,exactSlotsR32:ds.exactSlotsR32,goalsDiff:ds.goalsDiff});
     });
   },[]);
   return <Modal title="Mis estadisticas" onClose={onClose}>
@@ -2183,11 +2299,16 @@ function StatsModal({profile,group,onClose}){
     {stats&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Predicciones cargadas</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.total}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Partidos jugados</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.played}</span></div>
-      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exact}</span></div>
+      <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.green)})}><span style={{color:C.sub,fontSize:13}}>Marcadores exactos</span><span style={{color:C.green,fontWeight:700,fontFamily:mono}}>{stats.exactMatches}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.accentS)})}><span style={{color:C.sub,fontSize:13}}>Resultado correcto</span><span style={{color:C.accentS,fontWeight:700,fontFamily:mono}}>{stats.result}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold)})}><span style={{color:C.sub,fontSize:13}}>Total puntos</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.totalPts}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>Mejor racha</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.bestStreak}</span></div>
       <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between"})}><span style={{color:C.sub,fontSize:13}}>% acierto</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.pct}%</span></div>
+      <div style={{borderTop:b(C.border),paddingTop:8,marginTop:4}}>
+        <div style={{fontSize:10,color:C.sub2,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6,padding:"0 4px"}}>Desempate</div>
+        <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.gold),marginBottom:8})}><span style={{color:C.sub,fontSize:13}}>Ubicaciones R32 exactas</span><span style={{color:C.gold,fontWeight:700,fontFamily:mono}}>{stats.exactSlotsR32}</span></div>
+        <div style={Object.assign({},card,{display:"flex",justifyContent:"space-between",borderLeft:b3(C.sub2)})}><span style={{color:C.sub,fontSize:13}}>Diferencia goles vs oficial</span><span style={{color:C.text,fontWeight:700,fontFamily:mono}}>{stats.goalsDiff}</span></div>
+      </div>
     </div>}
   </Modal>;
 }
