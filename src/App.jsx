@@ -333,27 +333,25 @@ function scoreGroup(pred, off) {
   return p;
 }
 
-// ========== SCORING KO (sistema Opción B doc 5) ==========
-// - pred: row de predictions con {match_id, home_team, away_team, home, away, pen_home, pen_away}
-// - off:  row oficial del slot predicho (se mantiene para compatibilidad, NO se usa para matchup global)
-// - phase: r32 | r16 | qf | sf | 3rd | f
-// - allOfficial: mapa completo {match_id -> off row}. REQUERIDO para evaluar presencia y matchup.
-//   Si no se pasa, la función retorna 0 (no puede evaluar).
-function scoreKO(pred, off, phase, allOfficial) {
-  if (!pred) return null;
-  var pts=KO_PTS[phase];
-  if (!pts) return null;
-  if (!allOfficial) return 0;
-
+// ========== EVALUACIÓN DE ESTADO DE UN SLOT KO ==========
+// Helper compartido entre scoring (scoreKO) y visualización (KOMatchCard).
+// Retorna:
+//   - homeState/awayState: por país:
+//       "exact"    -> ubicación exacta (solo posible en R32)
+//       "presence" -> clasificó a la fase pero no en esta ubicación (R32) o simplemente clasificó (R16+)
+//       "none"     -> no clasificó
+//       null       -> sin equipo predicho
+//   - hasMatchup: true si los dos países predichos jugaron entre sí en algún slot de la misma fase
+//   - matchedOff: row oficial del slot donde ocurrió el matchup (para extraer goles)
+//   - swapped: true si predHome aparece como away en matchedOff (afecta cómo mapear goles)
+function koEvalState(pred, phase, allOfficial){
+  if (!pred) return {homeState:null,awayState:null,hasMatchup:false,matchedOff:null,swapped:false};
   var predHome=pred.home_team||null;
   var predAway=pred.away_team||null;
-  if (!predHome && !predAway) return 0;
+  var slotId=pred.match_id;
 
-  var p=0;
-
-  // ===== PRESENCIA: ¿el país aparece en algún slot oficial de esa fase? =====
   function countryInPhase(country){
-    if (!country) return false;
+    if (!country || !allOfficial) return false;
     for (var i=0;i<KO_SLOTS.length;i++){
       var s=KO_SLOTS[i];
       if (s.phase!==phase) continue;
@@ -362,82 +360,112 @@ function scoreKO(pred, off, phase, allOfficial) {
     }
     return false;
   }
-  if (predHome && countryInPhase(predHome)) p+=pts.presence;
-  if (predAway && countryInPhase(predAway)) p+=pts.presence;
 
-  // ===== SLOT EXACTO (solo r32, bonus aditivo) =====
-  // Para type "pos" (1°A, 2°B...): el país oficial DEL MISMO slot/posición coincide
-  // Para type "third" (Mejor 3°): regla relajada — el país clasificó como mejor 3° en
-  //   CUALQUIER slot r32 oficial cuyo lado correspondiente sea type "third".
-  if (phase==="r32" && pts.slot){
-    var slotId=pred.match_id;
+  function slotExact(country, pos){
+    if (!country || !slotId || !allOfficial) return false;
     var meta=KO_SLOT_META[slotId];
-    if (meta){
-      function slotExact(country, side, pos){
-        if (!country || !side) return false;
-        if (side.type==="pos"){
-          var o=allOfficial[slotId];
-          if (!o) return false;
-          return (pos==="home"?o.home_team:o.away_team)===country;
-        }
-        if (side.type==="third"){
-          for (var i=0;i<KO_SLOTS.length;i++){
-            var s=KO_SLOTS[i];
-            if (s.phase!=="r32") continue;
-            var m=KO_SLOT_META[s.id];
-            var o=allOfficial[s.id];
-            if (!o||!m) continue;
-            if (m.home.type==="third" && o.home_team===country) return true;
-            if (m.away.type==="third" && o.away_team===country) return true;
-          }
-        }
-        return false;
+    if (!meta) return false;
+    var side=meta[pos];
+    if (!side) return false;
+    if (side.type==="pos"){
+      var o=allOfficial[slotId];
+      if (!o) return false;
+      return (pos==="home"?o.home_team:o.away_team)===country;
+    }
+    if (side.type==="third"){
+      // Regla relajada: cualquier slot r32 oficial de tipo "third"
+      for (var i=0;i<KO_SLOTS.length;i++){
+        var s=KO_SLOTS[i];
+        if (s.phase!=="r32") continue;
+        var m=KO_SLOT_META[s.id];
+        var o=allOfficial[s.id];
+        if (!o||!m) continue;
+        if (m.home.type==="third" && o.home_team===country) return true;
+        if (m.away.type==="third" && o.away_team===country) return true;
       }
-      if (slotExact(predHome, meta.home, "home")) p+=pts.slot;
-      if (slotExact(predAway, meta.away, "away")) p+=pts.slot;
+    }
+    return false;
+  }
+
+  function stateOf(country, pos){
+    if (!country) return null;
+    if (phase==="r32"){
+      if (slotExact(country,pos)) return "exact";
+      if (countryInPhase(country)) return "presence";
+      return "none";
+    } else {
+      if (countryInPhase(country)) return "presence";
+      return "none";
     }
   }
 
-  // ===== MATCHUP DETECTADO (mismo conjunto de equipos en ALGÚN slot de la misma fase) =====
-  // Habilita evaluación de goles y penales por equipo (independiente del orden home/away).
-  var matchedOff=null;
-  if (predHome && predAway){
+  var homeState=stateOf(predHome,"home");
+  var awayState=stateOf(predAway,"away");
+
+  var hasMatchup=false, matchedOff=null, swapped=false;
+  if (predHome && predAway && allOfficial){
     var pSet=[predHome,predAway].sort().join("|");
     for (var i=0;i<KO_SLOTS.length;i++){
       var s=KO_SLOTS[i];
       if (s.phase!==phase) continue;
       var o=allOfficial[s.id];
-      if (!o || !o.home_team || !o.away_team) continue;
+      if (!o||!o.home_team||!o.away_team) continue;
       var oSet=[o.home_team,o.away_team].sort().join("|");
-      if (oSet===pSet){ matchedOff=o; break; }
+      if (oSet===pSet){
+        hasMatchup=true;
+        matchedOff=o;
+        swapped=(o.home_team!==predHome);
+        break;
+      }
     }
   }
 
-  // ===== GOLES (solo si matchup detectado) =====
-  if (matchedOff){
+  return {homeState:homeState,awayState:awayState,hasMatchup:hasMatchup,matchedOff:matchedOff,swapped:swapped};
+}
+
+// ========== SCORING KO (sistema Opción B doc 5) ==========
+// Regla R32: por país, NO aditiva. Si ubicación exacta: +slot (10). Si solo presencia: +presence (4).
+// Otras fases: solo presencia (12/18/24/30/36 según fase).
+// Goles y penales: solo cuando hay matchup detectado, +goal (6) por equipo cuyo número coincide.
+function scoreKO(pred, off, phase, allOfficial) {
+  if (!pred) return null;
+  var pts=KO_PTS[phase];
+  if (!pts) return null;
+  if (!allOfficial) return 0;
+
+  var ev=koEvalState(pred,phase,allOfficial);
+  if (!ev.homeState && !ev.awayState) return 0;
+
+  // Puntos por país (NO aditivo en R32)
+  function ptsFor(state){
+    if (state==="exact") return pts.slot||pts.presence;
+    if (state==="presence") return pts.presence;
+    return 0;
+  }
+  var p=ptsFor(ev.homeState)+ptsFor(ev.awayState);
+
+  // Goles y penales solo si matchup detectado
+  if (ev.matchedOff){
     var ph=+(pred.home!=null && pred.home!==""?pred.home:-1);
     var pa=+(pred.away!=null && pred.away!==""?pred.away:-1);
-    var oh=+(matchedOff.home!=null && matchedOff.home!==""?matchedOff.home:-1);
-    var oa=+(matchedOff.away!=null && matchedOff.away!==""?matchedOff.away:-1);
+    var oh=+(ev.matchedOff.home!=null && ev.matchedOff.home!==""?ev.matchedOff.home:-1);
+    var oa=+(ev.matchedOff.away!=null && ev.matchedOff.away!==""?ev.matchedOff.away:-1);
     if (ph>=0 && pa>=0 && oh>=0 && oa>=0){
-      // ¿El equipo en pos home del predicho está como home u away en el oficial?
-      var swapped = matchedOff.home_team !== predHome;
-      var offGoalsForPredHome = swapped ? oa : oh;
-      var offGoalsForPredAway = swapped ? oh : oa;
-      if (ph===offGoalsForPredHome) p+=pts.goal;
-      if (pa===offGoalsForPredAway) p+=pts.goal;
+      var offForPredHome = ev.swapped ? oa : oh;
+      var offForPredAway = ev.swapped ? oh : oa;
+      if (ph===offForPredHome) p+=pts.goal;
+      if (pa===offForPredAway) p+=pts.goal;
 
-      // ===== PENALES (solo si predicción fue empate Y oficial fue a penales) =====
       var predDraw = ph===pa;
-      var offHasPen = matchedOff.pen_home!=null && matchedOff.pen_home!=="" &&
-                      matchedOff.pen_away!=null && matchedOff.pen_away!=="";
+      var offHasPen = ev.matchedOff.pen_home!=null && ev.matchedOff.pen_home!=="" &&
+                      ev.matchedOff.pen_away!=null && ev.matchedOff.pen_away!=="";
       if (predDraw && offHasPen){
         var pph=+(pred.pen_home!=null && pred.pen_home!==""?pred.pen_home:-1);
         var ppa=+(pred.pen_away!=null && pred.pen_away!==""?pred.pen_away:-1);
         if (pph>=0 && ppa>=0){
-          var oph=+matchedOff.pen_home, opa=+matchedOff.pen_away;
-          var offPenForPredHome = swapped ? opa : oph;
-          var offPenForPredAway = swapped ? oph : opa;
+          var oph=+ev.matchedOff.pen_home, opa=+ev.matchedOff.pen_away;
+          var offPenForPredHome = ev.swapped ? opa : oph;
+          var offPenForPredAway = ev.swapped ? oph : opa;
           if (pph===offPenForPredHome) p+=pts.goal;
           if (ppa===offPenForPredAway) p+=pts.goal;
         }
@@ -860,24 +888,24 @@ function ReglamentoView({ctx}){
       {section(C.accentS,"Fase de Grupos",<span><b style={{color:C.gold}}>4 pts</b> resultado (L/E/V)<br/><b style={{color:C.gold}}>2 pts</b> goles equipo local exactos<br/><b style={{color:C.gold}}>2 pts</b> goles equipo visitante exactos<br/><b style={{color:C.gold}}>2 pts</b> extra si marcador exacto<br/><span style={{color:C.sub,fontSize:11}}>Max 10 pts por partido</span></span>)}
 
       {section(C.gold,"Fase Eliminatoria — cómo se puntúa",<span style={{fontSize:12}}>
-        Cada país predicho en un slot suma <b>presencia</b> si clasificó a esa ronda (aparece en el bracket oficial, sin importar el slot).<br/>
-        En <b>16avos</b> hay además un bonus por <b>slot exacto</b> (acertaste posición).<br/>
+        Cada país predicho en un cruce suma <b>presencia</b> si clasificó a esa ronda (aparece en el bracket oficial, sin importar la ubicación).<br/>
+        En <b>16avos</b> hay un puntaje mayor por <b>ubicación exacta</b>: o sumás 10 (ubicación exacta) o sumás 4 (clasificó a otra ubicación). No son aditivos.<br/>
         De <b>8vos en adelante</b> solo cuenta presencia (las llaves cascadean desde 16avos).<br/>
-        <span style={{color:C.sub,fontSize:11}}>Excepción: para "Mejor 3°" en 16avos, el slot se considera correcto si el país clasificó entre los 8 mejores 3os, sin exigir grupo específico.</span>
+        <span style={{color:C.sub,fontSize:11}}>Excepción: para "Mejor 3°" en 16avos, la ubicación se considera correcta si el país clasificó entre los 8 mejores 3os, sin exigir grupo específico.</span>
       </span>)}
 
-      {section(C.gold,"Puntos por presencia",<span>
-        <b style={{color:C.gold}}>16avos</b>: 4 pts por país + <b>10 pts</b> bonus si slot exacto<br/>
-        <b style={{color:C.gold}}>8vos</b>: 12 pts por país<br/>
-        <b style={{color:C.gold}}>Cuartos</b>: 18 pts por país<br/>
-        <b style={{color:C.gold}}>Semis</b>: 24 pts por país<br/>
-        <b style={{color:C.gold}}>3°/4° puesto</b>: 30 pts por país<br/>
-        <b style={{color:C.gold}}>Final</b>: 36 pts por país<br/>
-        <span style={{color:C.sub,fontSize:11}}>En 3°/4° y Final, slot y matchup colapsan (un único partido por fase).</span>
+      {section(C.gold,"Puntos por país",<span>
+        <b style={{color:C.gold}}>16avos</b>: 10 pts si ubicación exacta, 4 pts si clasificó a otra ubicación<br/>
+        <b style={{color:C.gold}}>8vos</b>: 12 pts<br/>
+        <b style={{color:C.gold}}>Cuartos</b>: 18 pts<br/>
+        <b style={{color:C.gold}}>Semis</b>: 24 pts<br/>
+        <b style={{color:C.gold}}>3°/4° puesto</b>: 30 pts<br/>
+        <b style={{color:C.gold}}>Final</b>: 36 pts<br/>
+        <span style={{color:C.sub,fontSize:11}}>En 3°/4° y Final, ubicación y partido exacto colapsan (un único partido por fase).</span>
       </span>)}
 
-      {section(C.green,"Goles y penales (matchup detectado)",<span>
-        Si los dos países que predijiste para un partido coinciden con un partido <b>real de la misma ronda</b> (sin importar orden ni slot), se activa el <b>marco verde</b> exterior.<br/>
+      {section(C.green,"Goles y penales (partido exacto)",<span>
+        Si los dos países que predijiste para un cruce coinciden con un partido <b>real de la misma ronda</b> (sin importar orden ni ubicación), se activa el <b>marco verde</b> exterior — es un "partido exacto".<br/>
         Con marco verde se evalúan los goles <b>por equipo de manera independiente</b>:<br/>
         <b style={{color:C.green}}>6 pts</b> por cada equipo cuyo número de goles coincide.<br/>
         Si predijiste empate y el partido fue a penales, los penales se evalúan con la misma regla:<br/>
@@ -886,15 +914,15 @@ function ReglamentoView({ctx}){
       </span>)}
 
       {section(C.accentS,"Cómo leer los colores",<span style={{fontSize:12}}>
-        <b style={{color:C.green}}>Marco verde exterior</b>: matchup detectado (los dos países jugaron entre sí en esa ronda).<br/><br/>
+        <b style={{color:C.green}}>Marco verde exterior</b>: partido exacto (los dos países jugaron entre sí en esa ronda).<br/><br/>
         <b>En 16avos</b> (3 estados por país):<br/>
-        🟢 verde: slot exacto<br/>
-        🟡 amarillo: clasificó, pero a otro slot<br/>
+        🟢 verde: ubicación exacta<br/>
+        🟡 amarillo: clasificó, pero a otra ubicación<br/>
         🔴 rojo: no clasificó<br/><br/>
         <b>De 8vos en adelante</b> (2 estados):<br/>
         🔵 azul: clasificó<br/>
         🔴 rojo: no clasificó<br/>
-        <span style={{color:C.sub,fontSize:11}}>El azul reemplaza al verde para no confundirse con "slot exacto" — desde 8vos no hay slots a elegir.</span>
+        <span style={{color:C.sub,fontSize:11}}>El azul reemplaza al verde para no confundirse con "ubicación exacta" — desde 8vos no hay ubicaciones a elegir, solo se evalúa si tu predicción llegó a esta ronda.</span>
       </span>)}
 
       {section(C.green,"Puntos Extras",<span><b style={{color:C.green}}>55 pts</b> Campeón<br/><b style={{color:C.green}}>35 pts</b> Subcampeón<br/><b style={{color:C.green}}>35 pts</b> 3° puesto<br/><b style={{color:C.green}}>35 pts</b> 4° puesto</span>)}
@@ -1463,7 +1491,7 @@ function PredictionsView({ctx}){
       </div>
     </>}
 
-    {tab==="knockout"&&<KOBracket preds={preds} official={official} onUpd={upd} setPreds={setPreds} locked={locked}/>}
+    {tab==="knockout"&&<KOBracket preds={preds} official={official} onUpd={upd} setPreds={setPreds} locked={locked} onReglamento={function(){setView("reglamento");}}/>}
 
     {tab==="extras"&&<div style={{padding:"10px 14px 100px"}}>
       <div style={Object.assign({},card,{marginBottom:16,padding:"12px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}>
@@ -1670,7 +1698,7 @@ function AdminView({ctx}){
     Promise.all([
       supabase.from("official_results").upsert(rows,{onConflict:"match_id"}),
       supabase.from("official_extras").upsert({id:1,champion:officialExtras.champion||null,runner_up:officialExtras.runner_up||null,third:officialExtras.third||null,fourth:officialExtras.fourth||null},{onConflict:"id"}),
-      supabase.from("groups").update({updated_at:new Date().toISOString()}).neq("id",""),
+      supabase.from("groups").update({updated_at:new Date().toISOString()}).not("id","is",null),
     ]).then(function(results){
       setSaving(false);
       var errors=results.filter(function(r){return r.error;}).map(function(r){return r.error.message;});
@@ -2164,17 +2192,46 @@ function StatsModal({profile,group,onClose}){
   </Modal>;
 }
 
-function KOBracket({preds,official,onUpd,setPreds,locked}){
+function KOBracket({preds,official,onUpd,setPreds,locked,onReglamento}){
   const [phase,setPhase]=useState("r32");
   var phaseLabels={r32:"16avos",r16:"Octavos",qf:"Cuartos",sf:"Semis","3rd":"3/4",f:"Final"};
   var phaseList=["r32","r16","qf","sf","3rd","f"];
   var slots=KO_SLOTS.filter(function(s){return s.phase===phase;});
+
+  // Pill de leyenda: cambia según la fase activa
+  // R32: verde (exacta) / amarillo (mal ubicado) / rojo (no clasificó) + marco verde matchup
+  // R16+: azul (clasificó) / rojo (no clasificó) + marco verde matchup
+  function legendChip(color,label){
+    return <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",borderRadius:14,border:"1px solid "+color,background:"transparent"}}>
+      <span style={{width:10,height:10,borderRadius:"50%",background:color,display:"inline-block"}}/>
+      <span style={{fontSize:10,color:C.text,fontWeight:500}}>{label}</span>
+    </div>;
+  }
+  var isR32=phase==="r32";
+
   return <>
     <div style={{display:"flex",overflowX:"auto",gap:6,padding:"10px 14px 0",scrollbarWidth:"none"}}>
       {phaseList.map(function(p){
         return <button key={p} onClick={function(){setPhase(p);}} style={{padding:"8px 14px",borderRadius:20,border:phase===p?b(C.accentS):b(C.border),background:phase===p?"rgba(0,200,224,0.1)":C.surface,color:phase===p?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap"}}>{phaseLabels[p]}</button>;
       })}
     </div>
+
+    {/* Pill de leyenda + botón Reglamento */}
+    <div style={{padding:"10px 14px 0",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+      {isR32 ? <>
+        {legendChip(C.green,"Ubicación exacta")}
+        {legendChip(C.gold,"Mal ubicado")}
+        {legendChip(C.red,"No clasificó")}
+      </> : <>
+        {legendChip(C.accentB,"Clasificó")}
+        {legendChip(C.red,"No clasificó")}
+      </>}
+      {legendChip(C.green,"Partido exacto (marco)")}
+    </div>
+    {onReglamento&&<div style={{padding:"8px 14px 0"}}>
+      <button onClick={onReglamento} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.accentS),background:"rgba(0,200,224,0.06)",color:C.accentS,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:font}}>📖 Reglamento</button>
+    </div>}
+
     <div style={{padding:"12px 14px 100px"}}>
       {slots.map(function(slot){
         return <KOMatchCard key={slot.id} slot={slot} pred={preds[slot.id]||{}} off={official[slot.id]||{}} onUpd={onUpd} preds={preds} setPreds={setPreds} locked={locked} allOfficial={official}/>;
@@ -2260,7 +2317,7 @@ function applyWinnerChange(state,slotId,newWinner,homeTeam,awayTeam){
 // - Para r32: abre modal con dropdown ordenado según los marcadores del usuario/admin.
 // - Para r16+: solo lectura, muestra el equipo derivado del ganador del feeder.
 // - Para 3°/4°: solo lectura, muestra el perdedor de la semi correspondiente.
-function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
+function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked,colorState,showLabel}){
   const [open,setOpen]=useState(false);
   const [thirdGroupOpen,setThirdGroupOpen]=useState(null);
   var meta=KO_SLOT_META[slotId];
@@ -2268,14 +2325,33 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
   var side=meta[pos];
   if(!side) return null;
 
+  // showLabel default: true. Cuando marco verde activo, KOMatchCard pasa showLabel=false
+  var labelVisible=showLabel!==false;
+
+  // Mapeo de colorState a color de borde de la celda
+  // "exact"    -> verde
+  // "presence" en R32 -> amarillo
+  // "presence" en R16+ -> azul
+  // "none"     -> rojo
+  // null/undefined -> borde normal
+  // Para distinguir presence R32 vs R16+, le pasamos el phase implícito desde colorState directamente
+  // (KOMatchCard sabe qué state es y le pasa el color final, no el state crudo)
+  var stateBorder=null;
+  if (colorState==="exact") stateBorder=C.green;
+  else if (colorState==="presence_r32") stateBorder=C.gold;
+  else if (colorState==="presence_ko") stateBorder=C.accentB;
+  else if (colorState==="none") stateBorder=C.red;
+
   // Auto-fill: octavos en adelante (incluye final y 3°/4°)
   var isAutoFill=side.type==="winner_of"||side.type==="loser_of";
   var posDesc=slotPosLabel(side);
 
   if(isAutoFill){
+    var autoStyle=Object.assign({},inp,{padding:"8px 10px",fontSize:13,opacity:value?1:0.5,color:value?C.text:C.sub2,fontStyle:value?"normal":"italic"});
+    if (stateBorder) autoStyle.border="1.5px solid "+stateBorder;
     return <div style={{flex:1}}>
-      <div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>
-      <div style={Object.assign({},inp,{padding:"8px 10px",fontSize:13,opacity:value?1:0.5,color:value?C.text:C.sub2,fontStyle:value?"normal":"italic"})}>{value||"Por definir"}</div>
+      {labelVisible&&<div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>}
+      <div style={autoStyle}>{value||"Por definir"}</div>
     </div>;
   }
 
@@ -2363,8 +2439,8 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked}){
 
   return <>
     <div style={{flex:1}}>
-      <div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>
-      <button onClick={function(){if(!locked)setOpen(true);}} disabled={locked} style={Object.assign({},inp,{padding:"8px 10px",fontSize:13,textAlign:"left",cursor:locked?"default":"pointer",color:value?C.text:C.sub2,fontFamily:font})}>{value||"Elegir equipo"}</button>
+      {labelVisible&&<div style={{fontSize:9,color:C.sub,marginBottom:3}}>{posDesc.toUpperCase()}</div>}
+      <button onClick={function(){if(!locked)setOpen(true);}} disabled={locked} style={Object.assign({},inp,{padding:"8px 10px",fontSize:13,textAlign:"left",cursor:locked?"default":"pointer",color:value?C.text:C.sub2,fontFamily:font},stateBorder?{border:"1.5px solid "+stateBorder}:{})}>{value||"Elegir equipo"}</button>
     </div>
     {open&&<Modal title={posDesc} onClose={function(){setOpen(false);setThirdGroupOpen(null);}}>
       {renderPicker()}
@@ -2381,6 +2457,59 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
   // pred puede venir sin match_id si es objeto recién creado; lo inyectamos para que scoreKO lea KO_SLOT_META
   var predWithId=pred.match_id?pred:Object.assign({},pred,{match_id:slot.id});
   var sc=hasOff?scoreKO(predWithId,off,phase,allOfficial):null;
+
+  // ===== Evaluación visual del slot =====
+  // En el admin (isAdmin=true), las celdas no llevan colores de semáforo porque ahí
+  // se EDITAN los oficiales, no se evalúa una predicción contra ellos.
+  var ev=(!isAdmin && allOfficial) ? koEvalState(predWithId,phase,allOfficial) : null;
+  var hasMatchup = ev && ev.hasMatchup;
+
+  // Color del borde de cada celda de país (cuando NO hay marco verde — si lo hay, el marco manda)
+  function stateToColor(state){
+    if (!state) return null;
+    if (hasMatchup) return null; // marco verde tapa, dejamos celdas neutras
+    if (state==="exact") return "exact";
+    if (state==="presence") return phase==="r32" ? "presence_r32" : "presence_ko";
+    if (state==="none") return "none";
+    return null;
+  }
+  var homeCellColor=ev?stateToColor(ev.homeState):null;
+  var awayCellColor=ev?stateToColor(ev.awayState):null;
+
+  // Estado de cada gol/penal: "ok" si coincide con el oficial matcheado (por equipo), "err" si no
+  // Solo se evalúa con marco verde activo
+  var homeGoalState=null, awayGoalState=null, homePenState=null, awayPenState=null;
+  if (hasMatchup && ev.matchedOff){
+    var phN=+(pred.home!=null && pred.home!==""?pred.home:NaN);
+    var paN=+(pred.away!=null && pred.away!==""?pred.away:NaN);
+    var oh=+(ev.matchedOff.home!=null && ev.matchedOff.home!==""?ev.matchedOff.home:NaN);
+    var oa=+(ev.matchedOff.away!=null && ev.matchedOff.away!==""?ev.matchedOff.away:NaN);
+    if (!isNaN(phN) && !isNaN(oh) && !isNaN(oa)){
+      var offForPredH=ev.swapped?oa:oh;
+      homeGoalState = phN===offForPredH ? "ok" : "err";
+    }
+    if (!isNaN(paN) && !isNaN(oh) && !isNaN(oa)){
+      var offForPredA=ev.swapped?oh:oa;
+      awayGoalState = paN===offForPredA ? "ok" : "err";
+    }
+    // Penales (solo si pred fue empate y oficial fue a penales)
+    var offHasPen=ev.matchedOff.pen_home!=null && ev.matchedOff.pen_home!=="" &&
+                  ev.matchedOff.pen_away!=null && ev.matchedOff.pen_away!=="";
+    if (isDraw && offHasPen){
+      var pphN=+(pred.pen_home!=null && pred.pen_home!==""?pred.pen_home:NaN);
+      var ppaN=+(pred.pen_away!=null && pred.pen_away!==""?pred.pen_away:NaN);
+      var oph=+ev.matchedOff.pen_home, opa=+ev.matchedOff.pen_away;
+      if (!isNaN(pphN)){
+        homePenState = pphN===(ev.swapped?opa:oph) ? "ok" : "err";
+      }
+      if (!isNaN(ppaN)){
+        awayPenState = ppaN===(ev.swapped?oph:opa) ? "ok" : "err";
+      }
+    }
+  }
+
+  // showLabel: cuando hay marco verde, no mostramos "1° DEL GRUPO X" — el marco indica que el slot ya no importa
+  var showLabel = !hasMatchup;
 
   // Cambio de equipo desde el picker (solo r32; auto-fill no llama a esto)
   function changeTeam(pos,newTeam){
@@ -2447,7 +2576,24 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
     });
   }
 
-  return <div style={Object.assign({},card,{marginBottom:12,opacity:locked?0.85:1,borderLeft:hasOff?b3(C.accentS):b3(C.border)})}>
+  // Estilo del contenedor: si matchup -> marco verde completo; si no, borderLeft según hay oficial o no
+  var cardStyle=Object.assign({},card,{marginBottom:12,opacity:locked?0.85:1});
+  if (hasMatchup) {
+    cardStyle.border=b2(C.green);
+    cardStyle.borderLeft=b2(C.green);
+  } else {
+    cardStyle.borderLeft=hasOff?b3(C.accentS):b3(C.border);
+  }
+
+  // Borde de los inputs de penales (no usan ScoreBox)
+  function penStyle(state){
+    var st=Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"});
+    if (state==="ok") st.border="1.5px solid "+C.green;
+    else if (state==="err") st.border="1.5px solid "+C.red;
+    return st;
+  }
+
+  return <div style={cardStyle}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
       <span style={{fontSize:10,color:C.sub2,letterSpacing:0.3}}>{slot.label} - {fmtDate(slot.date)} - {slot.time} hs</span>
       {sc!=null&&<PtsBadge pts={sc}/>}
@@ -2455,20 +2601,20 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
     <div style={{fontSize:10,color:C.sub,marginBottom:10}}>&#128205; {slot.venue}</div>
 
     <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-      <TeamSlotPicker slotId={slot.id} pos="home" value={pred.home_team} onChange={function(t){changeTeam("home",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked}/>
-      <ScoreBox value={ph!=null?ph:""} onChange={function(v){setScore("home",v);}} readOnly={locked}/>
+      <TeamSlotPicker slotId={slot.id} pos="home" value={pred.home_team} onChange={function(t){changeTeam("home",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked} colorState={homeCellColor} showLabel={showLabel}/>
+      <ScoreBox value={ph!=null?ph:""} onChange={function(v){setScore("home",v);}} readOnly={locked} state={homeGoalState}/>
       <span style={{color:C.border2}}>-</span>
-      <ScoreBox value={pa!=null?pa:""} onChange={function(v){setScore("away",v);}} readOnly={locked}/>
-      <TeamSlotPicker slotId={slot.id} pos="away" value={pred.away_team} onChange={function(t){changeTeam("away",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked}/>
+      <ScoreBox value={pa!=null?pa:""} onChange={function(v){setScore("away",v);}} readOnly={locked} state={awayGoalState}/>
+      <TeamSlotPicker slotId={slot.id} pos="away" value={pred.away_team} onChange={function(t){changeTeam("away",t);}} scores={scoresForCalc||preds} isAdmin={isAdmin} locked={locked} colorState={awayCellColor} showLabel={showLabel}/>
     </div>
 
     {isDraw&&<div style={{padding:"10px",background:C.surface2,borderRadius:8,border:b("rgba(255,208,96,0.3)"),marginTop:6}}>
       <div style={{fontSize:10,color:C.gold,marginBottom:6,fontWeight:700,letterSpacing:0.5,textAlign:"center"}}>&#9917; PENALES</div>
       <div style={{display:"flex",gap:6,alignItems:"center"}}>
         <div style={{flex:1}}/>
-        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_home||""} onChange={function(e){setPen("pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <input type="number" min="0" style={penStyle(homePenState)} value={pred.pen_home||""} onChange={function(e){setPen("pen_home",e.target.value);}} readOnly={locked} placeholder="0"/>
         <span style={{color:C.sub2}}>-</span>
-        <input type="number" min="0" style={Object.assign({},inp,{width:50,textAlign:"center",padding:"8px"})} value={pred.pen_away||""} onChange={function(e){setPen("pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
+        <input type="number" min="0" style={penStyle(awayPenState)} value={pred.pen_away||""} onChange={function(e){setPen("pen_away",e.target.value);}} readOnly={locked} placeholder="0"/>
         <div style={{flex:1}}/>
       </div>
     </div>}
