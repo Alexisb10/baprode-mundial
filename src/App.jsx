@@ -367,22 +367,10 @@ function koEvalState(pred, phase, allOfficial){
     if (!meta) return false;
     var side=meta[pos];
     if (!side) return false;
-    if (side.type==="pos"){
+     if (side.type==="pos" || side.type==="third"){
       var o=allOfficial[slotId];
       if (!o) return false;
       return (pos==="home"?o.home_team:o.away_team)===country;
-    }
-    if (side.type==="third"){
-      // Regla relajada: cualquier slot r32 oficial de tipo "third"
-      for (var i=0;i<KO_SLOTS.length;i++){
-        var s=KO_SLOTS[i];
-        if (s.phase!=="r32") continue;
-        var m=KO_SLOT_META[s.id];
-        var o=allOfficial[s.id];
-        if (!o||!m) continue;
-        if (m.home.type==="third" && o.home_team===country) return true;
-        if (m.away.type==="third" && o.away_team===country) return true;
-      }
     }
     return false;
   }
@@ -715,10 +703,32 @@ export default function App() {
 
   function loadProfile(uid){
     setLoading(true);
-    supabase.from("profiles").select("*").eq("id",uid).single().then(function(r){
-      setProfile(r.data);setLoading(false);
-      setView(r.data?"groups_list":"splash");
-      if(window.location.search) window.history.replaceState({},"","/");
+    supabase.from("profiles").select("*").eq("id",uid).maybeSingle().then(function(r){
+      if (r.data){
+        setProfile(r.data);setLoading(false);
+        setView("groups_list");
+        if(window.location.search) window.history.replaceState({},"","/");
+        return;
+      }
+      supabase.auth.getUser().then(function(au){
+        var u=au.data&&au.data.user, md=u&&u.user_metadata;
+        if (!u||!md||!md.nombre){
+          supabase.auth.signOut();setProfile(null);setLoading(false);setView("splash");
+          showToast("Tu cuenta tiene un problema. Contactá al administrador.","err");
+          return;
+        }
+        supabase.from("profiles").insert({id:uid,nombre:md.nombre,dni:md.dni||"",dob:md.dob||null,email:u.email,nick:md.nick||"",cel:md.cel||"",is_admin:false}).select().single().then(function(insR){
+          if (insR.error){
+            supabase.from("profiles").select("*").eq("id",uid).maybeSingle().then(function(rr){
+              if (rr.data){setProfile(rr.data);setLoading(false);setView("groups_list");}
+              else{supabase.auth.signOut();setProfile(null);setLoading(false);setView("splash");showToast("Error creando perfil: "+insR.error.message,"err");}
+            });
+            return;
+          }
+          setProfile(insR.data);setLoading(false);setView("groups_list");
+          if(window.location.search) window.history.replaceState({},"","/");
+        });
+      });
     });
   }
 
@@ -1038,9 +1048,11 @@ function RegisterView({ctx}){
     setLoading(true);
     supabase.auth.signUp({email:f.email,password:f.pw,options:{data:{nombre:f.nombre,dni:f.dni,dob:f.dob,nick:f.nick,cel:f.cel}}}).then(function(r){
       if(r.error){toast$(r.error.message,"err");setLoading(false);return;}
-      supabase.from("profiles").insert({id:r.data.user.id,nombre:f.nombre,dni:f.dni,dob:f.dob,email:f.email,nick:f.nick,cel:f.cel,is_admin:false});
-      toast$("Cuenta creada! Ya podes ingresar");
-      setLoading(false);setView("login");
+        supabase.from("profiles").insert({id:r.data.user.id,nombre:f.nombre,dni:f.dni,dob:f.dob,email:f.email,nick:f.nick,cel:f.cel,is_admin:false}).then(function(insR){
+        if (insR && insR.error) console.log("Profile insert error:",insR.error.message);
+        toast$("Cuenta creada! Ya podes ingresar");
+        setLoading(false);setView("login");
+      });
     });
   }
 
@@ -1123,8 +1135,7 @@ function ReglamentoView({ctx}){
       {section(C.gold,"Fase Eliminatoria — cómo se puntúa",<span style={{fontSize:12}}>
         Cada país predicho en un cruce suma <b>presencia</b> si clasificó a esa ronda (aparece en el bracket oficial, sin importar la ubicación).<br/>
         En <b>16avos</b> hay un puntaje mayor por <b>ubicación exacta</b>: o sumás 10 (ubicación exacta) o sumás 4 (clasificó a otra ubicación). No son aditivos.<br/>
-        De <b>8vos en adelante</b> solo cuenta presencia (las llaves cascadean desde 16avos).<br/>
-        <span style={{color:C.sub,fontSize:11}}>Excepción: para "Mejor 3°" en 16avos, la ubicación se considera correcta si el país clasificó entre los 8 mejores 3os, sin exigir grupo específico.</span>
+        De <b>8vos en adelante</b> solo cuenta presencia (las llaves cascadean desde 16avos).
       </span>)}
 
       {section(C.gold,"Puntos por país",<span>
@@ -1769,7 +1780,10 @@ function GlobalRankingView({ctx}){
   var medalEmoji=["&#127941;","&#129352;","&#129353;"];
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Ranking Global" onBack={function(){setView("groups_list");}}/>
-    <Tabs items={[{id:"individual",label:"Individual"},{id:"groups",label:"Por grupos"}]} active={tab} onSelect={setTab}/>
+    <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
+      <button onClick={function(){setTab("individual");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="individual"?b(C.accentS):b(C.border),background:tab==="individual"?"rgba(0,200,224,0.1)":C.surface,color:tab==="individual"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Individual</button>
+      <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Por grupos</button>
+    </div>
     <div style={{padding:"16px 14px 80px"}}>
       {tab==="individual"&&<>
         <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma. Para usuarios con varias planillas se toma la mejor.</p></div>
