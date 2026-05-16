@@ -837,7 +837,7 @@ function Bar({title,onBack}){
 function Tabs({items,active,onSelect,small}){
   return <div style={{display:"flex",overflowX:"auto",borderBottom:b(C.border),scrollbarWidth:"none",background:C.bg}}>
     {items.map(function(it){
-      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 12px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
+      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 4px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
     })}
   </div>;
 }
@@ -1635,7 +1635,10 @@ function OfficialResultsView({ctx}){
 
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Resultados Oficiales" onBack={function(){setView("groups_list");}}/>
-    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Eliminatoria"}]} active={tab} onSelect={setTab}/>
+    <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
+      <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
+      <button onClick={function(){setTab("ko");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="ko"?b(C.accentS):b(C.border),background:tab==="ko"?"rgba(0,200,224,0.1)":C.surface,color:tab==="ko"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Eliminatoria</button>
+    </div>
 
     {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
     {!loading&&!hasAnyResult&&<div style={{textAlign:"center",marginTop:48,padding:"0 24px"}}><div style={{fontSize:40,marginBottom:12}}>&#9203;</div><div style={{color:C.sub,fontSize:14}}>El torneo aun no comenzo</div></div>}
@@ -1955,7 +1958,11 @@ function PredictionsView({ctx}){
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Mis predicciones" onBack={function(){setView("group");}}/>
     {locked&&<div style={{margin:"8px 14px",background:"rgba(224,92,106,0.08)",borderRadius:8,padding:"8px 12px",border:b(C.red),fontSize:12,color:C.red}}>Planilla cerrada - solo lectura</div>}
-    <Tabs items={[{id:"groups",label:"Grupos"},{id:"knockout",label:"Cruces"},{id:"extras",label:"Extras"}]} active={tab} onSelect={setTab}/>
+    <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
+      <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
+      <button onClick={function(){setTab("knockout");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="knockout"?b(C.accentS):b(C.border),background:tab==="knockout"?"rgba(0,200,224,0.1)":C.surface,color:tab==="knockout"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Cruces</button>
+      <button onClick={function(){setTab("extras");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="extras"?b(C.accentS):b(C.border),background:tab==="extras"?"rgba(0,200,224,0.1)":C.surface,color:tab==="extras"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Extras</button>
+    </div>
 
     {tab==="groups"&&<>
       <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={activeGrp} onSelect={setActiveGrp} small/>
@@ -2136,7 +2143,10 @@ function ViewUserPredModal({user,group,onClose}){
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,overflowY:"auto"}}>
     <div style={{background:C.bg,minHeight:"100%",maxWidth:480,margin:"0 auto"}}>
       <Bar title={"Planilla de "+name} onBack={onClose}/>
-      <Tabs items={[{id:"grupos",label:"Grupos"},{id:"cruces",label:"Cruces"}]} active={mainTab} onSelect={setMainTab}/>
+      <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
+        <button onClick={function(){setMainTab("grupos");}} style={{flex:1,padding:"10px",borderRadius:10,border:mainTab==="grupos"?b(C.accentS):b(C.border),background:mainTab==="grupos"?"rgba(0,200,224,0.1)":C.surface,color:mainTab==="grupos"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
+        <button onClick={function(){setMainTab("cruces");}} style={{flex:1,padding:"10px",borderRadius:10,border:mainTab==="cruces"?b(C.accentS):b(C.border),background:mainTab==="cruces"?"rgba(0,200,224,0.1)":C.surface,color:mainTab==="cruces"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Cruces</button>
+      </div>
       {mainTab==="grupos"&&<>
         <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
         <div style={{padding:"10px 14px 40px"}}>
@@ -2650,7 +2660,10 @@ function FixtureView({ctx}){
 
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Fixture completo" onBack={back}/>
-    <Tabs items={[{id:"groups",label:"Grupos"},{id:"ko",label:"Eliminatoria"}]} active={tab} onSelect={setTab}/>
+    <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
+      <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
+      <button onClick={function(){setTab("ko");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="ko"?b(C.accentS):b(C.border),background:tab==="ko"?"rgba(0,200,224,0.1)":C.surface,color:tab==="ko"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Eliminatoria</button>
+    </div>
 
     {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:32}}>Cargando...</p>}
 
