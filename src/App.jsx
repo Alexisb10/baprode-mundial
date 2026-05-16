@@ -837,7 +837,7 @@ function Bar({title,onBack}){
 function Tabs({items,active,onSelect,small}){
   return <div style={{display:"flex",overflowX:"auto",borderBottom:b(C.border),scrollbarWidth:"none",background:C.bg}}>
     {items.map(function(it){
-      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 10px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
+      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 12px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
     })}
   </div>;
 }
@@ -1676,15 +1676,15 @@ function OfficialResultsView({ctx}){
           var played=off&&off.home!=null&&off.home!=="";
           return <div key={s.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
             <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
-            {played?<>
+            {(off&&(off.home_team||off.away_team))?<>
               <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
                 <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
                 <div style={{minWidth:70,textAlign:"center",background:C.surface2,borderRadius:8,padding:"6px 12px",border:b(C.border)}}>
-                  <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>
+                  {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>:<span style={{color:C.sub,fontSize:14}}>vs</span>}
                 </div>
                 <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
               </div>
-              {off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
+              {played&&off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
             </>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
           </div>;
         })}
@@ -2143,10 +2143,7 @@ function ViewUserPredModal({user,group,onClose}){
   return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:100,overflowY:"auto"}}>
     <div style={{background:C.bg,minHeight:"100%",maxWidth:480,margin:"0 auto"}}>
       <Bar title={"Planilla de "+name} onBack={onClose}/>
-      <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
-        <button onClick={function(){setMainTab("grupos");}} style={{flex:1,padding:"10px",borderRadius:10,border:mainTab==="grupos"?b(C.accentS):b(C.border),background:mainTab==="grupos"?"rgba(0,200,224,0.1)":C.surface,color:mainTab==="grupos"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
-        <button onClick={function(){setMainTab("cruces");}} style={{flex:1,padding:"10px",borderRadius:10,border:mainTab==="cruces"?b(C.accentS):b(C.border),background:mainTab==="cruces"?"rgba(0,200,224,0.1)":C.surface,color:mainTab==="cruces"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Cruces</button>
-      </div>
+      <Tabs items={[{id:"grupos",label:"Grupos"},{id:"cruces",label:"Cruces"}]} active={mainTab} onSelect={setMainTab}/>
       {mainTab==="grupos"&&<>
         <Tabs items={Object.keys(GROUPS).map(function(g){return{id:g,label:g};})} active={ag} onSelect={setAg} small/>
         <div style={{padding:"10px 14px 40px"}}>
@@ -2700,15 +2697,15 @@ function FixtureView({ctx}){
           var played=off&&off.home!=null&&off.home!=="";
           return <div key={s.id} style={Object.assign({},card,{marginBottom:10,borderLeft:played?b3(C.accentS):b3(C.border)})}>
             <div style={{fontSize:10,color:C.sub2,marginBottom:6}}>{s.label} - {fmtDate(s.date)} - {s.time} hs - {s.venue}</div>
-            {played?<>
+            {(off&&(off.home_team||off.away_team))?<>
               <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
                 <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600}}>{off.home_team||"?"}</span>
                 <div style={{minWidth:70,textAlign:"center",background:C.surface2,borderRadius:8,padding:"6px 12px",border:b(C.border)}}>
-                  <span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>
+                  {played?<span style={{fontFamily:mono,fontSize:20,fontWeight:800,color:C.text}}>{off.home}-{off.away}</span>:<span style={{color:C.sub,fontSize:14}}>vs</span>}
                 </div>
                 <span style={{flex:1,fontSize:14,color:C.text,fontWeight:600,textAlign:"right"}}>{off.away_team||"?"}</span>
               </div>
-              {off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
+              {played&&off.pen_home!=null&&off.pen_home!==""&&<div style={{fontSize:11,color:C.gold,marginTop:6,textAlign:"center"}}>Penales: {off.pen_home}-{off.pen_away}</div>}
             </>:<div style={{fontSize:12,color:C.sub,marginTop:4}}>Por jugar</div>}
           </div>;
         })}
