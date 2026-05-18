@@ -2057,7 +2057,7 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
         <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
         <ScoreBox value={pred.away!=null?pred.away:""} onChange={function(v){onUpd("away",v);}} state={hasOff?(+pred.away===+off.away?"ok":"err"):null} readOnly={locked}/>
       </div>
-      <span style={{flex:1,fontSize:14,color:C.text,fontWeight:700,textAlign:"right",lineHeight:1.3}}>{match.away}</span>ch.away}</span>
+      <span style={{flex:1,fontSize:14,color:C.text,fontWeight:700,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
     </div>
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <span style={{color:C.sub,fontSize:11}}>Oficial: <b style={{color:C.text,fontSize:13,fontWeight:700}}>{off.home}-{off.away}</b></span>
