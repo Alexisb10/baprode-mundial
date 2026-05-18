@@ -996,13 +996,15 @@ function WheelPicker({items,value,onChange,width}){
   var idx=items.indexOf(value);
   var ITEM_H=36;
   var VISIBLE_H=120;
-  var PAD=Math.floor((VISIBLE_H-ITEM_H)/2); // 42
+  var PAD=42;
   return <div style={{width:w,height:VISIBLE_H,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
     <div style={{position:"absolute",top:0,left:0,right:0,height:40,background:"linear-gradient(to bottom,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
     <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:"linear-gradient(to top,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
     <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,marginTop:-18,border:b(C.accentS),borderRadius:8,background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
-    <div style={{overflowY:"scroll",height:VISIBLE_H,scrollSnapType:"y mandatory",scrollbarWidth:"none",paddingTop:PAD,paddingBottom:PAD,boxSizing:"content-box"}} onScroll={function(e){var el=e.target;var i=Math.min(Math.max(Math.round(el.scrollTop/ITEM_H),0),items.length-1);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
+    <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}} onScroll={function(e){var el=e.target;var i=Math.min(Math.max(Math.round(el.scrollTop/ITEM_H),0),items.length-1);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
+      <div style={{height:PAD}}/>
       {items.map(function(item,i){return <div key={item} style={{height:ITEM_H,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"start",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>;})}
+      <div style={{height:PAD}}/>
     </div>
   </div>;
 }
