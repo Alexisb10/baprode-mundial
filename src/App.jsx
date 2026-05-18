@@ -844,7 +844,7 @@ function Tabs({items,active,onSelect,small}){
 
 function Field({label,value,onChange,type}){
   return <div>
-    <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>{label}</div>
+    <div style={{fontSize:12,color:C.text,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase",fontWeight:700}}>{label}</div>
     <input type={type||"text"} style={inp} value={value} onChange={function(e){onChange(e.target.value);}}/>
   </div>;
 }
@@ -861,7 +861,7 @@ function IconBtn({onClick,children,title}){
   return <button onClick={onClick} title={title} style={{background:C.surface,border:b(C.border),borderRadius:10,width:38,height:38,cursor:"pointer",color:C.sub2,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>{children}</button>;
 }
 
-function SectionLabel({children}){return <div style={{fontSize:10,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:10,marginTop:4}}>{children}</div>;}
+function SectionLabel({children}){return <div style={{fontSize:13,color:C.accentS,letterSpacing:1,textTransform:"uppercase",marginBottom:10,marginTop:4,fontWeight:700}}>{children}</div>;}
 
 function Ava({name,size}){
   var sz=size||34;
@@ -919,7 +919,7 @@ function SplashView({ctx}){
       <p style={{color:C.sub,fontSize:13,marginTop:10,letterSpacing:0.5}}>USA &middot; Mexico &middot; Canada</p>
     </div>
     <div style={{padding:"0 20px 48px",display:"flex",flexDirection:"column",gap:10}}>
-      <GradBtn onClick={function(){setView("login");}}>Iniciar sesion</GradBtn>
+      <GradBtn onClick={function(){setView("login");}}>Iniciar sesión</GradBtn>
       <Btn2 onClick={function(){setView("register");}}>Crear cuenta</Btn2>
       {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
       {!ctx.installPrompt&&ctx.isIOS&&!ctx.isStandalone&&<button onClick={ctx.openIOSInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>📱 Instalar en iPhone</button>}
@@ -943,44 +943,44 @@ function LoginView({ctx}){
       supabase.from("profiles").select("email").ilike("nick",identifier).maybeSingle().then(function(r){
         if(!r.data){toast$("Usuario no encontrado","err");setLoading(false);return;}
         supabase.auth.signInWithPassword({email:r.data.email,password:pw}).then(function(r2){
-          if(r2.error){toast$("Contrasena incorrecta","err");setLoading(false);}
+          if(r2.error){toast$("Contraseña incorrecta","err");setLoading(false);}
         });
       });
     } else {
       supabase.auth.signInWithPassword({email:emailToUse,password:pw}).then(function(r){
-        if(r.error){toast$("Email o contrasena incorrectos","err");setLoading(false);}
+        if(r.error){toast$("Email o contraseña incorrectos","err");setLoading(false);}
       });
     }
   }
 
   function forgotPw(){
     if(!identifier) return toast$("Ingresa tu email primero","err");
-    if(identifier.indexOf("@")<0) return toast$("Usa tu email para recuperar contrasena","err");
+    if(identifier.indexOf("@")<0) return toast$("Usa tu email para recuperar contraseña","err");
     supabase.auth.resetPasswordForEmail(identifier,{redirectTo:"https://baprode-mundial.vercel.app"});
-    toast$("Email de recuperacion enviado");
+    toast$("Email de recuperación enviado");
   }
 
   return <div style={{minHeight:"100vh",display:"flex",flexDirection:"column"}}>
-    <Bar title="Iniciar sesion" onBack={function(){setView("splash");}}/>
+    <Bar title="Iniciar sesión" onBack={function(){setView("splash");}}/>
     <div style={{padding:"24px 20px",display:"flex",flexDirection:"column",gap:14}}>
       <div>
-        <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Email o Nick</div>
+        <div style={{fontSize:12,color:C.text,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase",fontWeight:700}}>Email o Nick</div>
         <input style={inp} placeholder="email o nick" value={identifier} onChange={function(e){setIdentifier(e.target.value);}}/>
       </div>
       <div>
-        <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Contrasena</div>
+        <div style={{fontSize:12,color:C.text,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase",fontWeight:700}}>Contraseña</div>
         <div style={{position:"relative"}}>
           <input type={showPw?"text":"password"} style={Object.assign({},inp,{paddingRight:44})} placeholder="..." value={pw} onChange={function(e){setPw(e.target.value);}}/>
           <button onClick={function(){setShowPw(function(p){return !p;});}} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",color:C.sub2,fontSize:16,padding:0}}>{showPw?"O":"O"}</button>
         </div>
       </div>
       <GradBtn onClick={login} disabled={loading}>{loading?"Ingresando...":"Entrar"}</GradBtn>
-      <button onClick={forgotPw} style={{background:"none",border:"none",color:C.sub2,fontSize:13,cursor:"pointer",padding:"4px 0",fontFamily:font}}>Olvide mi contrasena</button>
+      <button onClick={forgotPw} style={{background:"none",border:"none",color:C.sub2,fontSize:14,cursor:"pointer",padding:"4px 0",fontFamily:font,fontWeight:600}}>Olvidé mi contraseña</button>
       <div style={{textAlign:"center",marginTop:8}}>
-        <span style={{color:C.sub,fontSize:13}}>No tenes cuenta? </span>
-        <button onClick={function(){setView("register");}} style={{background:"none",border:"none",color:C.accentS,fontSize:13,cursor:"pointer",fontFamily:font,fontWeight:600}}>Registrate</button>
+        <span style={{color:C.sub2,fontSize:14}}>¿No tenés cuenta? </span>
+        <button onClick={function(){setView("register");}} style={{background:"none",border:"none",color:C.accentS,fontSize:14,cursor:"pointer",fontFamily:font,fontWeight:700}}>Registrate</button>
       </div>
-      <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>Problemas? Contactar administrador</button>
+      <button onClick={function(){setView("contacto");}} style={{background:"none",border:"none",color:C.sub2,fontSize:13,cursor:"pointer",fontFamily:font,padding:"4px 0",textAlign:"center"}}>¿Problemas? Contactar administrador</button>
       {ctx.installPrompt&&<button onClick={ctx.doInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>⬇ Descargar app</button>}
       {!ctx.installPrompt&&ctx.isIOS&&!ctx.isStandalone&&<button onClick={ctx.openIOSInstall} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"none",border:"1.5px solid "+C.accentS,borderRadius:8,color:C.accentS,fontSize:13,fontWeight:700,padding:"12px 20px",cursor:"pointer",fontFamily:font,letterSpacing:0.3}}>📱 Instalar en iPhone</button>}
     </div>
@@ -994,12 +994,15 @@ const YEARS=Array.from({length:90},function(_,i){return String(2006-i);});
 function WheelPicker({items,value,onChange,width}){
   var w=width||70;
   var idx=items.indexOf(value);
-  return <div style={{width:w,height:120,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
+  var ITEM_H=36;
+  var VISIBLE_H=120;
+  var PAD=Math.floor((VISIBLE_H-ITEM_H)/2); // 42
+  return <div style={{width:w,height:VISIBLE_H,overflow:"hidden",position:"relative",cursor:"ns-resize"}}>
     <div style={{position:"absolute",top:0,left:0,right:0,height:40,background:"linear-gradient(to bottom,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
     <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:"linear-gradient(to top,"+C.surface2+",transparent)",zIndex:2,pointerEvents:"none"}}/>
     <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,marginTop:-18,border:b(C.accentS),borderRadius:8,background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
-    <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",scrollbarWidth:"none",paddingTop:42,paddingBottom:42}} onScroll={function(e){var el=e.target;var i=Math.round(el.scrollTop/36);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
-      {items.map(function(item,i){return <div key={item} style={{height:36,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"start",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>;})}
+    <div style={{overflowY:"scroll",height:VISIBLE_H,scrollSnapType:"y mandatory",scrollbarWidth:"none",paddingTop:PAD,paddingBottom:PAD,boxSizing:"content-box"}} onScroll={function(e){var el=e.target;var i=Math.min(Math.max(Math.round(el.scrollTop/ITEM_H),0),items.length-1);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
+      {items.map(function(item,i){return <div key={item} style={{height:ITEM_H,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"start",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>;})}
     </div>
   </div>;
 }
@@ -1014,7 +1017,7 @@ function DOBPicker({value,onChange}){
   function confirm(){onChange(temp);setOpen(false);}
   function displayDate(v){if(!v)return"";var p=v.split("-");return p[2]+" "+MONTHS_WHEEL[parseInt(p[1])-1]+" "+p[0];}
   return <div>
-    <div style={{fontSize:11,color:C.sub,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase"}}>Fecha de nacimiento *</div>
+    <div style={{fontSize:12,color:C.text,marginBottom:5,letterSpacing:0.5,textTransform:"uppercase",fontWeight:700}}>Fecha de nacimiento *</div>
     <button onClick={function(){setOpen(true);}} style={Object.assign({},inp,{textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"})}>
       <span style={{color:value&&value!=="2000-01-01"?C.text:C.sub}}>{value&&value!=="2000-01-01"?displayDate(value):"Seleccionar fecha"}</span>
       <span style={{color:C.sub2,fontSize:16}}>&#128197;</span>
@@ -1026,9 +1029,9 @@ function DOBPicker({value,onChange}){
           <button onClick={function(){setOpen(false);}} style={{background:"none",border:"none",color:C.sub,fontSize:22,cursor:"pointer"}}>&#x2715;</button>
         </div>
         <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:20}}>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub,marginBottom:4}}>DIA</div><WheelPicker items={DAYS} value={day} onChange={function(d){update(year,MONTHS_WHEEL[monthIdx],d);}} width={60}/></div>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub,marginBottom:4}}>MES</div><WheelPicker items={MONTHS_WHEEL} value={MONTHS_WHEEL[monthIdx]} onChange={function(m){update(year,m,day);}} width={72}/></div>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub,marginBottom:4}}>ANO</div><WheelPicker items={YEARS} value={year} onChange={function(y){update(y,MONTHS_WHEEL[monthIdx],day);}} width={72}/></div>
+          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub2,marginBottom:4}}>DÍA</div><WheelPicker items={DAYS} value={day} onChange={function(d){update(year,MONTHS_WHEEL[monthIdx],d);}} width={60}/></div>
+          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub2,marginBottom:4}}>MES</div><WheelPicker items={MONTHS_WHEEL} value={MONTHS_WHEEL[monthIdx]} onChange={function(m){update(year,m,day);}} width={72}/></div>
+          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:C.sub2,marginBottom:4}}>AÑO</div><WheelPicker items={YEARS} value={year} onChange={function(y){update(y,MONTHS_WHEEL[monthIdx],day);}} width={72}/></div>
         </div>
         <GradBtn onClick={confirm}>Confirmar</GradBtn>
       </div>
@@ -1044,7 +1047,7 @@ function RegisterView({ctx}){
 
   function register(){
     if(!f.nombre||!f.dni||!f.dob||!f.email||!f.nick||!f.pw) return toast$("Completa los campos obligatorios","err");
-    if(!ageOk(f.dob)) return toast$("Debes ser mayor de 18 anos","err");
+    if(!ageOk(f.dob)) return toast$("Debes ser mayor de 18 años","err");
     setLoading(true);
     supabase.auth.signUp({email:f.email,password:f.pw,options:{data:{nombre:f.nombre,dni:f.dni,dob:f.dob,nick:f.nick,cel:f.cel}}}).then(function(r){
       if(r.error){toast$(r.error.message,"err");setLoading(false);return;}
@@ -1066,9 +1069,9 @@ function RegisterView({ctx}){
       <SectionLabel>Cuenta</SectionLabel>
       <Field label="Email *" value={f.email} onChange={upd("email")} type="email"/>
       <Field label="Nick *" value={f.nick} onChange={upd("nick")}/>
-      <Field label="Contrasena *" value={f.pw} onChange={upd("pw")} type="password"/>
+      <Field label="Contraseña *" value={f.pw} onChange={upd("pw")} type="password"/>
       <div style={{marginTop:4}}><GradBtn onClick={register} disabled={loading}>{loading?"Creando...":"Crear cuenta"}</GradBtn></div>
-      <p style={{fontSize:11,color:C.sub,textAlign:"center",lineHeight:1.6,margin:0}}>Debes ser mayor de 18 anos para registrarte</p>
+      <p style={{fontSize:12,color:C.sub2,textAlign:"center",lineHeight:1.6,margin:0}}>Debes ser mayor de 18 años para registrarte</p>
     </div>
   </div>;
 }
@@ -2046,13 +2049,13 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
       {sc!=null&&<PtsBadge pts={sc}/>}
     </div>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
-      <span style={{flex:1,fontSize:13,color:C.sub,lineHeight:1.3}}>{match.home}</span>
+      <span style={{flex:1,fontSize:13,color:C.text,lineHeight:1.3}}>{match.home}</span>
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <ScoreBox value={pred.home!=null?pred.home:""} onChange={function(v){onUpd("home",v);}} state={hasOff?(+pred.home===+off.home?"ok":"err"):null} readOnly={locked}/>
         <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
         <ScoreBox value={pred.away!=null?pred.away:""} onChange={function(v){onUpd("away",v);}} state={hasOff?(+pred.away===+off.away?"ok":"err"):null} readOnly={locked}/>
       </div>
-      <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
+      <span style={{flex:1,fontSize:13,color:C.text,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
     </div>
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <span style={{color:C.sub,fontSize:11}}>Oficial: {off.home}-{off.away}</span>
@@ -2237,11 +2240,11 @@ function AdminView({ctx}){
             return <div key={m.id} style={Object.assign({},card,{marginBottom:10})}>
               <div style={{fontSize:10,color:C.sub2,marginBottom:8}}>{fmtDate(m.date)} - {m.time} hs - {m.venue}</div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{flex:1,fontSize:13,color:C.sub}}>{m.home}</span>
+                <span style={{flex:1,fontSize:13,color:C.text}}>{m.home}</span>
                 <ScoreBox value={official[m.id]&&official[m.id].home!=null?official[m.id].home:""} onChange={function(v){upd(m.id,"home",v);}}/>
                 <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
                 <ScoreBox value={official[m.id]&&official[m.id].away!=null?official[m.id].away:""} onChange={function(v){upd(m.id,"away",v);}}/>
-                <span style={{flex:1,fontSize:13,color:C.sub,textAlign:"right"}}>{m.away}</span>
+                <span style={{flex:1,fontSize:13,color:C.text,textAlign:"right"}}>{m.away}</span>
               </div>
             </div>;
           })}
