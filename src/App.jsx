@@ -1501,7 +1501,7 @@ function GroupView({ctx}){
         <button onClick={function(){setView("fixture");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.accentS}}>Fixture</button>
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={function(){setView("reglamento");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Estadísticas del torneo</button>
+        <button onClick={function(){setView("reglamento");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Reglamento</button>
         <button onClick={shareGroup} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Invitar</button>
       </div>
       {isGroupAdmin&&<Btn2 onClick={function(){setShowManage(true);}}>Administrar grupo</Btn2>}
