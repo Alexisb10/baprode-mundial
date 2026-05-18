@@ -2011,7 +2011,7 @@ function PredictionsView({ctx}){
               <span style={{fontSize:14,fontWeight:600,color:C.text}}>{item.label}</span>
               <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{item.pts} pts</span>
             </div>
-            {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:correct?C.green:C.accentS}}>{offVal}</b></div>}
+            {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:correct?C.green:C.text}}>{offVal}</b></div>}
             <div style={Object.assign({},inp,{padding:"10px 12px",fontSize:14,color:predVal?C.text:C.sub2,fontStyle:predVal?"normal":"italic",cursor:"default"})}>
               {predVal||"Pendiente"}
             </div>
