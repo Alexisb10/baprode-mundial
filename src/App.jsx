@@ -1238,10 +1238,10 @@ function GroupsListView({ctx}){
       <button onClick={function(){setView("global_ranking");}} style={{flex:1,padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.gold,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Ranking global</button>
     </div>
     <div style={{padding:"8px 16px 0"}}>
-      <button onClick={function(){setView("reglamento");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.sub2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Reglamento</button>
+      <button onClick={function(){setView("stats");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:"#c084fc",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Estadísticas del torneo</button>
     </div>
     <div style={{padding:"8px 16px 0"}}>
-      <button onClick={function(){setView("stats");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:"#c084fc",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Estadísticas del torneo</button>
+      <button onClick={function(){setView("reglamento");}} style={{width:"100%",padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.sub2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Reglamento</button>
     </div>
     {isLocked()&&<div style={{margin:"12px 16px 0",background:"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(C.red),display:"flex",alignItems:"center",gap:8}}>
       <span>&#128274;</span>
@@ -2057,7 +2057,7 @@ function PredMatchCard({match,pred,off,onUpd,locked}){
         <span style={{color:C.border2,fontSize:13,fontFamily:mono}}>-</span>
         <ScoreBox value={pred.away!=null?pred.away:""} onChange={function(v){onUpd("away",v);}} state={hasOff?(+pred.away===+off.away?"ok":"err"):null} readOnly={locked}/>
       </div>
-      <span style={{flex:1,fontSize:14,color:C.text,fontWeight:700,textAlign:"right",lineHeight:1.3}}>{match.away}</span>
+      <span style={{flex:1,fontSize:14,color:C.text,fontWeight:700,textAlign:"right",lineHeight:1.3}}>{match.away}</span>ch.away}</span>
     </div>
     {hasOff&&<div style={{marginTop:8,paddingTop:8,borderTop:b(C.border),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <span style={{color:C.sub,fontSize:11}}>Oficial: <b style={{color:C.text,fontSize:13,fontWeight:700}}>{off.home}-{off.away}</b></span>
