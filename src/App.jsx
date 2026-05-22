@@ -2967,6 +2967,7 @@ function TeamSlotPicker({slotId,pos,value,onChange,scores,isAdmin,locked,colorSt
   function renderTable(group,teams){
     var allFilled=teams[0]&&teams[0].hasAll;
     return <div>
+      {isAdmin&&value&&<button onClick={function(){pick(null);}} style={{display:"flex",alignItems:"center",width:"100%",padding:"12px 14px",marginBottom:10,borderRadius:10,border:b(C.red),background:"rgba(224,92,106,0.1)",color:C.red,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:font,textAlign:"left"}}>Vaciar este equipo (dejar sin definir)</button>}
       <div style={{fontSize:11,color:allFilled?C.sub:C.gold,marginBottom:8,padding:"8px 10px",background:allFilled?"rgba(0,200,224,0.06)":"rgba(255,208,96,0.08)",borderRadius:8,border:b(allFilled?C.border:"rgba(255,208,96,0.3)")}}>
         {allFilled
           ? (isAdmin?"Según los marcadores oficiales así quedó el grupo. Pero podés elegir libremente.":"Según tu pronóstico así quedó el grupo. Pero podés elegir libremente.")
