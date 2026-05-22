@@ -2201,7 +2201,7 @@ function AdminView({ctx}){
 
   function save(){
     setSaving(true);
-    var rows=Object.values(official).map(function(r){return{match_id:r.match_id,home:r.home!=null?r.home:null,away:r.away!=null?r.away:null,winner:r.winner||null,pen_home:r.pen_home||null,pen_away:r.pen_away||null,home_team:r.home_team||null,away_team:r.away_team||null};});
+    var clean=function(v){return(v===""||v==null||(typeof v==="string"&&v.trim()===""))?null:v;};var cleanNum=function(v){var c=clean(v);return c==null?null:parseInt(c,10);};var rows=Object.values(official).map(function(r){return{match_id:r.match_id,home:cleanNum(r.home),away:cleanNum(r.away),winner:clean(r.winner),pen_home:cleanNum(r.pen_home),pen_away:cleanNum(r.pen_away),home_team:clean(r.home_team),away_team:clean(r.away_team)};});
     Promise.all([
       supabase.from("official_results").upsert(rows,{onConflict:"match_id"}),
       supabase.from("official_extras").upsert({id:1,champion:officialExtras.champion||null,runner_up:officialExtras.runner_up||null,third:officialExtras.third||null,fourth:officialExtras.fourth||null},{onConflict:"id"}),
