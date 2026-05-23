@@ -1882,6 +1882,10 @@ function PredictionsView({ctx}){
     ]).then(function(results){
       var offMap={};(results[0].data||[]).forEach(function(r){offMap[r.match_id]=r;});setOfficial(offMap);
       var myPreds=results[1].data||[];
+      var byId={};myPreds.forEach(function(p){byId[p.match_id]=p;});
+      var REQUIRED=[];for(var gi=0;gi<GROUP_MATCHES.length;gi++)REQUIRED.push(GROUP_MATCHES[gi].id);for(var si=0;si<KO_SLOTS.length;si++)REQUIRED.push(KO_SLOTS[si].id);
+      var f=0;REQUIRED.forEach(function(id){var x=byId[id];var ok=x&&x.home!=null&&x.home!==""&&x.away!=null&&x.away!=="";if(!ok)f++;});
+      setFaltan(f);
       if(myPreds.length>0){var map={};myPreds.forEach(function(p){map[p.match_id]=p;});setPreds(map);}
       else{
         supabase.from("predictions").select("*").eq("user_id",profile.id).neq("group_id",activeGroup.id).limit(1).then(function(r){
@@ -1969,7 +1973,7 @@ function PredictionsView({ctx}){
 
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Mis predicciones" onBack={function(){setView("group");}}/>
-    {!locked&&faltan!=null&&<div style={{margin:"10px 14px 0",background:faltan===0?"rgba(76,223,154,0.08)":"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(faltan===0?C.green:C.red),display:"flex",alignItems:"center",gap:10}}>
+    {faltan!=null&&<div style={{margin:"10px 14px 0",background:faltan===0?"rgba(76,223,154,0.08)":"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(faltan===0?C.green:C.red),display:"flex",alignItems:"center",gap:10}}>
       <div style={{flex:1}}>
         <div style={{fontSize:10,color:C.sub,letterSpacing:0.5,textTransform:"uppercase"}}>Estado de tu planilla</div>
         <div style={{fontSize:15,fontWeight:700,color:faltan===0?C.green:C.red,marginTop:2}}>{faltan===0?"COMPLETA":"FALTA COMPLETAR"}</div>
