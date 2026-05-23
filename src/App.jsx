@@ -1436,7 +1436,6 @@ function GroupView({ctx}){
   var profile=ctx.profile,activeGroup=ctx.activeGroup,setView=ctx.setView,setActiveGroup=ctx.setActiveGroup,toast$=ctx.toast$;
   const [members,setMembers]=useState([]);
   const [completed,setCompleted]=useState({});
-  const [faltan,setFaltan]=useState(null);
   const [selectedUser,setSelectedUser]=useState(null);
   const [showManage,setShowManage]=useState(false);
   const [showStats,setShowStats]=useState(false);
@@ -1454,12 +1453,6 @@ function GroupView({ctx}){
       setMyRole(me&&me.role);
       supabase.from("predictions").select("user_id").eq("group_id",activeGroup.id).then(function(p){
         var done={};(p.data||[]).forEach(function(x){done[x.user_id]=(done[x.user_id]||0)+1;});setCompleted(done);
-      });
-      supabase.from("predictions").select("match_id,home,away").eq("group_id",activeGroup.id).eq("user_id",profile.id).then(function(pr){
-        var REQUIRED=[];for(var gi=0;gi<GROUP_MATCHES.length;gi++)REQUIRED.push(GROUP_MATCHES[gi].id);for(var si=0;si<KO_SLOTS.length;si++)REQUIRED.push(KO_SLOTS[si].id);
-        var byId={};(pr.data||[]).forEach(function(x){byId[x.match_id]=x;});
-        var faltan=0;REQUIRED.forEach(function(id){var x=byId[id];var ok=x&&x.home!=null&&x.home!==""&&x.away!=null&&x.away!=="";if(!ok)faltan++;});
-        setFaltan(faltan);
       });
     });
   }
@@ -1502,13 +1495,6 @@ function GroupView({ctx}){
     </div>}
     <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
       <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
-      {faltan!=null&&<div style={{background:faltan===0?"rgba(76,223,154,0.08)":"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(faltan===0?C.green:C.red),display:"flex",alignItems:"center",gap:10}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,color:C.sub,letterSpacing:0.5,textTransform:"uppercase"}}>Estado de tu planilla</div>
-          <div style={{fontSize:15,fontWeight:700,color:faltan===0?C.green:C.red,marginTop:2}}>{faltan===0?"COMPLETA":"FALTA COMPLETAR"}</div>
-        </div>
-        {faltan>0&&<div style={{fontSize:12,color:C.red,fontWeight:600,fontFamily:mono}}>{faltan} partido{faltan===1?"":"s"}</div>}
-      </div>}
       <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
@@ -1882,7 +1868,8 @@ function PredictionsView({ctx}){
   const [officialExtras,setOfficialExtras]=useState(null);
   const [saving,setSaving]=useState(false);
   const [showCopyModal,setShowCopyModal]=useState(false);
-  var locked=isLocked();
+  const [faltan,setFaltan]=useState(null);
+     var locked=isLocked();
 
   useEffect(function(){loadData();},[]);
 
@@ -1969,13 +1956,26 @@ function PredictionsView({ctx}){
     Promise.all([
       supabase.from("predictions").upsert(rows,{onConflict:"user_id,group_id,match_id"}),
       supabase.from("prediction_extras").upsert({user_id:profile.id,group_id:activeGroup.id,champion:derivedExtras.champion,runner_up:derivedExtras.runner_up,third:derivedExtras.third,fourth:derivedExtras.fourth},{onConflict:"user_id,group_id"}),
-    ]).then(function(){setSaving(false);toast$("Guardado");});
+    ]).then(function(){
+      setSaving(false);
+      var REQUIRED=[];for(var gi=0;gi<GROUP_MATCHES.length;gi++)REQUIRED.push(GROUP_MATCHES[gi].id);for(var si=0;si<KO_SLOTS.length;si++)REQUIRED.push(KO_SLOTS[si].id);
+      var f=0;REQUIRED.forEach(function(id){var x=preds[id];var ok=x&&x.home!=null&&x.home!==""&&x.away!=null&&x.away!=="";if(!ok)f++;});
+      setFaltan(f);
+      toast$("Guardado");
+    });
   }
 
   var sortedGroupMatches=GROUP_MATCHES.filter(function(m){return m.group===activeGrp;}).sort(function(a,b){return (a.date+a.time).localeCompare(b.date+b.time);});
 
   return <div style={{minHeight:"100vh"}}>
     <Bar title="Mis predicciones" onBack={function(){setView("group");}}/>
+    {!locked&&faltan!=null&&<div style={{margin:"10px 14px 0",background:faltan===0?"rgba(76,223,154,0.08)":"rgba(224,92,106,0.08)",borderRadius:10,padding:"10px 14px",border:b(faltan===0?C.green:C.red),display:"flex",alignItems:"center",gap:10}}>
+      <div style={{flex:1}}>
+        <div style={{fontSize:10,color:C.sub,letterSpacing:0.5,textTransform:"uppercase"}}>Estado de tu planilla</div>
+        <div style={{fontSize:15,fontWeight:700,color:faltan===0?C.green:C.red,marginTop:2}}>{faltan===0?"COMPLETA":"FALTA COMPLETAR"}</div>
+      </div>
+      {faltan>0&&<div style={{fontSize:12,color:C.red,fontWeight:600,fontFamily:mono}}>{faltan} partido{faltan===1?"":"s"}</div>}
+    </div>}
     {locked&&<div style={{margin:"8px 14px",background:"rgba(224,92,106,0.08)",borderRadius:8,padding:"8px 12px",border:b(C.red),fontSize:12,color:C.red}}>Planilla cerrada - solo lectura</div>}
     <div style={{padding:"12px 14px 0",display:"flex",gap:8}}>
       <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Grupos</button>
