@@ -835,9 +835,9 @@ function Bar({title,onBack}){
 }
 
 function Tabs({items,active,onSelect,small}){
-  return <div style={{display:"flex",overflowX:"auto",borderBottom:b(C.border),scrollbarWidth:"none",background:C.bg}}>
+  return <div style={{display:"flex",overflowX:"auto",borderBottom:b(C.border),scrollbarWidth:"none",background:C.bg,justifyContent:small?"center":"flex-start"}}>
     {items.map(function(it){
-      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 9px":"10px 16px",fontSize:small?12:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
+      return <button key={it.id} onClick={function(){onSelect(it.id);}} style={{background:"none",border:"none",borderBottom:active===it.id?b2(C.accentS):b2("transparent"),cursor:"pointer",whiteSpace:"nowrap",fontFamily:font,padding:small?"8px 9px":"10px 16px",fontSize:small?13:13,fontWeight:600,color:active===it.id?C.accentS:C.sub}}>{it.label}</button>;
     })}
   </div>;
 }
