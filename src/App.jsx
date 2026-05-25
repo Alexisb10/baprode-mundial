@@ -3312,7 +3312,7 @@ function StatsView({ctx}){
   const [matchAccuracy,setMatchAccuracy]=useState({best:null,worst:null});
   useEffect(function(){
     Promise.all([
-      supabase.from("prediction_extras").select("user_id,campeon"),
+      supabase.from("prediction_extras").select("user_id,champion"),
       supabase.from("predictions").select("user_id,match_id,home,away,home_team,away_team"),
       supabase.from("official_results").select("*"),
     ]).then(function(results){
@@ -3320,7 +3320,7 @@ function StatsView({ctx}){
       var preds=results[1].data||[];
       var offMap={};(results[2].data||[]).forEach(function(o){offMap[o.match_id]=o;});
       var champCount={};
-      extras.forEach(function(e){if(e.campeon)champCount[e.campeon]=(champCount[e.campeon]||0)+1;});
+      extras.forEach(function(e){if(e.champion)champCount[e.champion]=(champCount[e.champion]||0)+1;});
       var total=Object.values(champCount).reduce(function(s,x){return s+x;},0)||1;
       setCampeonStats(Object.keys(champCount).map(function(t){return{team:t,count:champCount[t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10).map(function(t){return Object.assign(t,{pct:Math.round(t.count/total*100)});}));
       var matchVotes={};
