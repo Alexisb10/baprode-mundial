@@ -1601,7 +1601,7 @@ function StandingsTable({group,scores}){
       <tbody>
         {arr.map(function(r,i){
           return <tr key={r.team} style={{borderTop:i>0?b(C.border):"none"}}>
-            <td style={Object.assign({},td,{textAlign:"left",paddingLeft:8,fontFamily:font,fontWeight:i<2?600:400,color:i<2?C.text:C.sub})}>{i+1}. {r.team}</td>
+            <td style={Object.assign({},td,{textAlign:"left",paddingLeft:8,fontFamily:font,fontWeight:600,color:C.text})}>{i+1}. {r.team}</td>
             <td style={td}>{r.played}</td>
             <td style={td}>{r.w}</td>
             <td style={td}>{r.d}</td>
