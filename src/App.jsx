@@ -3308,6 +3308,8 @@ function StatsView({ctx}){
   const [loading,setLoading]=useState(true);
   const [campeonStats,setCampeonStats]=useState([]);
   const [levStats,setLevStats]=useState([]);
+  const [levSort,setLevSort]=useState("votos");
+  const [levOpenGroups,setLevOpenGroups]=useState({});
   const [roundStats,setRoundStats]=useState({});
   const [matchAccuracy,setMatchAccuracy]=useState({best:null,worst:null});
   useEffect(function(){
@@ -3333,7 +3335,7 @@ function StatsView({ctx}){
         if(ph>pa)matchVotes[p.match_id].L++;else if(ph<pa)matchVotes[p.match_id].V++;else matchVotes[p.match_id].E++;
         matchVotes[p.match_id].total++;
       });
-      setLevStats(Object.values(matchVotes).filter(function(v){return v.total>0;}).sort(function(a,b){return b.total-a.total;}));
+      setLevStats(Object.values(matchVotes).filter(function(v){return v.total>0;}));
       var accuracy=[];
       Object.keys(matchVotes).forEach(function(mid){
         var off=offMap[mid];
@@ -3397,20 +3399,71 @@ function StatsView({ctx}){
         </div>
       </>}
       <SectionLabel>Pronósticos por partido (Grupos)</SectionLabel>
-      <div style={Object.assign({},card,{marginBottom:16})}>
-        {levStats.length===0&&<p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p>}
-        {levStats.slice(0,12).map(function(v,i){
-          var lP=v.total?Math.round(v.L/v.total*100):0,eP=v.total?Math.round(v.E/v.total*100):0,vP=v.total?Math.round(v.V/v.total*100):0;
-          return <div key={v.match.id} style={{marginBottom:i<Math.min(levStats.length,12)-1?14:0}}>
-            <div style={{fontSize:11,color:C.sub,marginBottom:4}}>{v.match.home} vs {v.match.away}</div>
-            <div style={{display:"flex",gap:3,height:22}}>
-              <div style={{flex:lP||1,background:"rgba(76,223,154,0.2)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.green}}>L {lP}%</div>
-              <div style={{flex:eP||1,background:"rgba(255,208,96,0.15)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.gold}}>E {eP}%</div>
-              <div style={{flex:vP||1,background:"rgba(0,200,224,0.12)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accentS}}>V {vP}%</div>
-            </div>
-          </div>;
-        })}
-      </div>
+      {levStats.length===0&&<div style={Object.assign({},card,{marginBottom:16})}><p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p></div>}
+      {levStats.length>0&&(function(){
+        // % que suman exactamente 100 (redondeo el tercero por diferencia)
+        var pcts=function(v){
+          var lP=Math.round(v.L/v.total*100),eP=Math.round(v.E/v.total*100);
+          var vP=100-lP-eP;
+          return {lP:lP,eP:eP,vP:vP};
+        };
+        // "división": cuán parejo es el reparto. 0 = todos coinciden, ~1 = máxima dispersión
+        var division=function(v){
+          var p=[v.L/v.total,v.E/v.total,v.V/v.total];
+          var max=Math.max.apply(null,p);
+          return 1-max; // mayor = más dividido
+        };
+        var sorters={
+          votos:function(a,b){return b.total-a.total;},
+          dividido:function(a,b){return division(b)-division(a);},
+          consenso:function(a,b){return division(a)-division(b);},
+        };
+        var byGroup={};
+        levStats.forEach(function(v){
+          var g=v.match.group;
+          if(!byGroup[g])byGroup[g]=[];
+          byGroup[g].push(v);
+        });
+        var groupKeys=Object.keys(byGroup).sort();
+        var sortBtns=[["votos","Más votados"],["dividido","Más divididos"],["consenso","Más consenso"]];
+        return <>
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            {sortBtns.map(function(s){
+              var active=levSort===s[0];
+              return <button key={s[0]} onClick={function(){setLevSort(s[0]);}} style={{flex:1,padding:"7px 4px",fontSize:11,fontWeight:600,fontFamily:font,borderRadius:8,cursor:"pointer",border:b(active?C.accentB:C.border),background:active?"rgba(34,128,255,0.15)":C.surface,color:active?C.accentS:C.sub}}>{s[1]}</button>;
+            })}
+          </div>
+          {groupKeys.map(function(g){
+            var matches=byGroup[g].slice().sort(sorters[levSort]);
+            var open=!!levOpenGroups[g];
+            return <div key={g} style={Object.assign({},card,{marginBottom:8,padding:open?"14px 14px":"12px 14px"})}>
+              <div onClick={function(){setLevOpenGroups(function(prev){var n=Object.assign({},prev);n[g]=!prev[g];return n;});}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
+                <span style={{fontSize:13,fontWeight:700,color:C.text}}>Grupo {g}</span>
+                <span style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:11,color:C.sub}}>{matches.length} {matches.length===1?"partido":"partidos"}</span>
+                  <span style={{fontSize:12,color:C.sub2,transform:open?"rotate(90deg)":"none",transition:"transform .15s"}}>▶</span>
+                </span>
+              </div>
+              {open&&<div style={{marginTop:14}}>
+                {matches.map(function(v,i){
+                  var p=pcts(v);
+                  return <div key={v.match.id} style={{marginBottom:i<matches.length-1?14:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <span style={{fontSize:11,color:C.sub}}>{v.match.home} vs {v.match.away}</span>
+                      <span style={{fontSize:10,color:C.sub2,fontFamily:mono}}>{v.total} {v.total===1?"voto":"votos"}</span>
+                    </div>
+                    <div style={{display:"flex",gap:3,height:22}}>
+                      <div style={{flex:p.lP||1,background:"rgba(76,223,154,0.2)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.green,overflow:"hidden"}}>L {p.lP}%</div>
+                      <div style={{flex:p.eP||1,background:"rgba(255,208,96,0.15)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.gold,overflow:"hidden"}}>E {p.eP}%</div>
+                      <div style={{flex:p.vP||1,background:"rgba(0,200,224,0.12)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accentS,overflow:"hidden"}}>V {p.vP}%</div>
+                    </div>
+                  </div>;
+                })}
+              </div>}
+            </div>;
+          })}
+        </>;
+      })()}
       <SectionLabel>Equipos más elegidos por ronda</SectionLabel>
       {phaseOrder.filter(function(p){return roundStats[p]&&roundStats[p].length>0;}).map(function(phase){
         return <div key={phase} style={Object.assign({},card,{marginBottom:10})}>
