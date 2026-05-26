@@ -3308,8 +3308,9 @@ function StatsView({ctx}){
   const [loading,setLoading]=useState(true);
   const [campeonStats,setCampeonStats]=useState([]);
   const [levStats,setLevStats]=useState([]);
-  const [levSort,setLevSort]=useState("votos");
-  const [levOpenGroups,setLevOpenGroups]=useState({});
+  const [champShowAll,setChampShowAll]=useState(false);
+  const [levOpenGroup,setLevOpenGroup]=useState(null);
+  const [roundOpen,setRoundOpen]=useState(null);
   const [roundStats,setRoundStats]=useState({});
   const [matchAccuracy,setMatchAccuracy]=useState({best:null,worst:null});
   useEffect(function(){
@@ -3324,7 +3325,7 @@ function StatsView({ctx}){
       var champCount={};
       extras.forEach(function(e){if(e.champion)champCount[e.champion]=(champCount[e.champion]||0)+1;});
       var total=Object.values(champCount).reduce(function(s,x){return s+x;},0)||1;
-      setCampeonStats(Object.keys(champCount).map(function(t){return{team:t,count:champCount[t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,10).map(function(t){return Object.assign(t,{pct:Math.round(t.count/total*100)});}));
+      setCampeonStats(Object.keys(champCount).map(function(t){return{team:t,count:champCount[t]};}).sort(function(a,b){return b.count-a.count;}).map(function(t){return Object.assign(t,{pct:Math.round(t.count/total*100)});}));
       var matchVotes={};
       preds.forEach(function(p){
         var m=GROUP_MATCHES.find(function(m){return m.id===p.match_id;});
@@ -3356,7 +3357,7 @@ function StatsView({ctx}){
         [p.home_team,p.away_team].forEach(function(t){if(t)byRound[slot.phase][t]=(byRound[slot.phase][t]||0)+1;});
       });
       var rs={};
-      Object.keys(byRound).forEach(function(phase){rs[phase]=Object.keys(byRound[phase]).map(function(t){return{team:t,count:byRound[phase][t]};}).sort(function(a,b){return b.count-a.count;}).slice(0,5);});
+      Object.keys(byRound).forEach(function(phase){rs[phase]=Object.keys(byRound[phase]).map(function(t){return{team:t,count:byRound[phase][t]};}).sort(function(a,b){return b.count-a.count;});});
       setRoundStats(rs);
       setLoading(false);
     });
@@ -3370,18 +3371,19 @@ function StatsView({ctx}){
       <SectionLabel>Campeón más elegido</SectionLabel>
       <div style={Object.assign({},card,{marginBottom:16})}>
         {campeonStats.length===0&&<p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p>}
-        {campeonStats.map(function(t,i){
-          return <div key={t.team} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<campeonStats.length-1?10:0}}>
+        {(champShowAll?campeonStats:campeonStats.slice(0,5)).map(function(t,i,arr){
+          return <div key={t.team} style={{display:"flex",alignItems:"center",gap:10,marginBottom:i<arr.length-1?10:0}}>
             <span style={{width:20,fontSize:11,color:C.sub2,textAlign:"right"}}>{i+1}.</span>
             <div style={{flex:1}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:3}}>
                 <span style={{fontSize:13,color:C.text}}>{t.team}</span>
-                <span style={{fontSize:12,color:C.sub,fontFamily:mono}}>{t.count} ({t.pct}%)</span>
+                <span style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:mono}}>{t.count} <span style={{fontSize:11,fontWeight:400,color:C.sub}}>({t.pct}%)</span></span>
               </div>
               <div style={{height:4,background:C.surface2,borderRadius:2}}><div style={{height:4,width:t.pct+"%",background:"#c084fc",borderRadius:2}}/></div>
             </div>
           </div>;
         })}
+        {campeonStats.length>5&&<button onClick={function(){setChampShowAll(function(v){return !v;});}} style={{width:"100%",marginTop:12,padding:"7px 0",fontSize:11,fontWeight:600,fontFamily:font,borderRadius:8,cursor:"pointer",border:b(C.border),background:C.surface,color:C.sub2}}>{champShowAll?"Ver menos":"Ver todos ("+campeonStats.length+")"}</button>}
       </div>
       {(matchAccuracy.best||matchAccuracy.worst)&&<>
         <SectionLabel>Precisión en partidos</SectionLabel>
@@ -3401,83 +3403,72 @@ function StatsView({ctx}){
       <SectionLabel>Pronósticos por partido (Grupos)</SectionLabel>
       {levStats.length===0&&<div style={Object.assign({},card,{marginBottom:16})}><p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos aún</p></div>}
       {levStats.length>0&&(function(){
-        // % que suman exactamente 100 (redondeo el tercero por diferencia)
+        // % que suman exactamente 100 (el tercero por diferencia para evitar 99/101)
         var pcts=function(v){
           var lP=Math.round(v.L/v.total*100),eP=Math.round(v.E/v.total*100);
-          var vP=100-lP-eP;
-          return {lP:lP,eP:eP,vP:vP};
-        };
-        // "división": cuán parejo es el reparto. 0 = todos coinciden, ~1 = máxima dispersión
-        var division=function(v){
-          var p=[v.L/v.total,v.E/v.total,v.V/v.total];
-          var max=Math.max.apply(null,p);
-          return 1-max; // mayor = más dividido
-        };
-        var sorters={
-          votos:function(a,b){return b.total-a.total;},
-          dividido:function(a,b){return division(b)-division(a);},
-          consenso:function(a,b){return division(a)-division(b);},
+          return {lP:lP,eP:eP,vP:100-lP-eP};
         };
         var byGroup={};
         levStats.forEach(function(v){
-          var g=v.match.group;
-          if(!byGroup[g])byGroup[g]=[];
-          byGroup[g].push(v);
+          if(!byGroup[v.match.group])byGroup[v.match.group]=[];
+          byGroup[v.match.group].push(v);
         });
-        var groupKeys=Object.keys(byGroup).sort();
-        var sortBtns=[["votos","Más votados"],["dividido","Más divididos"],["consenso","Más consenso"]];
-        return <>
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
-            {sortBtns.map(function(s){
-              var active=levSort===s[0];
-              return <button key={s[0]} onClick={function(){setLevSort(s[0]);}} style={{flex:1,padding:"7px 4px",fontSize:11,fontWeight:600,fontFamily:font,borderRadius:8,cursor:"pointer",border:b(active?C.accentB:C.border),background:active?"rgba(34,128,255,0.15)":C.surface,color:active?C.accentS:C.sub}}>{s[1]}</button>;
+        Object.keys(byGroup).forEach(function(g){byGroup[g].sort(function(a,b){return a.match.id<b.match.id?-1:1;});});
+        var allGroups=Object.keys(GROUPS);
+        var open=levOpenGroup;
+        var matches=open&&byGroup[open]?byGroup[open]:[];
+        return <div style={Object.assign({},card,{marginBottom:16})}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+            {allGroups.map(function(g){
+              var active=open===g;
+              var has=!!byGroup[g];
+              return <button key={g} onClick={function(){setLevOpenGroup(active?null:g);}} style={{padding:"10px 0",fontSize:13,fontWeight:700,fontFamily:font,borderRadius:8,cursor:"pointer",border:b(active?C.accentB:C.border),background:active?"rgba(34,128,255,0.15)":C.surface,color:active?C.accentS:(has?C.text:C.sub),opacity:has?1:0.5}}>{g}</button>;
             })}
           </div>
-          {groupKeys.map(function(g){
-            var matches=byGroup[g].slice().sort(sorters[levSort]);
-            var open=!!levOpenGroups[g];
-            return <div key={g} style={Object.assign({},card,{marginBottom:8,padding:open?"14px 14px":"12px 14px"})}>
-              <div onClick={function(){setLevOpenGroups(function(prev){var n=Object.assign({},prev);n[g]=!prev[g];return n;});}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer"}}>
-                <span style={{fontSize:13,fontWeight:700,color:C.text}}>Grupo {g}</span>
-                <span style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:11,color:C.sub}}>{matches.length} {matches.length===1?"partido":"partidos"}</span>
-                  <span style={{fontSize:12,color:C.sub2,transform:open?"rotate(90deg)":"none",transition:"transform .15s"}}>▶</span>
-                </span>
-              </div>
-              {open&&<div style={{marginTop:14}}>
-                {matches.map(function(v,i){
-                  var p=pcts(v);
-                  return <div key={v.match.id} style={{marginBottom:i<matches.length-1?14:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                      <span style={{fontSize:11,color:C.sub}}>{v.match.home} vs {v.match.away}</span>
-                      <span style={{fontSize:10,color:C.sub2,fontFamily:mono}}>{v.total} {v.total===1?"voto":"votos"}</span>
-                    </div>
-                    <div style={{display:"flex",gap:3,height:22}}>
-                      <div style={{flex:p.lP||1,background:"rgba(76,223,154,0.2)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.green,overflow:"hidden"}}>L {p.lP}%</div>
-                      <div style={{flex:p.eP||1,background:"rgba(255,208,96,0.15)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.gold,overflow:"hidden"}}>E {p.eP}%</div>
-                      <div style={{flex:p.vP||1,background:"rgba(0,200,224,0.12)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accentS,overflow:"hidden"}}>V {p.vP}%</div>
-                    </div>
-                  </div>;
-                })}
-              </div>}
-            </div>;
-          })}
-        </>;
+          {open&&<div style={{marginTop:14,paddingTop:14,borderTop:b(C.border)}}>
+            {matches.length===0&&<p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin votos en el grupo {open} aún</p>}
+            {matches.map(function(v,i){
+              var p=pcts(v);
+              return <div key={v.match.id} style={{marginBottom:i<matches.length-1?14:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:11,color:C.sub}}>{v.match.home} vs {v.match.away}</span>
+                  <span style={{fontSize:10,color:C.sub2,fontFamily:mono}}>{v.total} {v.total===1?"voto":"votos"}</span>
+                </div>
+                <div style={{display:"flex",gap:3,height:22}}>
+                  <div style={{flex:p.lP||1,background:"rgba(76,223,154,0.2)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.green,overflow:"hidden"}}>L {p.lP}%</div>
+                  <div style={{flex:p.eP||1,background:"rgba(255,208,96,0.15)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.gold,overflow:"hidden"}}>E {p.eP}%</div>
+                  <div style={{flex:p.vP||1,background:"rgba(0,200,224,0.12)",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:C.accentS,overflow:"hidden"}}>V {p.vP}%</div>
+                </div>
+              </div>;
+            })}
+          </div>}
+        </div>;
       })()}
       <SectionLabel>Equipos más elegidos por ronda</SectionLabel>
-      {phaseOrder.filter(function(p){return roundStats[p]&&roundStats[p].length>0;}).map(function(phase){
-        return <div key={phase} style={Object.assign({},card,{marginBottom:10})}>
-          <div style={{fontSize:11,color:"#c084fc",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:0.5}}>{phaseLabels[phase]}</div>
-          {roundStats[phase].map(function(t,i){
-            return <div key={t.team} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<roundStats[phase].length-1?6:0}}>
-              <span style={{fontSize:11,color:C.sub2,width:16,textAlign:"right"}}>{i+1}.</span>
-              <span style={{flex:1,fontSize:13,color:C.text}}>{t.team}</span>
-              <span style={{fontSize:12,color:C.sub,fontFamily:mono}}>{t.count}</span>
-            </div>;
-          })}
+      {(function(){
+        var avail=phaseOrder.filter(function(p){return roundStats[p]&&roundStats[p].length>0;});
+        if(avail.length===0)return <div style={Object.assign({},card,{marginBottom:16})}><p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos de cruces aún</p></div>;
+        var open=roundOpen;
+        var teams=open&&roundStats[open]?roundStats[open]:[];
+        return <div style={Object.assign({},card,{marginBottom:16})}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+            {phaseOrder.map(function(phase){
+              var has=roundStats[phase]&&roundStats[phase].length>0;
+              var active=open===phase;
+              return <button key={phase} disabled={!has} onClick={function(){setRoundOpen(active?null:phase);}} style={{padding:"10px 2px",fontSize:11,fontWeight:700,fontFamily:font,borderRadius:8,cursor:has?"pointer":"default",border:b(active?"#c084fc":C.border),background:active?"rgba(192,132,252,0.15)":C.surface,color:active?"#c084fc":(has?C.text:C.sub),opacity:has?1:0.4,textTransform:"uppercase",letterSpacing:0.3}}>{phaseLabels[phase]}</button>;
+            })}
+          </div>
+          {open&&<div style={{marginTop:14,paddingTop:14,borderTop:b(C.border)}}>
+            {teams.map(function(t,i){
+              return <div key={t.team} style={{display:"flex",alignItems:"center",gap:8,marginBottom:i<teams.length-1?8:0}}>
+                <span style={{fontSize:11,color:C.sub2,width:18,textAlign:"right"}}>{i+1}.</span>
+                <span style={{flex:1,fontSize:13,color:C.text}}>{t.team}</span>
+                <span style={{fontSize:15,fontWeight:700,color:C.text,fontFamily:mono}}>{t.count}</span>
+              </div>;
+            })}
+          </div>}
         </div>;
-      })}
-      {phaseOrder.every(function(p){return !roundStats[p]||roundStats[p].length===0;})&&<div style={Object.assign({},card,{marginBottom:16})}><p style={{color:C.sub,fontSize:12,textAlign:"center",margin:0}}>Sin datos de cruces aún</p></div>}
+      })()}
     </div>}
   </div>;
 }
