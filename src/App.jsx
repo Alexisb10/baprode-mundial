@@ -1704,6 +1704,7 @@ function GlobalRankingView({ctx}){
   const [ranking,setRanking]=useState([]);
   const [groupsRanking,setGroupsRanking]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [search,setSearch]=useState("");
 
   useEffect(function(){
     Promise.all([
@@ -1737,7 +1738,7 @@ function GlobalRankingView({ctx}){
       });
 
       var uids=Object.keys(byUserGroup);
-      supabase.from("profiles").select("id,nick,nombre").in("id",uids.length?uids:["00000000-0000-0000-0000-000000000000"]).then(function(r2){
+      supabase.from("public_profiles").select("id,nick,nombre").in("id",uids.length?uids:["00000000-0000-0000-0000-000000000000"]).then(function(r2){
         var profMap={};(r2.data||[]).forEach(function(p){profMap[p.id]=p;});
 
         // ===== Ranking INDIVIDUAL: mejor planilla por usuario =====
@@ -1792,24 +1793,32 @@ function GlobalRankingView({ctx}){
       <button onClick={function(){setTab("individual");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="individual"?b(C.accentS):b(C.border),background:tab==="individual"?"rgba(0,200,224,0.1)":C.surface,color:tab==="individual"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Individual</button>
       <button onClick={function(){setTab("groups");}} style={{flex:1,padding:"10px",borderRadius:10,border:tab==="groups"?b(C.accentS):b(C.border),background:tab==="groups"?"rgba(0,200,224,0.1)":C.surface,color:tab==="groups"?C.accentS:C.sub,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Por grupos</button>
     </div>
-    <div style={{padding:"16px 14px 80px"}}>
+    <div style={{padding:"16px 14px 100px"}}>
       {tab==="individual"&&<>
-        <div style={Object.assign({},card,{marginBottom:16,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma. Para usuarios con varias planillas se toma la mejor.</p></div>
+        <div style={Object.assign({},card,{marginBottom:12,padding:"10px 14px",background:"rgba(255,208,96,0.05)",border:b("rgba(255,208,96,0.2)")})}><p style={{color:C.sub,fontSize:12,margin:0,lineHeight:1.6}}>Todos los participantes de la plataforma. Para usuarios con varias planillas se toma la mejor.</p></div>
+        <input type="text" placeholder="Buscar por nick o nombre" value={search} onChange={function(e){setSearch(e.target.value);}} style={Object.assign({},inp,{marginBottom:14,fontSize:13,padding:"10px 13px"})}/>
         {loading&&<p style={{color:C.sub,textAlign:"center",marginTop:24}}>Calculando...</p>}
-        {ranking.map(function(r,i){
-          var isMine=r.uid===profile.id;
-          return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
-            <Ava name={r.nick} size={32}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
-              {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
-            </div>
-            <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
-            <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
-          </div>;
-        })}
-        {!loading&&ranking.every(function(r){return r.pts===0;})&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aun</p>}
+        {(function(){
+          var withRank=ranking.map(function(r,i){return Object.assign({},r,{rank:i+1});});
+          var q=search.trim().toLowerCase();
+          var list=q?withRank.filter(function(r){return (r.nick||"").toLowerCase().indexOf(q)>=0||(r.nombre||"").toLowerCase().indexOf(q)>=0;}):withRank;
+          if(!loading&&q&&list.length===0)return <p style={{color:C.sub,textAlign:"center",marginTop:24,fontSize:13}}>Sin coincidencias para "{search}"</p>;
+          return list.map(function(r){
+            var i=r.rank-1;
+            var isMine=r.uid===profile.id;
+            return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
+              <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
+              <Ava name={r.nick} size={32}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
+                {r.nombre&&<div style={{fontSize:11,color:C.sub,marginTop:1}}>({r.nombre})</div>}
+              </div>
+              <span style={{fontFamily:mono,fontSize:18,fontWeight:700,color:C.text}}>{r.pts}</span>
+              <span style={{fontSize:10,color:C.sub,marginLeft:3}}>pts</span>
+            </div>;
+          });
+        })()}
+        {!loading&&!search.trim()&&ranking.every(function(r){return r.pts===0;})&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin resultados oficiales aun</p>}
       </>}
 
       {tab==="groups"&&<>
@@ -1829,6 +1838,22 @@ function GlobalRankingView({ctx}){
         })}
       </>}
     </div>
+    {tab==="individual"&&!loading&&(function(){
+      var myIdx=ranking.findIndex(function(r){return r.uid===profile.id;});
+      if(myIdx<0)return null;
+      var me=ranking[myIdx];
+      var rank=myIdx+1;
+      return <div style={{position:"fixed",bottom:0,left:0,right:0,background:C.surface2,borderTop:b2(C.accentS),padding:"10px 14px",zIndex:50,display:"flex",alignItems:"center",gap:10,boxShadow:"0 -4px 14px rgba(0,0,0,0.5)"}}>
+        <span style={{fontSize:9,color:C.sub2,fontWeight:700,letterSpacing:0.5}}>TU POS.</span>
+        <span style={{width:28,fontSize:rank<=3?20:13,textAlign:"center",flexShrink:0,color:rank===1?C.gold:rank===2?"#C0C0C0":rank===3?"#CD7F32":C.accentS,fontWeight:700,fontFamily:mono}} dangerouslySetInnerHTML={{__html:rank<=3?medalEmoji[rank-1]:rank+"."}}/>
+        <Ava name={me.nick} size={28}/>
+        <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.accentS,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{me.nick}</div>
+        </div>
+        <span style={{fontFamily:mono,fontSize:16,fontWeight:700,color:C.text}}>{me.pts}</span>
+        <span style={{fontSize:10,color:C.sub}}>pts</span>
+      </div>;
+    })()}
   </div>;
 }
 
