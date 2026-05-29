@@ -1003,7 +1003,7 @@ function WheelPicker({items,value,onChange,width}){
     <div style={{position:"absolute",top:"50%",left:0,right:0,height:36,marginTop:-18,border:b(C.accentS),borderRadius:8,background:"rgba(0,200,224,0.08)",zIndex:1,pointerEvents:"none"}}/>
     <div style={{overflowY:"scroll",height:"100%",scrollSnapType:"y mandatory",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"}} onScroll={function(e){var el=e.target;var i=Math.min(Math.max(Math.round(el.scrollTop/ITEM_H),0),items.length-1);if(items[i]&&items[i]!==value)onChange(items[i]);}}>
       <div style={{height:PAD}}/>
-      {items.map(function(item,i){return <div key={item} style={{height:ITEM_H,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"start",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>;})}
+      {items.map(function(item,i){return <div key={item} style={{height:ITEM_H,display:"flex",alignItems:"center",justifyContent:"center",scrollSnapAlign:"center",fontSize:15,fontWeight:i===idx?700:400,color:i===idx?C.accentS:C.sub,fontFamily:mono,transition:"all 0.1s"}}>{item}</div>;})}
       <div style={{height:PAD}}/>
     </div>
   </div>;
@@ -1232,7 +1232,7 @@ function GroupsListView({ctx}){
     </div>
     <div style={{padding:"12px 16px 0",display:"flex",gap:8}}>
       <button onClick={function(){markResultsSeen();setView("official");}} style={{flex:1,padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.accentS,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6,position:"relative"}}>
-        Resultados
+        RESULTADOS OFICIALES
         {hasNewResults&&<span style={{position:"absolute",top:6,right:6,width:8,height:8,borderRadius:"50%",background:C.red}}/>}
       </button>
       <button onClick={function(){setView("global_ranking");}} style={{flex:1,padding:"10px",borderRadius:10,border:b(C.border),background:C.surface,color:C.gold,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>Ranking global</button>
@@ -1498,7 +1498,7 @@ function GroupView({ctx}){
       <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
-        <button onClick={function(){setView("fixture");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.accentS}}>Fixture</button>
+        <button onClick={function(){setView("fixture");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.accentS}}>RESULTADOS OFICIALES</button>
       </div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setView("reglamento");}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.sub2}}>Reglamento</button>
