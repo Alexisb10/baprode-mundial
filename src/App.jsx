@@ -829,7 +829,7 @@ function Page({children}){return <div style={{minHeight:"100vh",background:C.bg,
 
 function Bar({title,onBack}){
   return <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:b(C.border),background:C.bg,position:"sticky",top:0,zIndex:10}}>
-    {onBack&&<button onClick={onBack} style={{background:"none",border:"none",color:C.sub2,fontSize:22,cursor:"pointer",padding:"0 4px",lineHeight:1}}>&#8592;</button>}
+    {onBack&&<button onClick={onBack} style={{background:"none",border:"none",color:C.text,fontSize:26,fontWeight:800,cursor:"pointer",padding:"4px 8px",lineHeight:1}}>&#8592;</button>}
     <span style={{fontSize:15,fontWeight:700,color:C.text,flex:1}}>{title}</span>
   </div>;
 }
