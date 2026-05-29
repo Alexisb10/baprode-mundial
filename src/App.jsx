@@ -1807,7 +1807,7 @@ function GlobalRankingView({ctx}){
             var i=r.rank-1;
             var isMine=r.uid===profile.id;
             return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
-              <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
+              <span style={{width:28,fontSize:i<3?20:14,fontWeight:i<3?400:700,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.accentS}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
               <Ava name={r.nick} size={32}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:isMine?700:500,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
@@ -1827,7 +1827,7 @@ function GlobalRankingView({ctx}){
         {!loading&&groupsRanking.length===0&&<p style={{color:C.sub,textAlign:"center",marginTop:40,fontSize:13}}>Sin grupos con suficientes miembros (mínimo 6).</p>}
         {groupsRanking.map(function(g,i){
           return <div key={g.gid} style={Object.assign({},rankRow,{background:C.surface,borderLeft:i<3?b2("rgba(255,208,96,0.4)"):b2(C.border),marginBottom:8})}>
-            <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
+            <span style={{width:28,fontSize:i<3?20:14,fontWeight:i<3?400:700,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.accentS}} dangerouslySetInnerHTML={{__html:i<3?medalEmoji[i]:(i+1)+"."}}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,fontWeight:500,color:C.text}}>{g.name}</div>
               <div style={{fontSize:11,color:C.sub,marginTop:1}}>{g.members} miembros</div>
@@ -2155,7 +2155,7 @@ function RankingView({ctx}){
       {ranking.map(function(r,i){
         var isMine=r.uid===profile.id;
         return <div key={r.uid} style={Object.assign({},rankRow,{background:isMine?"rgba(0,200,224,0.07)":C.surface,borderLeft:isMine?b2(C.accentS):i<3?b2("rgba(0,200,224,0.25)"):b2(C.border),marginBottom:8})}>
-          <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}} dangerouslySetInnerHTML={{__html:i<3?medals[i]:(i+1)+"."}}/>
+          <span style={{width:28,fontSize:i<3?20:14,fontWeight:i<3?400:700,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.accentS}} dangerouslySetInnerHTML={{__html:i<3?medals[i]:(i+1)+"."}}/>
           <Ava name={r.nick} size={32}/>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:14,fontWeight:isMine?600:400,color:isMine?C.accentS:C.text}}>{r.nick}{r.tied&&<span title="Empatado en puntos — desempate por criterios" style={{marginLeft:6,fontSize:11,color:C.gold,fontWeight:700}}>=</span>}</div>
@@ -2592,7 +2592,7 @@ function AdminGroupDetailModal({group,onClose}){
         {ranking.map(function(r,i){
           return <div key={r.uid} style={Object.assign({},card,{marginBottom:8,borderLeft:i<3?b3(C.accentS):b3(C.border)})}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-              <span style={{width:28,fontSize:i<3?20:12,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.sub}}>{i<3?medals[i]:(i+1)+"."}</span>
+              <span style={{width:28,fontSize:i<3?20:14,fontWeight:i<3?400:700,textAlign:"center",flexShrink:0,color:i===0?C.gold:i===1?"#C0C0C0":i===2?"#CD7F32":C.accentS}}>{i<3?medals[i]:(i+1)+"."}</span>
               <Ava name={r.nick} size={32}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:600,color:C.text,display:"flex",alignItems:"center",gap:6}}>
