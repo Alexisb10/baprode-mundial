@@ -2535,15 +2535,10 @@ function AdminGroupDetailModal({group,onClose}){
 
   function removeMember(uid){
     setRemoving(true);
-    Promise.all([
-      supabase.from("predictions").delete().eq("user_id",uid).eq("group_id",group.id),
-      supabase.from("prediction_extras").delete().eq("user_id",uid).eq("group_id",group.id),
-      supabase.from("group_members").delete().eq("user_id",uid).eq("group_id",group.id),
-    ]).then(function(results){
-      var err=results.find(function(r){return r.error;});
+    supabase.rpc("admin_remove_member",{target_user_id:uid,target_group_id:group.id}).then(function(res){
       setRemoving(false);
-      if (err){
-        alert("No se pudo sacar al miembro: "+err.error.message+"\n\nSi el error menciona RLS o permisos, hace falta crear una función RPC en Supabase. Avisame.");
+      if (res.error){
+        alert("No se pudo sacar al miembro: "+res.error.message);
         return;
       }
       setRanking(function(prev){return prev.filter(function(r){return r.uid!==uid;});});
