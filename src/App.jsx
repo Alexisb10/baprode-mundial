@@ -45,87 +45,87 @@ const ALL_TEAMS = Object.values(GROUPS).flat().sort();
 const GROUP_MATCHES = [
   {id:"A1",group:"A",home:"Mexico",away:"Sudáfrica",date:"2026-06-11",time:"16:00",venue:"Ciudad de México"},
   {id:"A2",group:"A",home:"Corea del Sur",away:"Chequia",date:"2026-06-11",time:"23:00",venue:"Zapopan"},
-  {id:"A3",group:"A",home:"Mexico",away:"Chequia",date:"2026-06-15",time:"23:00",venue:"Ciudad de México"},
-  {id:"A4",group:"A",home:"Corea del Sur",away:"Sudáfrica",date:"2026-06-15",time:"20:00",venue:"Zapopan"},
-  {id:"A5",group:"A",home:"Mexico",away:"Corea del Sur",date:"2026-06-19",time:"23:00",venue:"Ciudad de México"},
-  {id:"A6",group:"A",home:"Sudáfrica",away:"Chequia",date:"2026-06-19",time:"23:00",venue:"Zapopan"},
+  {id:"A3",group:"A",home:"Mexico",away:"Chequia",date:"2026-06-24",time:"22:00",venue:"Ciudad de México"},
+  {id:"A4",group:"A",home:"Corea del Sur",away:"Sudáfrica",date:"2026-06-24",time:"22:00",venue:"Monterrey"},
+  {id:"A5",group:"A",home:"Mexico",away:"Corea del Sur",date:"2026-06-18",time:"22:00",venue:"Zapopan"},
+  {id:"A6",group:"A",home:"Sudáfrica",away:"Chequia",date:"2026-06-18",time:"13:00",venue:"Atlanta"},
   {id:"B1",group:"B",home:"Canadá",away:"Bosnia-Herz.",date:"2026-06-12",time:"16:00",venue:"Toronto"},
   {id:"B2",group:"B",home:"Qatar",away:"Suiza",date:"2026-06-13",time:"16:00",venue:"Santa Clara"},
-  {id:"B3",group:"B",home:"Canadá",away:"Suiza",date:"2026-06-17",time:"16:00",venue:"Toronto"},
-  {id:"B4",group:"B",home:"Qatar",away:"Bosnia-Herz.",date:"2026-06-17",time:"20:00",venue:"Santa Clara"},
-  {id:"B5",group:"B",home:"Canadá",away:"Qatar",date:"2026-06-21",time:"20:00",venue:"Toronto"},
-  {id:"B6",group:"B",home:"Bosnia-Herz.",away:"Suiza",date:"2026-06-21",time:"20:00",venue:"Kansas City"},
+  {id:"B3",group:"B",home:"Canadá",away:"Suiza",date:"2026-06-24",time:"16:00",venue:"Vancouver"},
+  {id:"B4",group:"B",home:"Qatar",away:"Bosnia-Herz.",date:"2026-06-24",time:"16:00",venue:"Seattle"},
+  {id:"B5",group:"B",home:"Canadá",away:"Qatar",date:"2026-06-18",time:"19:00",venue:"Vancouver"},
+  {id:"B6",group:"B",home:"Bosnia-Herz.",away:"Suiza",date:"2026-06-18",time:"16:00",venue:"Los Ángeles"},
   {id:"C1",group:"C",home:"Brasil",away:"Marruecos",date:"2026-06-13",time:"19:00",venue:"East Rutherford"},
   {id:"C2",group:"C",home:"Haití",away:"Escocia",date:"2026-06-13",time:"22:00",venue:"Foxborough"},
-  {id:"C3",group:"C",home:"Brasil",away:"Escocia",date:"2026-06-17",time:"22:00",venue:"East Rutherford"},
-  {id:"C4",group:"C",home:"Marruecos",away:"Haití",date:"2026-06-17",time:"19:00",venue:"Foxborough"},
-  {id:"C5",group:"C",home:"Brasil",away:"Haití",date:"2026-06-21",time:"16:00",venue:"East Rutherford"},
-  {id:"C6",group:"C",home:"Escocia",away:"Marruecos",date:"2026-06-21",time:"16:00",venue:"Foxborough"},
+  {id:"C3",group:"C",home:"Brasil",away:"Escocia",date:"2026-06-24",time:"19:00",venue:"Miami"},
+  {id:"C4",group:"C",home:"Marruecos",away:"Haití",date:"2026-06-24",time:"19:00",venue:"Atlanta"},
+  {id:"C5",group:"C",home:"Brasil",away:"Haití",date:"2026-06-19",time:"21:30",venue:"Philadelphia"},
+  {id:"C6",group:"C",home:"Escocia",away:"Marruecos",date:"2026-06-19",time:"19:00",venue:"Foxborough"},
   {id:"D1",group:"D",home:"USA",away:"Paraguay",date:"2026-06-12",time:"22:00",venue:"Los Ángeles"},
-  {id:"D2",group:"D",home:"Australia",away:"Türkiye",date:"2026-06-13",time:"13:00",venue:"Philadelphia"},
-  {id:"D3",group:"D",home:"USA",away:"Türkiye",date:"2026-06-17",time:"13:00",venue:"Los Ángeles"},
-  {id:"D4",group:"D",home:"Paraguay",away:"Australia",date:"2026-06-17",time:"22:00",venue:"Philadelphia"},
-  {id:"D5",group:"D",home:"USA",away:"Australia",date:"2026-06-22",time:"20:00",venue:"Los Ángeles"},
-  {id:"D6",group:"D",home:"Türkiye",away:"Paraguay",date:"2026-06-22",time:"20:00",venue:"Philadelphia"},
-  {id:"E1",group:"E",home:"Alemania",away:"Costa Marfil",date:"2026-06-14",time:"16:00",venue:"Atlanta"},
-  {id:"E2",group:"E",home:"Curazao",away:"Ecuador",date:"2026-06-14",time:"22:00",venue:"Seattle"},
-  {id:"E3",group:"E",home:"Alemania",away:"Ecuador",date:"2026-06-18",time:"16:00",venue:"Atlanta"},
-  {id:"E4",group:"E",home:"Costa Marfil",away:"Curazao",date:"2026-06-18",time:"22:00",venue:"Seattle"},
-  {id:"E5",group:"E",home:"Alemania",away:"Curazao",date:"2026-06-22",time:"16:00",venue:"Atlanta"},
-  {id:"E6",group:"E",home:"Ecuador",away:"Costa Marfil",date:"2026-06-22",time:"16:00",venue:"Seattle"},
-  {id:"F1",group:"F",home:"Países Bajos",away:"Túnez",date:"2026-06-14",time:"13:00",venue:"Miami"},
-  {id:"F2",group:"F",home:"Japón",away:"Suecia",date:"2026-06-14",time:"19:00",venue:"Dallas"},
-  {id:"F3",group:"F",home:"Países Bajos",away:"Suecia",date:"2026-06-18",time:"13:00",venue:"Miami"},
-  {id:"F4",group:"F",home:"Túnez",away:"Japón",date:"2026-06-18",time:"19:00",venue:"Dallas"},
-  {id:"F5",group:"F",home:"Países Bajos",away:"Japón",date:"2026-06-22",time:"22:00",venue:"Miami"},
-  {id:"F6",group:"F",home:"Suecia",away:"Túnez",date:"2026-06-22",time:"22:00",venue:"Dallas"},
-  {id:"G1",group:"G",home:"Bélgica",away:"Irán",date:"2026-06-15",time:"13:00",venue:"Dallas"},
-  {id:"G2",group:"G",home:"Egipto",away:"Nueva Zelanda",date:"2026-06-15",time:"16:00",venue:"Seattle"},
-  {id:"G3",group:"G",home:"Bélgica",away:"Nueva Zelanda",date:"2026-06-19",time:"13:00",venue:"Dallas"},
-  {id:"G4",group:"G",home:"Irán",away:"Egipto",date:"2026-06-19",time:"16:00",venue:"Seattle"},
-  {id:"G5",group:"G",home:"Bélgica",away:"Egipto",date:"2026-06-23",time:"20:00",venue:"Dallas"},
-  {id:"G6",group:"G",home:"Nueva Zelanda",away:"Irán",date:"2026-06-23",time:"20:00",venue:"Seattle"},
-  {id:"H1",group:"H",home:"España",away:"Arabia Saudita",date:"2026-06-15",time:"19:00",venue:"Kansas City"},
-  {id:"H2",group:"H",home:"Uruguay",away:"Cabo Verde",date:"2026-06-15",time:"22:00",venue:"Miami"},
-  {id:"H3",group:"H",home:"España",away:"Cabo Verde",date:"2026-06-19",time:"19:00",venue:"Kansas City"},
-  {id:"H4",group:"H",home:"Arabia Saudita",away:"Uruguay",date:"2026-06-19",time:"22:00",venue:"Miami"},
-  {id:"H5",group:"H",home:"España",away:"Uruguay",date:"2026-06-23",time:"16:00",venue:"Kansas City"},
-  {id:"H6",group:"H",home:"Cabo Verde",away:"Arabia Saudita",date:"2026-06-23",time:"16:00",venue:"Miami"},
-  {id:"I1",group:"I",home:"Francia",away:"Senegal",date:"2026-06-16",time:"13:00",venue:"Atlanta"},
-  {id:"I2",group:"I",home:"Noruega",away:"Irak",date:"2026-06-16",time:"16:00",venue:"Los Ángeles"},
-  {id:"I3",group:"I",home:"Francia",away:"Irak",date:"2026-06-20",time:"13:00",venue:"Atlanta"},
-  {id:"I4",group:"I",home:"Senegal",away:"Noruega",date:"2026-06-20",time:"16:00",venue:"Los Ángeles"},
-  {id:"I5",group:"I",home:"Francia",away:"Noruega",date:"2026-06-24",time:"20:00",venue:"Atlanta"},
-  {id:"I6",group:"I",home:"Irak",away:"Senegal",date:"2026-06-24",time:"20:00",venue:"Los Ángeles"},
-  {id:"J1",group:"J",home:"Argentina",away:"Argelia",date:"2026-06-16",time:"19:00",venue:"Miami"},
-  {id:"J2",group:"J",home:"Austria",away:"Jordania",date:"2026-06-16",time:"22:00",venue:"East Rutherford"},
-  {id:"J3",group:"J",home:"Argentina",away:"Jordania",date:"2026-06-20",time:"19:00",venue:"Miami"},
-  {id:"J4",group:"J",home:"Argelia",away:"Austria",date:"2026-06-20",time:"22:00",venue:"East Rutherford"},
-  {id:"J5",group:"J",home:"Argentina",away:"Austria",date:"2026-06-24",time:"16:00",venue:"Miami"},
-  {id:"J6",group:"J",home:"Jordania",away:"Argelia",date:"2026-06-24",time:"16:00",venue:"East Rutherford"},
-  {id:"K1",group:"K",home:"Portugal",away:"Uzbekistán",date:"2026-06-17",time:"13:00",venue:"Kansas City"},
-  {id:"K2",group:"K",home:"Colombia",away:"DR Congo",date:"2026-06-17",time:"16:00",venue:"Santa Clara"},
-  {id:"K3",group:"K",home:"Portugal",away:"DR Congo",date:"2026-06-21",time:"13:00",venue:"Kansas City"},
-  {id:"K4",group:"K",home:"Uzbekistán",away:"Colombia",date:"2026-06-21",time:"16:00",venue:"Santa Clara"},
-  {id:"K5",group:"K",home:"Portugal",away:"Colombia",date:"2026-06-25",time:"20:00",venue:"Kansas City"},
-  {id:"K6",group:"K",home:"DR Congo",away:"Uzbekistán",date:"2026-06-25",time:"20:00",venue:"Santa Clara"},
-  {id:"L1",group:"L",home:"Inglaterra",away:"Panamá",date:"2026-06-18",time:"13:00",venue:"Foxborough"},
-  {id:"L2",group:"L",home:"Croacia",away:"Ghana",date:"2026-06-18",time:"16:00",venue:"Vancouver"},
-  {id:"L3",group:"L",home:"Inglaterra",away:"Ghana",date:"2026-06-22",time:"13:00",venue:"Foxborough"},
-  {id:"L4",group:"L",home:"Panamá",away:"Croacia",date:"2026-06-22",time:"16:00",venue:"Vancouver"},
-  {id:"L5",group:"L",home:"Inglaterra",away:"Croacia",date:"2026-06-26",time:"20:00",venue:"Foxborough"},
-  {id:"L6",group:"L",home:"Ghana",away:"Panamá",date:"2026-06-26",time:"20:00",venue:"Vancouver"},
+  {id:"D2",group:"D",home:"Australia",away:"Türkiye",date:"2026-06-14",time:"01:00",venue:"Vancouver"},
+  {id:"D3",group:"D",home:"USA",away:"Türkiye",date:"2026-06-25",time:"23:00",venue:"Los Ángeles"},
+  {id:"D4",group:"D",home:"Paraguay",away:"Australia",date:"2026-06-25",time:"23:00",venue:"Santa Clara"},
+  {id:"D5",group:"D",home:"USA",away:"Australia",date:"2026-06-19",time:"16:00",venue:"Seattle"},
+  {id:"D6",group:"D",home:"Türkiye",away:"Paraguay",date:"2026-06-20",time:"00:00",venue:"Santa Clara"},
+  {id:"E1",group:"E",home:"Alemania",away:"Costa Marfil",date:"2026-06-20",time:"17:00",venue:"Toronto"},
+  {id:"E2",group:"E",home:"Curazao",away:"Ecuador",date:"2026-06-20",time:"21:00",venue:"Kansas City"},
+  {id:"E3",group:"E",home:"Alemania",away:"Ecuador",date:"2026-06-25",time:"17:00",venue:"East Rutherford"},
+  {id:"E4",group:"E",home:"Costa Marfil",away:"Curazao",date:"2026-06-25",time:"17:00",venue:"Philadelphia"},
+  {id:"E5",group:"E",home:"Alemania",away:"Curazao",date:"2026-06-14",time:"14:00",venue:"Houston"},
+  {id:"E6",group:"E",home:"Ecuador",away:"Costa Marfil",date:"2026-06-14",time:"20:00",venue:"Philadelphia"},
+  {id:"F1",group:"F",home:"Países Bajos",away:"Túnez",date:"2026-06-25",time:"20:00",venue:"Kansas City"},
+  {id:"F2",group:"F",home:"Japón",away:"Suecia",date:"2026-06-25",time:"20:00",venue:"Dallas"},
+  {id:"F3",group:"F",home:"Países Bajos",away:"Suecia",date:"2026-06-20",time:"14:00",venue:"Houston"},
+  {id:"F4",group:"F",home:"Túnez",away:"Japón",date:"2026-06-21",time:"01:00",venue:"Monterrey"},
+  {id:"F5",group:"F",home:"Países Bajos",away:"Japón",date:"2026-06-14",time:"17:00",venue:"Dallas"},
+  {id:"F6",group:"F",home:"Suecia",away:"Túnez",date:"2026-06-14",time:"23:00",venue:"Monterrey"},
+  {id:"G1",group:"G",home:"Bélgica",away:"Irán",date:"2026-06-21",time:"16:00",venue:"Los Ángeles"},
+  {id:"G2",group:"G",home:"Egipto",away:"Nueva Zelanda",date:"2026-06-21",time:"22:00",venue:"Vancouver"},
+  {id:"G3",group:"G",home:"Bélgica",away:"Nueva Zelanda",date:"2026-06-27",time:"00:00",venue:"Vancouver"},
+  {id:"G4",group:"G",home:"Irán",away:"Egipto",date:"2026-06-27",time:"00:00",venue:"Seattle"},
+  {id:"G5",group:"G",home:"Bélgica",away:"Egipto",date:"2026-06-15",time:"16:00",venue:"Seattle"},
+  {id:"G6",group:"G",home:"Nueva Zelanda",away:"Irán",date:"2026-06-15",time:"22:00",venue:"Los Ángeles"},
+  {id:"H1",group:"H",home:"España",away:"Arabia Saudita",date:"2026-06-21",time:"13:00",venue:"Atlanta"},
+  {id:"H2",group:"H",home:"Uruguay",away:"Cabo Verde",date:"2026-06-21",time:"19:00",venue:"Miami"},
+  {id:"H3",group:"H",home:"España",away:"Cabo Verde",date:"2026-06-15",time:"13:00",venue:"Atlanta"},
+  {id:"H4",group:"H",home:"Arabia Saudita",away:"Uruguay",date:"2026-06-15",time:"19:00",venue:"Miami"},
+  {id:"H5",group:"H",home:"España",away:"Uruguay",date:"2026-06-26",time:"21:00",venue:"Zapopan"},
+  {id:"H6",group:"H",home:"Cabo Verde",away:"Arabia Saudita",date:"2026-06-26",time:"21:00",venue:"Houston"},
+  {id:"I1",group:"I",home:"Francia",away:"Senegal",date:"2026-06-16",time:"16:00",venue:"East Rutherford"},
+  {id:"I2",group:"I",home:"Noruega",away:"Irak",date:"2026-06-16",time:"19:00",venue:"Foxborough"},
+  {id:"I3",group:"I",home:"Francia",away:"Irak",date:"2026-06-22",time:"18:00",venue:"Philadelphia"},
+  {id:"I4",group:"I",home:"Senegal",away:"Noruega",date:"2026-06-22",time:"21:00",venue:"East Rutherford"},
+  {id:"I5",group:"I",home:"Francia",away:"Noruega",date:"2026-06-26",time:"16:00",venue:"Foxborough"},
+  {id:"I6",group:"I",home:"Irak",away:"Senegal",date:"2026-06-26",time:"16:00",venue:"Toronto"},
+  {id:"J1",group:"J",home:"Argentina",away:"Argelia",date:"2026-06-16",time:"22:00",venue:"Kansas City"},
+  {id:"J2",group:"J",home:"Austria",away:"Jordania",date:"2026-06-17",time:"01:00",venue:"Santa Clara"},
+  {id:"J3",group:"J",home:"Argentina",away:"Jordania",date:"2026-06-27",time:"23:00",venue:"Dallas"},
+  {id:"J4",group:"J",home:"Argelia",away:"Austria",date:"2026-06-27",time:"23:00",venue:"Kansas City"},
+  {id:"J5",group:"J",home:"Argentina",away:"Austria",date:"2026-06-22",time:"14:00",venue:"Dallas"},
+  {id:"J6",group:"J",home:"Jordania",away:"Argelia",date:"2026-06-23",time:"00:00",venue:"Santa Clara"},
+  {id:"K1",group:"K",home:"Portugal",away:"Uzbekistán",date:"2026-06-23",time:"14:00",venue:"Houston"},
+  {id:"K2",group:"K",home:"Colombia",away:"DR Congo",date:"2026-06-23",time:"23:00",venue:"Zapopan"},
+  {id:"K3",group:"K",home:"Portugal",away:"DR Congo",date:"2026-06-17",time:"14:00",venue:"Houston"},
+  {id:"K4",group:"K",home:"Uzbekistán",away:"Colombia",date:"2026-06-17",time:"23:00",venue:"Ciudad de México"},
+  {id:"K5",group:"K",home:"Portugal",away:"Colombia",date:"2026-06-27",time:"20:30",venue:"Miami"},
+  {id:"K6",group:"K",home:"DR Congo",away:"Uzbekistán",date:"2026-06-27",time:"20:30",venue:"Atlanta"},
+  {id:"L1",group:"L",home:"Inglaterra",away:"Panamá",date:"2026-06-27",time:"18:00",venue:"East Rutherford"},
+  {id:"L2",group:"L",home:"Croacia",away:"Ghana",date:"2026-06-27",time:"18:00",venue:"Philadelphia"},
+  {id:"L3",group:"L",home:"Inglaterra",away:"Ghana",date:"2026-06-23",time:"17:00",venue:"Foxborough"},
+  {id:"L4",group:"L",home:"Panamá",away:"Croacia",date:"2026-06-23",time:"20:00",venue:"Toronto"},
+  {id:"L5",group:"L",home:"Inglaterra",away:"Croacia",date:"2026-06-17",time:"17:00",venue:"Dallas"},
+  {id:"L6",group:"L",home:"Ghana",away:"Panamá",date:"2026-06-17",time:"20:00",venue:"Toronto"},
 ];
 
 const KO_SLOTS = [
   // Round of 32 — 16 partidos oficiales FIFA
   {id:"r32_0",phase:"r32",label:"M73: 2°A vs 2°B",date:"2026-06-28",time:"16:00",venue:"Los Ángeles"},
-  {id:"r32_1",phase:"r32",label:"M74: 1°E vs Mejor 3° (A/B/C/D/F)",date:"2026-06-28",time:"17:30",venue:"Foxborough"},
-  {id:"r32_2",phase:"r32",label:"M75: 1°F vs 2°C",date:"2026-06-28",time:"22:00",venue:"Monterrey"},
-  {id:"r32_3",phase:"r32",label:"M76: 1°C vs 2°F",date:"2026-06-28",time:"14:00",venue:"Houston"},
-  {id:"r32_4",phase:"r32",label:"M77: 1°I vs Mejor 3° (C/D/F/G/H)",date:"2026-06-29",time:"18:00",venue:"East Rutherford"},
+  {id:"r32_1",phase:"r32",label:"M74: 1°E vs Mejor 3° (A/B/C/D/F)",date:"2026-06-29",time:"17:30",venue:"Foxborough"},
+  {id:"r32_2",phase:"r32",label:"M75: 1°F vs 2°C",date:"2026-06-29",time:"22:00",venue:"Monterrey"},
+  {id:"r32_3",phase:"r32",label:"M76: 1°C vs 2°F",date:"2026-06-29",time:"14:00",venue:"Houston"},
+  {id:"r32_4",phase:"r32",label:"M77: 1°I vs Mejor 3° (C/D/F/G/H)",date:"2026-06-30",time:"18:00",venue:"East Rutherford"},
   {id:"r32_5",phase:"r32",label:"M78: 2°E vs 2°I",date:"2026-06-30",time:"14:00",venue:"Dallas"},
-  {id:"r32_6",phase:"r32",label:"M79: 1°A vs Mejor 3° (C/E/F/H/I)",date:"2026-06-29",time:"22:00",venue:"Ciudad de México"},
+  {id:"r32_6",phase:"r32",label:"M79: 1°A vs Mejor 3° (C/E/F/H/I)",date:"2026-06-30",time:"22:00",venue:"Ciudad de México"},
   {id:"r32_7",phase:"r32",label:"M80: 1°L vs Mejor 3° (E/H/I/J/K)",date:"2026-07-01",time:"13:00",venue:"Atlanta"},
   {id:"r32_8",phase:"r32",label:"M81: 1°D vs Mejor 3° (B/E/F/I/J)",date:"2026-07-01",time:"21:00",venue:"Santa Clara"},
   {id:"r32_9",phase:"r32",label:"M82: 1°G vs Mejor 3° (A/E/H/I/J)",date:"2026-07-01",time:"17:00",venue:"Seattle"},
@@ -136,24 +136,24 @@ const KO_SLOTS = [
   {id:"r32_14",phase:"r32",label:"M87: 1°K vs Mejor 3° (D/E/I/J/L)",date:"2026-07-03",time:"22:30",venue:"Kansas City"},
   {id:"r32_15",phase:"r32",label:"M88: 2°D vs 2°G",date:"2026-07-03",time:"15:00",venue:"Dallas"},
   // Round of 16 — 8 partidos
-  {id:"r16_0",phase:"r16",label:"M89: W73 vs W76",date:"2026-07-04",time:"13:00",venue:"Houston"},
-  {id:"r16_1",phase:"r16",label:"M90: W74 vs W75",date:"2026-07-04",time:"17:00",venue:"Philadelphia"},
-  {id:"r16_2",phase:"r16",label:"M91: W77 vs W79",date:"2026-07-05",time:"16:00",venue:"East Rutherford"},
-  {id:"r16_3",phase:"r16",label:"M92: W80 vs W82",date:"2026-07-05",time:"20:00",venue:"Ciudad de México"},
-  {id:"r16_4",phase:"r16",label:"M93: W78 vs W88",date:"2026-07-06",time:"15:00",venue:"Dallas"},
-  {id:"r16_5",phase:"r16",label:"M94: W81 vs W85",date:"2026-07-06",time:"21:00",venue:"Seattle"},
-  {id:"r16_6",phase:"r16",label:"M95: W83 vs W84",date:"2026-07-07",time:"13:00",venue:"Atlanta"},
-  {id:"r16_7",phase:"r16",label:"M96: W86 vs W87",date:"2026-07-07",time:"17:00",venue:"Vancouver"},
+  {id:"r16_0",phase:"r16",label:"M89: W74 vs W77",date:"2026-07-04",time:"18:00",venue:"Philadelphia"},
+  {id:"r16_1",phase:"r16",label:"M90: W73 vs W75",date:"2026-07-04",time:"14:00",venue:"Houston"},
+  {id:"r16_2",phase:"r16",label:"M91: W76 vs W78",date:"2026-07-05",time:"17:00",venue:"East Rutherford"},
+  {id:"r16_3",phase:"r16",label:"M92: W79 vs W80",date:"2026-07-05",time:"21:00",venue:"Ciudad de México"},
+  {id:"r16_4",phase:"r16",label:"M93: W83 vs W84",date:"2026-07-06",time:"16:00",venue:"Dallas"},
+  {id:"r16_5",phase:"r16",label:"M94: W81 vs W82",date:"2026-07-06",time:"21:00",venue:"Seattle"},
+  {id:"r16_6",phase:"r16",label:"M95: W86 vs W88",date:"2026-07-07",time:"13:00",venue:"Atlanta"},
+  {id:"r16_7",phase:"r16",label:"M96: W85 vs W87",date:"2026-07-07",time:"17:00",venue:"Vancouver"},
   // Cuartos de final — 4 partidos
-  {id:"qf_0",phase:"qf",label:"Cuartos 1: W89 vs W90",date:"2026-07-09",time:"16:00",venue:"Foxborough"},
-  {id:"qf_1",phase:"qf",label:"Cuartos 2: W91 vs W92",date:"2026-07-10",time:"15:00",venue:"Los Ángeles"},
-  {id:"qf_2",phase:"qf",label:"Cuartos 3: W93 vs W94",date:"2026-07-11",time:"17:00",venue:"Miami"},
-  {id:"qf_3",phase:"qf",label:"Cuartos 4: W95 vs W96",date:"2026-07-11",time:"21:00",venue:"Kansas City"},
+  {id:"qf_0",phase:"qf",label:"Cuartos 1: W89 vs W90",date:"2026-07-09",time:"17:00",venue:"Foxborough"},
+  {id:"qf_1",phase:"qf",label:"Cuartos 2: W93 vs W94",date:"2026-07-10",time:"16:00",venue:"Los Ángeles"},
+  {id:"qf_2",phase:"qf",label:"Cuartos 3: W91 vs W92",date:"2026-07-11",time:"18:00",venue:"Miami"},
+  {id:"qf_3",phase:"qf",label:"Cuartos 4: W95 vs W96",date:"2026-07-11",time:"22:00",venue:"Kansas City"},
   // Semifinales
-  {id:"sf_0",phase:"sf",label:"Semifinal 1",date:"2026-07-14",time:"15:00",venue:"Dallas"},
-  {id:"sf_1",phase:"sf",label:"Semifinal 2",date:"2026-07-15",time:"15:00",venue:"Atlanta"},
+  {id:"sf_0",phase:"sf",label:"Semifinal 1",date:"2026-07-14",time:"16:00",venue:"Dallas"},
+  {id:"sf_1",phase:"sf",label:"Semifinal 2",date:"2026-07-15",time:"16:00",venue:"Atlanta"},
   // 3° y 4° puesto
-  {id:"3rd_0",phase:"3rd",label:"3° y 4° puesto",date:"2026-07-18",time:"16:00",venue:"Miami"},
+  {id:"3rd_0",phase:"3rd",label:"3° y 4° puesto",date:"2026-07-18",time:"18:00",venue:"Miami"},
   // Final
   {id:"f_0",phase:"f",label:"Final",date:"2026-07-19",time:"16:00",venue:"East Rutherford"},
 ];
@@ -175,18 +175,21 @@ const KO_PTS = {
 // Define which match feeds into which next match (and as home/away)
 // Note: only 12 r32 matches feed into 8 r16 (top performers advance)
 const KO_NEXT = {
-  r32_0:{next:"r16_0",pos:"home"},r32_3:{next:"r16_0",pos:"away"},
-  r32_1:{next:"r16_1",pos:"home"},r32_2:{next:"r16_1",pos:"away"},
-  r32_4:{next:"r16_2",pos:"home"},r32_6:{next:"r16_2",pos:"away"},
-  r32_7:{next:"r16_3",pos:"home"},r32_9:{next:"r16_3",pos:"away"},
-  r32_5:{next:"r16_4",pos:"home"},r32_15:{next:"r16_4",pos:"away"},
-  r32_8:{next:"r16_5",pos:"home"},r32_12:{next:"r16_5",pos:"away"},
-  r32_10:{next:"r16_6",pos:"home"},r32_11:{next:"r16_6",pos:"away"},
-  r32_13:{next:"r16_7",pos:"home"},r32_14:{next:"r16_7",pos:"away"},
+  // R32 -> R16 (bracket oficial FIFA 2026)
+  r32_1:{next:"r16_0",pos:"home"},r32_4:{next:"r16_0",pos:"away"},
+  r32_0:{next:"r16_1",pos:"home"},r32_2:{next:"r16_1",pos:"away"},
+  r32_3:{next:"r16_2",pos:"home"},r32_5:{next:"r16_2",pos:"away"},
+  r32_6:{next:"r16_3",pos:"home"},r32_7:{next:"r16_3",pos:"away"},
+  r32_10:{next:"r16_4",pos:"home"},r32_11:{next:"r16_4",pos:"away"},
+  r32_8:{next:"r16_5",pos:"home"},r32_9:{next:"r16_5",pos:"away"},
+  r32_13:{next:"r16_6",pos:"home"},r32_15:{next:"r16_6",pos:"away"},
+  r32_12:{next:"r16_7",pos:"home"},r32_14:{next:"r16_7",pos:"away"},
+  // R16 -> QF
   r16_0:{next:"qf_0",pos:"home"},r16_1:{next:"qf_0",pos:"away"},
-  r16_2:{next:"qf_1",pos:"home"},r16_3:{next:"qf_1",pos:"away"},
-  r16_4:{next:"qf_2",pos:"home"},r16_5:{next:"qf_2",pos:"away"},
+  r16_4:{next:"qf_1",pos:"home"},r16_5:{next:"qf_1",pos:"away"},
+  r16_2:{next:"qf_2",pos:"home"},r16_3:{next:"qf_2",pos:"away"},
   r16_6:{next:"qf_3",pos:"home"},r16_7:{next:"qf_3",pos:"away"},
+  // QF -> SF -> Final
   qf_0:{next:"sf_0",pos:"home"},qf_1:{next:"sf_0",pos:"away"},
   qf_2:{next:"sf_1",pos:"home"},qf_3:{next:"sf_1",pos:"away"},
   sf_0:{next:"f_0",pos:"home"},sf_1:{next:"f_0",pos:"away"},
@@ -1436,6 +1439,7 @@ function GroupView({ctx}){
   var profile=ctx.profile,activeGroup=ctx.activeGroup,setView=ctx.setView,setActiveGroup=ctx.setActiveGroup,toast$=ctx.toast$;
   const [members,setMembers]=useState([]);
   const [completed,setCompleted]=useState({});
+  const [myFilled,setMyFilled]=useState(0);
   const [selectedUser,setSelectedUser]=useState(null);
   const [showManage,setShowManage]=useState(false);
   const [showStats,setShowStats]=useState(false);
@@ -1451,8 +1455,13 @@ function GroupView({ctx}){
       setMembers(mem);
       var me=mem.find(function(m){return m.user_id===profile.id;});
       setMyRole(me&&me.role);
-      supabase.from("predictions").select("user_id").eq("group_id",activeGroup.id).then(function(p){
-        var done={};(p.data||[]).forEach(function(x){done[x.user_id]=(done[x.user_id]||0)+1;});setCompleted(done);
+      supabase.from("predictions").select("user_id,home,away").eq("group_id",activeGroup.id).then(function(p){
+        var done={},mine=0;
+        (p.data||[]).forEach(function(x){
+          done[x.user_id]=(done[x.user_id]||0)+1;
+          if(x.user_id===profile.id&&x.home!=null&&x.home!==""&&x.away!=null&&x.away!=="") mine++;
+        });
+        setCompleted(done); setMyFilled(mine);
       });
     });
   }
@@ -1494,7 +1503,10 @@ function GroupView({ctx}){
       <button onClick={copyJoinCode} style={{background:C.surface2,border:b(C.border2),color:C.accentS,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:font}}>Copiar</button>
     </div>}
     <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-      <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
+      <div style={{position:"relative"}}>
+        <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
+        <span style={{position:"absolute",top:6,right:10,fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:8,background:myFilled>=104?"rgba(86,224,170,0.18)":"rgba(224,92,106,0.18)",color:myFilled>=104?C.green:C.red,border:b(myFilled>=104?"rgba(86,224,170,0.45)":"rgba(224,92,106,0.45)"),pointerEvents:"none"}}>{myFilled>=104?"Completo":("Faltan "+(104-myFilled))}</span>
+      </div>
       <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
@@ -1908,10 +1920,30 @@ function PredictionsView({ctx}){
       var offMap={};(results[0].data||[]).forEach(function(r){offMap[r.match_id]=r;});setOfficial(offMap);
       var myPreds=results[1].data||[];
       var byId={};myPreds.forEach(function(p){byId[p.match_id]=p;});
+      // Fill-forward: re-cascada de equipos KO desde ganadores previos (no pisa nada).
+      var FF_ORDER=["r32_0","r32_1","r32_2","r32_3","r32_4","r32_5","r32_6","r32_7","r32_8","r32_9","r32_10","r32_11","r32_12","r32_13","r32_14","r32_15","r16_0","r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","qf_0","qf_1","qf_2","qf_3","sf_0","sf_1"];
+      FF_ORDER.forEach(function(sid){
+        var sp=byId[sid]; if(!sp||!sp.winner) return;
+        var nx=KO_NEXT[sid];
+        if(nx){
+          var dst=byId[nx.next]||{match_id:nx.next,user_id:profile.id,group_id:activeGroup.id};
+          var tf=nx.pos==="home"?"home_team":"away_team";
+          if(!dst[tf]){ dst=Object.assign({},dst); dst[tf]=sp.winner; byId[nx.next]=dst; }
+        }
+        var ln=KO_LOSER_NEXT[sid];
+        if(ln&&sp.home_team&&sp.away_team){
+          var loser=sp.winner===sp.home_team?sp.away_team:(sp.winner===sp.away_team?sp.home_team:null);
+          if(loser){
+            var ldst=byId[ln.next]||{match_id:ln.next,user_id:profile.id,group_id:activeGroup.id};
+            var lf=ln.pos==="home"?"home_team":"away_team";
+            if(!ldst[lf]){ ldst=Object.assign({},ldst); ldst[lf]=loser; byId[ln.next]=ldst; }
+          }
+        }
+      });
       var REQUIRED=[];for(var gi=0;gi<GROUP_MATCHES.length;gi++)REQUIRED.push(GROUP_MATCHES[gi].id);for(var si=0;si<KO_SLOTS.length;si++)REQUIRED.push(KO_SLOTS[si].id);
       var f=0;REQUIRED.forEach(function(id){var x=byId[id];var ok=x&&x.home!=null&&x.home!==""&&x.away!=null&&x.away!=="";if(!ok)f++;});
       setFaltan(f);
-      if(myPreds.length>0){var map={};myPreds.forEach(function(p){map[p.match_id]=p;});setPreds(map);}
+      if(myPreds.length>0){setPreds(byId);}
       else{
         supabase.from("predictions").select("*").eq("user_id",profile.id).neq("group_id",activeGroup.id).limit(1).then(function(r){
           if(r.data&&r.data.length>0) setShowCopyModal(true);
