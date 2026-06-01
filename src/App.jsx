@@ -1505,7 +1505,7 @@ function GroupView({ctx}){
     <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
       <div style={{position:"relative"}}>
         <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
-        <span style={{position:"absolute",top:6,right:10,fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:8,background:myFilled>=104?"rgba(86,224,170,0.18)":"rgba(224,92,106,0.18)",color:myFilled>=104?C.green:C.red,border:b(myFilled>=104?"rgba(86,224,170,0.45)":"rgba(224,92,106,0.45)"),pointerEvents:"none"}}>{myFilled>=104?"Completo":("Faltan "+(104-myFilled))}</span>
+        <span style={{position:"absolute",top:6,right:10,fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:8,background:myFilled>=104?"#0a2472":"rgba(224,92,106,0.18)",color:myFilled>=104?"#fff":C.red,border:b(myFilled>=104?"#0a2472":"rgba(224,92,106,0.45)"),pointerEvents:"none"}}>{myFilled>=104?"Completo":("Faltan "+(104-myFilled))}</span>
       </div>
       <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
