@@ -3366,9 +3366,23 @@ function StatsView({ctx}){
   const [roundStats,setRoundStats]=useState({});
   const [matchAccuracy,setMatchAccuracy]=useState({best:null,worst:null});
   useEffect(function(){
+    function fetchAllPredictions(){
+      return new Promise(function(resolve){
+        var all=[];
+        function next(from){
+          supabase.from("predictions").select("user_id,group_id,match_id,home,away,home_team,away_team,winner").range(from,from+999).then(function(r){
+            var data=r.data||[];
+            all=all.concat(data);
+            if (data.length<1000) return resolve({data:all});
+            next(from+1000);
+          });
+        }
+        next(0);
+      });
+    }
     Promise.all([
       supabase.from("prediction_extras").select("user_id,champion"),
-      supabase.from("predictions").select("user_id,group_id,match_id,home,away,home_team,away_team,winner"),
+      fetchAllPredictions(),
       supabase.from("official_results").select("*"),
     ]).then(function(results){
       var extras=results[0].data||[];
