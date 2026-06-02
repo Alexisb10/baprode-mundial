@@ -3370,7 +3370,7 @@ function StatsView({ctx}){
       return new Promise(function(resolve){
         var all=[];
         function next(from){
-          supabase.from("predictions").select("user_id,group_id,match_id,home,away,home_team,away_team,winner").range(from,from+999).then(function(r){
+          supabase.from("predictions").select("user_id,group_id,match_id,home,away,home_team,away_team,winner").order("user_id").order("group_id").order("match_id").range(from,from+999).then(function(r){
             var data=r.data||[];
             all=all.concat(data);
             if (data.length<1000) return resolve({data:all});
