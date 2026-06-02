@@ -3368,7 +3368,7 @@ function StatsView({ctx}){
   useEffect(function(){
     Promise.all([
       supabase.from("prediction_extras").select("user_id,champion"),
-      supabase.from("predictions").select("user_id,match_id,home,away,home_team,away_team"),
+      supabase.from("predictions").select("user_id,group_id,match_id,home,away,home_team,away_team,winner"),
       supabase.from("official_results").select("*"),
     ]).then(function(results){
       var extras=results[0].data||[];
@@ -3401,12 +3401,47 @@ function StatsView({ctx}){
       });
       accuracy.sort(function(a,b){return b.pct-a.pct;});
       setMatchAccuracy({best:accuracy[0]||null,worst:accuracy[accuracy.length-1]||null});
-      var byRound={};
+      // Agrupar preds por planilla (user_id + group_id) para aplicar fill-forward de KO igual que PredictionsView.
+      var planillas={};
       preds.forEach(function(p){
-        var slot=KO_SLOTS.find(function(s){return s.id===p.match_id;});
-        if(!slot)return;
-        if(!byRound[slot.phase])byRound[slot.phase]={};
-        [p.home_team,p.away_team].forEach(function(t){if(t)byRound[slot.phase][t]=(byRound[slot.phase][t]||0)+1;});
+        var k=p.user_id+"|"+(p.group_id||"");
+        if(!planillas[k]) planillas[k]={};
+        planillas[k][p.match_id]=p;
+      });
+      // Fill-forward por planilla: cascadea winners → home_team/away_team del siguiente slot (no pisa datos).
+      var FF_ORDER_STATS=["r32_0","r32_1","r32_2","r32_3","r32_4","r32_5","r32_6","r32_7","r32_8","r32_9","r32_10","r32_11","r32_12","r32_13","r32_14","r32_15","r16_0","r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","qf_0","qf_1","qf_2","qf_3","sf_0","sf_1"];
+      Object.keys(planillas).forEach(function(k){
+        var byId=planillas[k];
+        FF_ORDER_STATS.forEach(function(sid){
+          var sp=byId[sid]; if(!sp||!sp.winner) return;
+          var nx=KO_NEXT[sid];
+          if(nx){
+            var dst=byId[nx.next]||{match_id:nx.next};
+            var tf=nx.pos==="home"?"home_team":"away_team";
+            if(!dst[tf]){ dst=Object.assign({},dst); dst[tf]=sp.winner; byId[nx.next]=dst; }
+          }
+          var ln=KO_LOSER_NEXT[sid];
+          if(ln&&sp.home_team&&sp.away_team){
+            var loser=sp.winner===sp.home_team?sp.away_team:(sp.winner===sp.away_team?sp.home_team:null);
+            if(loser){
+              var ldst=byId[ln.next]||{match_id:ln.next};
+              var lf=ln.pos==="home"?"home_team":"away_team";
+              if(!ldst[lf]){ ldst=Object.assign({},ldst); ldst[lf]=loser; byId[ln.next]=ldst; }
+            }
+          }
+        });
+      });
+      // Conteo de teams por ronda (con datos derivados aplicados).
+      var byRound={};
+      Object.keys(planillas).forEach(function(k){
+        var byId=planillas[k];
+        Object.keys(byId).forEach(function(mid){
+          var slot=KO_SLOTS.find(function(s){return s.id===mid;});
+          if(!slot)return;
+          var p=byId[mid];
+          if(!byRound[slot.phase])byRound[slot.phase]={};
+          [p.home_team,p.away_team].forEach(function(t){if(t)byRound[slot.phase][t]=(byRound[slot.phase][t]||0)+1;});
+        });
       });
       var rs={};
       Object.keys(byRound).forEach(function(phase){rs[phase]=Object.keys(byRound[phase]).map(function(t){return{team:t,count:byRound[phase][t]};}).sort(function(a,b){return b.count-a.count;});});
