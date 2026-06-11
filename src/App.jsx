@@ -7,12 +7,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Primer partido: México vs Sudáfrica, 11/06 16:00 hora local México (UTC-6) = 19:00 ART
 const TOURNAMENT_START = new Date("2026-06-11T19:00:00-03:00");
-// Las predicciones de usuarios se bloquean 1h antes del primer partido
-const PREDICTIONS_LOCK = new Date(TOURNAMENT_START.getTime() - 60*60*1000);
+// Mundial en curso: planillas bloqueadas (fecha en el pasado -> isLocked() siempre true)
+const PREDICTIONS_LOCK = new Date("2026-06-11T00:00:00-03:00");
 const isLocked = () => new Date() >= PREDICTIONS_LOCK;
-// Banner de aviso planilla incompleta: visible hasta el 12/06 ART
-const BANNER_DEADLINE = new Date("2026-06-12T00:00:00-03:00");
-const isBannerActive = () => new Date() < BANNER_DEADLINE;
 
 const C = {
   bg:"#050a10",surface:"#091520",surface2:"#0d1e2e",
@@ -1253,13 +1250,6 @@ function GroupsListView({ctx}){
       <span>&#128274;</span>
       <div style={{fontSize:12,color:C.red}}>Las planillas estan cerradas. El torneo ya comenzo.</div>
     </div>}
-    {isBannerActive()&&<div style={{margin:"12px 16px 0"}}>
-      <style>{"@keyframes borderCycle{0%{border-color:#ff9800;}16%{border-color:#e53935;}33%{border-color:#fdd835;}50%{border-color:#43a047;}66%{border-color:#1e88e5;}83%{border-color:#00acc1;}100%{border-color:#ff9800;}}"}</style>
-      <div style={{borderRadius:12,padding:"12px 14px",background:"transparent",border:"2px solid #ff9800",animation:"borderCycle 4s ease-in-out infinite"}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>⚠️ Completá tu planilla antes del 11 de junio</div>
-        <div style={{fontSize:12,color:C.sub,lineHeight:1.5}}>Muchos completaron solo la fase de grupos. No te olvides de completar también la fase de eliminación: 16avos, Octavos, Cuartos, Semis y Final.</div>
-      </div>
-    </div>}
     <div style={{padding:"16px",paddingBottom:100}}>
       <SectionLabel>Mis grupos</SectionLabel>
       {loading&&<p style={{color:C.sub,fontSize:13,textAlign:"center",marginTop:24}}>Cargando...</p>}
@@ -1517,10 +1507,6 @@ function GroupView({ctx}){
         <GradBtn onClick={function(){setView("predictions");}}>{isLocked()?"Ver mis predicciones":"Mis predicciones"}</GradBtn>
         <span style={{position:"absolute",top:6,right:10,fontSize:12,fontWeight:700,padding:"3px 10px",borderRadius:8,background:myFilled>=104?"#0a2472":"rgba(224,92,106,0.18)",color:myFilled>=104?"#fff":C.red,border:b(myFilled>=104?"#0a2472":"rgba(224,92,106,0.45)"),pointerEvents:"none"}}>{myFilled>=104?"Completo":("Faltan "+(104-myFilled))}</span>
       </div>
-      {myFilled<104&&<div style={{borderRadius:12,padding:"12px 14px",background:"transparent",border:"2px solid #ff9800",animation:"borderCycle 4s ease-in-out infinite"}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>⚠️ Completá tu planilla antes del 11 de junio</div>
-        <div style={{fontSize:12,color:C.sub,lineHeight:1.5}}>No te olvides de completar también la fase de eliminación: 16avos, Octavos, Cuartos, Semis y Final.</div>
-      </div>}
       <button onClick={function(){setView("ranking");}} style={{width:"100%",padding:"13px",borderRadius:12,border:b(C.gold),cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:font,background:"rgba(255,208,96,0.05)",color:C.gold}}>Ranking del grupo</button>
       <div style={{display:"flex",gap:8}}>
         <button onClick={function(){setShowStats(true);}} style={{flex:1,padding:"11px",borderRadius:12,border:b(C.border),cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:font,background:C.surface,color:C.green}}>Mis stats</button>
