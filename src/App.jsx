@@ -1719,9 +1719,25 @@ function GlobalRankingView({ctx}){
   const [search,setSearch]=useState("");
 
   useEffect(function(){
+    // Paginación: predictions excede 1000 filas (~3000+ con todas las planillas).
+    // Sin paginar, Supabase devolvía solo 1000 y faltaban usuarios en el ranking.
+    function fetchAllPredictions(){
+      return new Promise(function(resolve){
+        var all=[];
+        function next(from){
+          supabase.from("predictions").select("user_id,group_id,match_id,home,away,pen_home,pen_away,winner,home_team,away_team").order("user_id").order("group_id").order("match_id").range(from,from+999).then(function(r){
+            var data=r.data||[];
+            all=all.concat(data);
+            if (data.length<1000) return resolve({data:all});
+            next(from+1000);
+          });
+        }
+        next(0);
+      });
+    }
     Promise.all([
       supabase.from("official_results").select("*"),
-      supabase.from("predictions").select("user_id,group_id,match_id,home,away,pen_home,pen_away,winner,home_team,away_team"),
+      fetchAllPredictions(),
       supabase.from("prediction_extras").select("*"),
       supabase.from("official_extras").select("*").single(),
       supabase.from("groups").select("id,name,invite_seq"),
@@ -1749,21 +1765,35 @@ function GlobalRankingView({ctx}){
         membersByGroup[m.group_id].push(m.user_id);
       });
 
+      // Helper: una planilla está completa si tiene >=104 predicciones con home/away no nulos
+      // (mismo criterio que el badge "Completo" en GroupView)
+      function isPlanillaCompleta(preds){
+        var filled=0;
+        for (var i=0;i<preds.length;i++){
+          var p=preds[i];
+          if (p.home!=null && p.home!=="" && p.away!=null && p.away!=="") filled++;
+        }
+        return filled>=104;
+      }
+
       var uids=Object.keys(byUserGroup);
       supabase.from("public_profiles").select("id,nick,nombre").in("id",uids.length?uids:["00000000-0000-0000-0000-000000000000"]).then(function(r2){
         var profMap={};(r2.data||[]).forEach(function(p){profMap[p.id]=p;});
 
         // ===== Ranking INDIVIDUAL: mejor planilla por usuario =====
+        // Solo entran usuarios con AL MENOS UNA planilla 104/104.
         var resInd=uids.map(function(uid){
           var bestStats=null;
           Object.keys(byUserGroup[uid]).forEach(function(gid){
-            var stats=calcUserStats(byUserGroup[uid][gid],offMap,extrasMap[uid],offExtras);
+            var preds=byUserGroup[uid][gid];
+            if (!isPlanillaCompleta(preds)) return; // skip planillas incompletas
+            var stats=calcUserStats(preds,offMap,extrasMap[uid],offExtras);
             if (!bestStats || tiebreakCompare(stats,bestStats)<0) bestStats=stats;
           });
-          if (!bestStats) bestStats={pts:0,exactMatches:0,exactSlotsR32:0,goalsDiff:0};
+          if (!bestStats) return null; // usuario sin ninguna planilla completa => fuera del ranking
           var prof=profMap[uid];
           return{uid:uid,pts:bestStats.pts,exactMatches:bestStats.exactMatches,exactSlotsR32:bestStats.exactSlotsR32,goalsDiff:bestStats.goalsDiff,nick:prof&&prof.nick||"?",nombre:prof&&prof.nombre||""};
-        });
+        }).filter(function(x){return x;});
         setRanking(markTies(resInd.sort(tiebreakCompare)));
 
         // ===== Ranking POR GRUPOS =====
