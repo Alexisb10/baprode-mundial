@@ -3147,7 +3147,6 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
   // Color del borde de cada celda de país (cuando NO hay marco verde — si lo hay, el marco manda)
   function stateToColor(state){
     if (!state) return null;
-    if (hasMatchup) return null; // marco verde tapa, dejamos celdas neutras
     if (state==="exact") return "exact";
     if (state==="presence") return phase==="r32" ? "presence_r32" : "presence_ko";
     if (state==="none") return "none";
