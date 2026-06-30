@@ -3136,7 +3136,7 @@ function KOMatchCard({slot,pred,off,onUpd,preds,setPreds,locked,scoresForCalc,is
   var hasOff=off&&off.home!=null&&off.home!=="";
   // pred puede venir sin match_id si es objeto recién creado; lo inyectamos para que scoreKO lea KO_SLOT_META
   var predWithId=pred.match_id?pred:Object.assign({},pred,{match_id:slot.id});
-  var sc=hasOff?scoreKO(predWithId,off,phase,allOfficial):null;
+  var sc=allOfficial?scoreKO(predWithId,off,phase,allOfficial):null;
 
   // ===== Evaluación visual del slot =====
   // En el admin (isAdmin=true), las celdas no llevan colores de semáforo porque ahí
