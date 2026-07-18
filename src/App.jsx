@@ -2111,7 +2111,7 @@ function PredictionsView({ctx}){
           return <div key={item.key} style={Object.assign({},card,{marginBottom:10,borderLeft:correct?b3(C.green):incorrect?b3(C.red):b3(C.border)})}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:14,fontWeight:600,color:C.text}}>{item.label}</span>
-              <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{item.pts} pts</span>
+              <span style={{fontSize:11,color:correct?C.green:incorrect?C.red:C.gold,background:correct?"rgba(76,223,154,0.1)":incorrect?"rgba(224,92,106,0.1)":"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid "+(correct?"rgba(76,223,154,0.3)":incorrect?"rgba(224,92,106,0.3)":"rgba(255,208,96,0.2)")}}>{item.pts} pts</span>
             </div>
             {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:C.text,fontSize:13,fontWeight:700}}>{offVal}</b></div>}
             <div style={Object.assign({},inp,{padding:"10px 12px",fontSize:14,color:predVal?C.text:C.sub2,fontStyle:predVal?"normal":"italic",cursor:"default"},correct?{border:"1.5px solid "+C.green}:incorrect?{border:"1.5px solid "+C.red}:{})}>
