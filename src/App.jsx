@@ -2114,7 +2114,7 @@ function PredictionsView({ctx}){
               <span style={{fontSize:11,color:C.gold,background:"rgba(255,208,96,0.1)",padding:"2px 8px",borderRadius:10,border:"1px solid rgba(255,208,96,0.2)"}}>{item.pts} pts</span>
             </div>
             {offVal&&<div style={{fontSize:11,color:C.sub,marginBottom:6}}>Oficial: <b style={{color:C.text,fontSize:13,fontWeight:700}}>{offVal}</b></div>}
-            <div style={Object.assign({},inp,{padding:"10px 12px",fontSize:14,color:predVal?C.text:C.sub2,fontStyle:predVal?"normal":"italic",cursor:"default"})}>
+            <div style={Object.assign({},inp,{padding:"10px 12px",fontSize:14,color:predVal?C.text:C.sub2,fontStyle:predVal?"normal":"italic",cursor:"default"},correct?{border:"1.5px solid "+C.green}:incorrect?{border:"1.5px solid "+C.red}:{})}>
               {predVal||"Pendiente"}
             </div>
             <div style={{fontSize:10,color:C.sub2,marginTop:6,letterSpacing:0.3}}>Derivado de {item.source}</div>
