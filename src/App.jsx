@@ -1742,7 +1742,7 @@ function GlobalRankingView({ctx}){
     ]).then(function(results){
       var offMap={};(results[0].data||[]).forEach(function(r){offMap[r.match_id]=r;});
       var allPreds=results[1].data||[];
-      var extrasMap={};(results[2].data||[]).forEach(function(e){extrasMap[e.user_id]=e;});
+      var extrasMap={};(results[2].data||[]).forEach(function(e){if(!extrasMap[e.user_id])extrasMap[e.user_id]={};extrasMap[e.user_id][e.group_id]=e;});
       var offExtras=results[3].data;
       var groups=results[4].data||[];
       var allMembers=results[5].data||[];
@@ -1784,7 +1784,7 @@ function GlobalRankingView({ctx}){
           Object.keys(byUserGroup[uid]).forEach(function(gid){
             var preds=byUserGroup[uid][gid];
             if (!isPlanillaCompleta(preds)) return; // skip planillas incompletas
-            var stats=calcUserStats(preds,offMap,extrasMap[uid],offExtras);
+            var stats=calcUserStats(preds,offMap,extrasMap[uid]&&extrasMap[uid][gid],offExtras);
             if (!bestStats || tiebreakCompare(stats,bestStats)<0) bestStats=stats;
           });
           if (!bestStats) return null; // usuario sin ninguna planilla completa => fuera del ranking
@@ -1803,7 +1803,7 @@ function GlobalRankingView({ctx}){
           if (memberIds.length<6) return null;
           var memberPts=memberIds.map(function(uid){
             var preds=(byUserGroup[uid]&&byUserGroup[uid][g.id])||[];
-            var stats=calcUserStats(preds,offMap,extrasMap[uid],offExtras);
+            var stats=calcUserStats(preds,offMap,extrasMap[uid]&&extrasMap[uid][g.id],offExtras);
             return stats.pts;
           });
           memberPts.sort(function(a,b){return b-a;}); // descendente
